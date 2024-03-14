@@ -1,0 +1,289 @@
+org: dfstio
+app: zkcloudworker
+service: zkcloudworker
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-prune-plugin
+
+provider:
+  name: aws
+  versionFunctions: false
+  runtime: nodejs18.x
+  region: eu-west-1
+  logRetentionInDays: 7
+  environment:
+    TASKS_TABLE: ${file(./env.json):TASKS_TABLE, env:TASKS_TABLE}
+    DEPLOYERS_TABLE: ${file(./env.json):DEPLOYERS_TABLE, env:DEPLOYERS_TABLE}
+    FILES_TABLE: ${file(./env.json):FILES_TABLE, env:FILES_TABLE}
+    JOBS_TABLE: ${file(./env.json):JOBS_TABLE, env:JOBS_TABLE}
+    STEPS_TABLE: ${file(./env.json):STEPS_TABLE, env:STEPS_TABLE}
+    PROOFS_TABLE: ${file(./env.json):PROOFS_TABLE, env:PROOFS_TABLE}
+    BUCKET: ${file(./env.json):BUCKET_NAME, env:BUCKET_NAME}
+    AWS_KMS_ENCRYPTION_KEY_ID: ${file(./env.json):AWS_KMS_ENCRYPTION_KEY_ID, env:AWS_KMS_ENCRYPTION_KEY_ID}
+    JWT_PRIVATEKEY: ${file(./env.json):JWT_PRIVATEKEY, env:JWT_PRIVATEKEY}
+    ZKCLOUDWORKER_AUTH: ${file(./env.json):ZKCLOUDWORKER_AUTH, env:ZKCLOUDWORKER_AUTH}
+    PINATA_JWT: ${file(./env.json):PINATA_JWT, env:PINATA_JWT}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "ses:*"
+        - lambda:InvokeFunction
+      Resource:
+        - "*"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TASKS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.FILES_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOBS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.STEPS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.PROOFS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DEPLOYERS_TABLE}"
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:PutObjectAcl
+        - s3:GetObject
+        - s3:GetObjectAcl
+        - s3:HeadObject
+      Resource: "arn:aws:s3:::${self:provider.environment.BUCKET}/*"
+    - Effect: Allow
+      Action:
+        - ec2:DescribeNetworkInterfaces
+        - ec2:CreateNetworkInterface
+        - ec2:DeleteNetworkInterface
+        - ec2:AssignPrivateIpAddresses
+        - ec2:UnassignPrivateIpAddresses
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - elasticfilesystem:ClientMount
+        - elasticfilesystem:ClientRootAccess
+        - elasticfilesystem:ClientWrite
+        - elasticfilesystem:DescribeMountTargets
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - kms:Encrypt
+        - kms:Decrypt
+        - kms:Encrypt*
+        - kms:Decrypt*
+      Resource: "*"
+
+functions:
+  zkcloudworker:
+    handler: zkcloudworker.api
+    timeout: 30
+    memorySize: 1024
+    events:
+      - http:
+          path: zkcloudworker
+          method: post
+          cors: true
+  worker:
+    handler: zkcloudworker.worker
+    timeout: 900
+    memorySize: 3008
+    fileSystemConfig:
+      localMountPath: /mnt/efs
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-0f3f582ae077325a0
+    vpc:
+      securityGroupIds:
+        - sg-0f6b6c3d4f2663068
+      subnetIds:
+        - subnet-09b609c8310b22fdb
+        - subnet-0c5889f7de38365f1
+        - subnet-070222651507646b1
+  test:
+    handler: test.cloud
+    timeout: 900
+    memorySize: 3008
+    fileSystemConfig:
+      localMountPath: /mnt/efs
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-0f3f582ae077325a0
+    vpc:
+      securityGroupIds:
+        - sg-0f6b6c3d4f2663068
+      subnetIds:
+        - subnet-09b609c8310b22fdb
+        - subnet-0c5889f7de38365f1
+        - subnet-070222651507646b1
+  tasks:
+    handler: tasks.check
+    timeout: 300
+    memorySize: 192
+    events:
+      - schedule:
+          rate: rate(60 minutes)
+          enabled: true
+          name: ts
+  sequencer:
+    handler: sequencer.run
+    timeout: 900
+    memorySize: 3008
+  step:
+    handler: sequencer.step
+    timeout: 900
+    memorySize: 3008
+    fileSystemConfig:
+      localMountPath: /mnt/efs
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-0f3f582ae077325a0
+    vpc:
+      securityGroupIds:
+        - sg-0f6b6c3d4f2663068
+      subnetIds:
+        - subnet-09b609c8310b22fdb
+        - subnet-0c5889f7de38365f1
+        - subnet-070222651507646b1
+
+resources:
+  Resources:
+    TasksDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.TASKS_TABLE}
+    FilesDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: filename
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: filename
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.FILES_TABLE}
+    JobsDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: jobId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: jobId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.JOBS_TABLE}
+    StepsDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: jobId
+            AttributeType: S
+          - AttributeName: stepId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: jobId
+            KeyType: HASH
+          - AttributeName: stepId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.STEPS_TABLE}
+    ProofsDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: jobId
+            AttributeType: S
+          - AttributeName: stepId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: jobId
+            KeyType: HASH
+          - AttributeName: stepId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.PROOFS_TABLE}
+    DeployersDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: publicKey
+            AttributeType: S
+        KeySchema:
+          - AttributeName: publicKey
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.DEPLOYERS_TABLE}
+
+package:
+  excludeDevDependencies: true
+  exclude:
+    - test/**
+    - jest.config.js
+    - tsconfig.json
+    - tslint.json
+    - env*.json
+    - .travis.yml
+    - .prettierrc
+    - node_modules/aws-sdk/**
+
+custom:
+  s3Bucket: formbucket-${self:provider.environment.BUCKET}

@@ -1,0 +1,20 @@
+# package directories
+node_modules
+jspm_packages
+
+# Serverless directories
+.serverless
+
+# Test directories
+deperciated/
+
+env.json
+src/mina/gastanks.ts
+test/
+proof.json
+output.txt
+.DS_Store
+.eslintrc.json
+.yarn/
+.yarnrc.yml
+.build/
