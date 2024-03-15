@@ -132,7 +132,7 @@ functions:
     memorySize: 3008
     fileSystemConfig:
       localMountPath: /mnt/efs
-      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-0f3f582ae077325a0
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-02d3e0b34e5e62ea7
     vpc:
       securityGroupIds:
         - sg-0f6b6c3d4f2663068
@@ -146,7 +146,7 @@ functions:
     memorySize: 3008
     fileSystemConfig:
       localMountPath: /mnt/efs
-      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-0f3f582ae077325a0
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-02d3e0b34e5e62ea7
     vpc:
       securityGroupIds:
         - sg-0f6b6c3d4f2663068
@@ -166,14 +166,14 @@ functions:
   sequencer:
     handler: sequencer.run
     timeout: 900
-    memorySize: 3008
+    memorySize: 512
   step:
     handler: sequencer.step
     timeout: 900
     memorySize: 3008
     fileSystemConfig:
       localMountPath: /mnt/efs
-      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-0f3f582ae077325a0
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-02d3e0b34e5e62ea7
     vpc:
       securityGroupIds:
         - sg-0f6b6c3d4f2663068
@@ -184,6 +184,11 @@ functions:
 
 resources:
   Resources:
+    Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.BUCKET}
+        AccessControl: Private
     TasksDynamoDbTable:
       Type: "AWS::DynamoDB::Table"
       DeletionPolicy: Delete

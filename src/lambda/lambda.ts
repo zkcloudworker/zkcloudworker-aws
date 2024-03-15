@@ -10,7 +10,7 @@ export default async function callLambda(name: string, payload: any) {
     const client = new LambdaClient();
 
     const params: InvokeCommandInput = {
-      FunctionName: "minanft-telegram-bot-dev-" + name, // the lambda function we are going to invoke
+      FunctionName: "zkcloudworker-dev-" + name, // the lambda function we are going to invoke
       InvocationType: "Event",
       Payload: payload,
     } as InvokeCommandInput;

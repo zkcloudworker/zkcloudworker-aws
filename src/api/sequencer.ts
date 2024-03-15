@@ -16,7 +16,7 @@ export default class Sequencer {
   jobId?: string;
   startTime: number;
   readonly MAX_RUN_TIME: number = 1000 * 60 * 10; // 10 minutes
-  readonly MAX_JOB_TIME: number = 1000 * 60 * 60 * 2; // 2 hours
+  readonly MAX_JOB_TIME: number = 1000 * 60 * 60 * 2; // 2 hours TODO: enforce this
 
   constructor(params: {
     jobsTable: string;
@@ -104,7 +104,7 @@ export default class Sequencer {
     }
     let transactions: string[] = job.jobData;
     if (job.developer === "@staketab") {
-      const file = new S3File(process.env.PROVER_KEYS_BUCKET!, job.jobData[0]);
+      const file = new S3File(process.env.BUCKET!, job.jobData[0]);
       const data = await file.get();
       const streamToString = await data.Body?.transformToString("utf8");
       if (streamToString === undefined) {
@@ -178,6 +178,26 @@ export default class Sequencer {
       shouldRun = await this.runIteration();
     }
     if (shouldRun) {
+      const JobsTable = new Jobs(this.jobsTable);
+      const job = await JobsTable.get({
+        id: this.username,
+        jobId: this.jobId,
+      });
+      console.log("Sequencer: run: job", job);
+      if (job === undefined) throw new Error("job not found");
+
+      if (job.jobStatus === "failed") {
+        console.log("Sequencer: run: job is failed, exiting");
+        return;
+      }
+      if (job.jobStatus === "finished" || job.jobStatus === "used") {
+        console.log("Sequencer: run: job is finished or used, exiting");
+        return;
+      }
+      if (Date.now() - job.timeCreated > this.MAX_JOB_TIME) {
+        console.error("Sequencer: run: job is too old, exiting");
+        return;
+      }
       await callLambda(
         "sequencer",
         JSON.stringify({
