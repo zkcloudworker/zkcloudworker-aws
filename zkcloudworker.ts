@@ -140,10 +140,7 @@ const api: Handler = async (
                 return;
               }
               const filename = "staketab." + Date.now().toString() + ".json";
-              const file = new S3File(
-                process.env.PROVER_KEYS_BUCKET!,
-                filename
-              );
+              const file = new S3File(process.env.BUCKET!, filename);
               await file.put(
                 JSON.stringify({ transactions }),
                 "application/json"

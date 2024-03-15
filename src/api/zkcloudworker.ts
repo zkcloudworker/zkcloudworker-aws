@@ -9,7 +9,7 @@ import Jobs from "../table/jobs";
 import { JobsData } from "../model/jobsData";
 import { Memory, sleep } from "zkcloudworker";
 
-const { PROVER_KEYS_BUCKET } = process.env;
+const { BUCKET } = process.env;
 
 export async function zkCloudWorkerDeploy(params: {
   name: string;
@@ -47,7 +47,7 @@ export async function zkCloudWorkerDeploy(params: {
     await listFiles(cacheDir, false);
 
     await loadCache({
-      cacheBucket: PROVER_KEYS_BUCKET!,
+      cacheBucket: BUCKET!,
       folder: contractsDir,
       files: files,
       overwrite: true,
