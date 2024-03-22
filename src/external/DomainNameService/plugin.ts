@@ -51,10 +51,6 @@ export class DomainNameServicePlugin extends BackendPlugin {
 
   public async create(transaction: string): Promise<string | undefined> {
     const cpuCores = os.cpus();
-    console.log(cpuCores);
-    for (const core of cpuCores) {
-      console.log(core.times);
-    }
     const numberOfCPUCores = cpuCores.length;
     console.log("CPU cores:", numberOfCPUCores);
     if (DomainNameServicePlugin.mapUpdateVerificationKey === undefined)

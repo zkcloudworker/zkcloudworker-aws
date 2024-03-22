@@ -1,5 +1,6 @@
 import type { Handler, Context, Callback } from "aws-lambda";
 import { cloud as cloudFunc, runZip } from "./src//api/cloud";
+import os from "os";
 import {
   Field,
   PublicKey,
@@ -59,6 +60,13 @@ const cloud: Handler = async (
   try {
     console.time("test");
     console.log("event", event);
+    const cpuCores = os.cpus();
+    console.log(cpuCores);
+    for (const core of cpuCores) {
+      console.log(core.times);
+    }
+    const numberOfCPUCores = cpuCores.length;
+    console.log("CPU cores:", numberOfCPUCores);
     console.log("test started");
     /*
     try {

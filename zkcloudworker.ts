@@ -20,7 +20,7 @@ const api: Handler = async (
   callback: Callback
 ) => {
   try {
-    console.log("event", event.body);
+    //console.log("event", event.body);
     const body = JSON.parse(event.body);
     if (
       body &&
