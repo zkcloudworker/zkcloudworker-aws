@@ -10,6 +10,7 @@ import {
   Struct,
 } from "o1js";
 import { makeString } from "zkcloudworker";
+import { checkInternet } from "./src/api/internet";
 
 class Storage extends Struct({
   hashString: [Field, Field],
@@ -72,7 +73,9 @@ const cloud: Handler = async (
     }
     */
 
-    const ELEMENTS_NUMBER = 1000;
+    await checkInternet();
+
+    const ELEMENTS_NUMBER = 10;
     const elements: MapElement[] = [];
 
     console.time(`prepared data of ${ELEMENTS_NUMBER} items`);
