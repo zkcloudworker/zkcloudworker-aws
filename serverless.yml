@@ -120,7 +120,7 @@ functions:
   zkcloudworker:
     handler: zkcloudworker.api
     timeout: 30
-    memorySize: 1024
+    memorySize: 512
     events:
       - http:
           path: zkcloudworker
