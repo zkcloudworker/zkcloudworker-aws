@@ -132,28 +132,27 @@ functions:
     memorySize: 3008
     fileSystemConfig:
       localMountPath: /mnt/efs
-      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-02d3e0b34e5e62ea7
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
     vpc:
       securityGroupIds:
-        - sg-0f6b6c3d4f2663068
+        - sg-07cdd56c86fb70d88
       subnetIds:
-        - subnet-09b609c8310b22fdb
-        - subnet-0c5889f7de38365f1
-        - subnet-070222651507646b1
+        - subnet-0c3cc81920de4c4c3
+        - subnet-08f6fb90590c47699
+
   test:
     handler: test.cloud
     timeout: 900
     memorySize: 3008
     fileSystemConfig:
       localMountPath: /mnt/efs
-      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-02d3e0b34e5e62ea7
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
     vpc:
       securityGroupIds:
-        - sg-0f6b6c3d4f2663068
+        - sg-07cdd56c86fb70d88
       subnetIds:
-        - subnet-09b609c8310b22fdb
-        - subnet-0c5889f7de38365f1
-        - subnet-070222651507646b1
+        - subnet-0c3cc81920de4c4c3
+        - subnet-08f6fb90590c47699
   tasks:
     handler: tasks.check
     timeout: 300
@@ -173,14 +172,13 @@ functions:
     memorySize: 3008
     fileSystemConfig:
       localMountPath: /mnt/efs
-      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-02d3e0b34e5e62ea7
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
     vpc:
       securityGroupIds:
-        - sg-0f6b6c3d4f2663068
+        - sg-07cdd56c86fb70d88
       subnetIds:
-        - subnet-09b609c8310b22fdb
-        - subnet-0c5889f7de38365f1
-        - subnet-070222651507646b1
+        - subnet-0c3cc81920de4c4c3
+        - subnet-08f6fb90590c47699
 
 resources:
   Resources:

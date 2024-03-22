@@ -1,4 +1,5 @@
 import { BackendPlugin, sleep, fee } from "zkcloudworker";
+import os from "os";
 import {
   Cache,
   verify,
@@ -49,17 +50,22 @@ export class DomainNameServicePlugin extends BackendPlugin {
   }
 
   public async create(transaction: string): Promise<string | undefined> {
+    const cpuCores = os.cpus();
+    console.log(cpuCores);
+    for (const core of cpuCores) {
+      console.log(core.times);
+    }
+    const numberOfCPUCores = cpuCores.length;
+    console.log("CPU cores:", numberOfCPUCores);
     if (DomainNameServicePlugin.mapUpdateVerificationKey === undefined)
       throw new Error("verificationKey is undefined");
-    console.time("create mapPoof");
+
     const args = JSON.parse(transaction);
     const isAccepted = args.isAccepted;
+    console.log("isAccepted", isAccepted);
     const state: MapTransition = MapTransition.fromFields(
       args.state.map((f: string) => Field.fromJSON(f))
     ) as MapTransition;
-    const address = PublicKey.fromBase58(args.address);
-    console.log("address", address.toBase58());
-    console.log("isAccepted", isAccepted);
 
     let proof: MapUpdateProof;
     //if (isAccepted === true) {
@@ -81,7 +87,6 @@ export class DomainNameServicePlugin extends BackendPlugin {
       DomainNameServicePlugin.mapUpdateVerificationKey
     );
     if (!ok) throw new Error("proof verification failed");
-    console.timeEnd("create mapPoof");
     return JSON.stringify(proof.toJSON(), null, 2);
   }
 
