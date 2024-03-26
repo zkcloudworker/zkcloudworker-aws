@@ -13,6 +13,7 @@ export default class Jobs extends Table<JobsData> {
     isStarted?: boolean;
     timeStarted?: number;
     txNumber: number;
+    metadata?: string;
   }): Promise<string | undefined> {
     const {
       username,
@@ -23,6 +24,7 @@ export default class Jobs extends Table<JobsData> {
       args,
       isStarted,
       timeStarted,
+      metadata,
     } = params;
     const timeCreated: number = timeStarted ?? Date.now();
     const jobId: string =
@@ -37,7 +39,10 @@ export default class Jobs extends Table<JobsData> {
       jobData,
       txNumber: params.txNumber,
       timeCreated,
+      timeCreatedString: new Date(timeCreated).toISOString(),
       jobStatus: "created" as JobStatus,
+      maxAttempts: 0,
+      metadata,
     };
     if (isStarted === true) item.timeStarted = timeCreated;
     try {
@@ -54,12 +59,16 @@ export default class Jobs extends Table<JobsData> {
     jobId: string;
     status: JobStatus;
     result?: string;
+    maxAttempts?: number;
     billedDuration?: number;
   }): Promise<void> {
-    const { username, jobId, status, result, billedDuration } = params;
+    const { username, jobId, status, result, billedDuration, maxAttempts } =
+      params;
     if (
       status === "finished" &&
-      (result === undefined || billedDuration === undefined)
+      (result === undefined ||
+        billedDuration === undefined ||
+        maxAttempts === undefined)
     )
       throw new Error(
         "result and billingDuration is required for finished jobs"
@@ -76,6 +85,7 @@ export default class Jobs extends Table<JobsData> {
             "#T": "timeFinished",
             "#R": "result",
             "#B": "billedDuration",
+            "#M": "maxAttempts",
           }
         : status === "started"
         ? { "#S": "jobStatus", "#T": "timeStarted" }
@@ -88,10 +98,11 @@ export default class Jobs extends Table<JobsData> {
             ":time": time,
             ":result": result,
             ":billedDuration": billedDuration,
+            ":maxAttempts": maxAttempts,
           }
         : { ":status": status, ":time": time },
       status === "finished"
-        ? "set #S = :status, #T = :time, #R = :result, #B = :billedDuration"
+        ? "set #S = :status, #T = :time, #R = :result, #B = :billedDuration, #M = :maxAttempts"
         : "set #S = :status, #T = :time"
     );
   }

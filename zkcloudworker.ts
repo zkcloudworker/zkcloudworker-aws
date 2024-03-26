@@ -119,7 +119,8 @@ const api: Handler = async (
               });
               return;
             }
-            const { transactions, developer, name, task, args } = body.data;
+            const { transactions, developer, name, task, args, metadata } =
+              body.data;
             if (developer === "@staketab") {
               try {
                 await getBackupPlugin({
@@ -159,6 +160,7 @@ const api: Handler = async (
                 task,
                 args,
                 txNumber: transactions.length,
+                metadata,
               });
               callback(null, {
                 statusCode: 200,
@@ -179,6 +181,7 @@ const api: Handler = async (
                 task,
                 args,
                 jobsTable: process.env.JOBS_TABLE!,
+                metadata,
               });
               callback(null, {
                 statusCode: 200,
@@ -323,9 +326,19 @@ async function createJob(params: {
   task: string;
   args: string[];
   jobsTable: string;
+  metadata?: string;
 }): Promise<string | undefined> {
-  const { command, username, developer, name, jobData, task, args, jobsTable } =
-    params;
+  const {
+    command,
+    username,
+    developer,
+    name,
+    jobData,
+    task,
+    args,
+    jobsTable,
+    metadata,
+  } = params;
   const JobsTable = new Jobs(jobsTable);
   const jobId = await JobsTable.createJob({
     username,
@@ -335,6 +348,7 @@ async function createJob(params: {
     task,
     args,
     txNumber: jobData.length,
+    metadata,
   });
   await callLambda(
     "worker",

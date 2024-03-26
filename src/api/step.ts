@@ -19,19 +19,16 @@ export async function runStep(
     attempts: step.attempts,
   });
   Memory.info(`start`);
+  // TODO remove after testing
+  const emulateError = Math.random() < 0.5;
+  if (emulateError) {
+    console.error("runStep: emulating error");
+    return;
+  }
+
   const StepsTable = new Steps(process.env.STEPS_TABLE!);
 
   try {
-    if (step.stepStatus.toString() !== "created" && step.attempts === 1) {
-      await StepsTable.updateStatus({
-        jobId: step.jobId,
-        stepId: step.stepId,
-        status: "failed",
-      });
-      console.error("runStep: step status is not created");
-      return;
-    }
-
     if (step.attempts > MAX_STEP_ATTEMPTS) {
       await StepsTable.updateStatus({
         jobId: step.jobId,

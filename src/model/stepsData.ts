@@ -22,6 +22,7 @@ export interface StepsData {
   timeFailed?: number;
   billedDuration?: number;
   stepStatus: JobStatus;
+  maxAttempts: number;
   result?: string;
 }
 
