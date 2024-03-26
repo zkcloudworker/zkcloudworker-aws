@@ -1355,6 +1355,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@digitalmaas/serverless-plugin-lambda-dead-letter@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@digitalmaas/serverless-plugin-lambda-dead-letter@npm:1.0.0"
+  dependencies:
+    bluebird: "npm:^3.4.7"
+    semver: "npm:^7.3.5"
+  checksum: 10c0/67017bcafd9d99710264f0471a19c60e745ceaafc6924dfc07a105b2587d4d35d1a28c6e26479208d3301c70348e4404401642affbfb5e11261b53e6bfbe375e
+  languageName: node
+  linkType: hard
+
 "@isaacs/cliui@npm:^8.0.2":
   version: 8.0.2
   resolution: "@isaacs/cliui@npm:8.0.2"
@@ -3067,7 +3077,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bluebird@npm:^3.7.2":
+"bluebird@npm:^3.4.7, bluebird@npm:^3.7.2":
   version: 3.7.2
   resolution: "bluebird@npm:3.7.2"
   checksum: 10c0/680de03adc54ff925eaa6c7bb9a47a0690e8b5de60f4792604aae8ed618c65e6b63a7893b57ca924beaf53eee69c5af4f8314148c08124c550fe1df1add897d2
@@ -8577,6 +8587,7 @@ __metadata:
     "@aws-sdk/client-lambda": "npm:^3.533.0"
     "@aws-sdk/client-s3": "npm:^3.533.0"
     "@aws-sdk/util-dynamodb": "npm:^3.533.0"
+    "@digitalmaas/serverless-plugin-lambda-dead-letter": "npm:^1.0.0"
     "@types/adm-zip": "npm:^0.5.5"
     "@types/aws-lambda": "npm:^8.10.136"
     "@types/jsonwebtoken": "npm:^9.0.6"

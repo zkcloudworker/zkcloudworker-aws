@@ -1,7 +1,7 @@
 import Steps from "../table/steps";
 import Proofs from "../table/proofs";
 import Jobs from "../table/jobs";
-import { StepsData } from "../model/stepsData";
+import { StepsData, MAX_STEP_ATTEMPTS } from "../model/stepsData";
 import callLambda from "../lambda/lambda";
 import { BackendPlugin, Memory } from "zkcloudworker";
 import { Cache } from "o1js";
@@ -12,18 +12,41 @@ export async function runStep(
   plugin: BackendPlugin
 ): Promise<void> {
   console.time("runStep");
-  console.log(`runStepTree start:`, step.task, step.stepId, step.jobId);
+  console.log(`runStep start:`, {
+    task: step.task,
+    stepId: step.stepId,
+    jobId: step.jobId,
+    attempts: step.attempts,
+  });
   Memory.info(`start`);
-  if (step.stepStatus.toString() !== "created")
-    throw new Error("step is not created");
-
   const StepsTable = new Steps(process.env.STEPS_TABLE!);
 
   try {
+    if (step.stepStatus.toString() !== "created" && step.attempts === 1) {
+      await StepsTable.updateStatus({
+        jobId: step.jobId,
+        stepId: step.stepId,
+        status: "failed",
+      });
+      console.error("runStep: step status is not created");
+      return;
+    }
+
+    if (step.attempts > MAX_STEP_ATTEMPTS) {
+      await StepsTable.updateStatus({
+        jobId: step.jobId,
+        stepId: step.stepId,
+        status: "failed",
+      });
+      console.error("runStep: maximum number of attempts is reached");
+      return;
+    }
+
     await StepsTable.updateStatus({
       jobId: step.jobId,
       stepId: step.stepId,
       status: "started",
+      attempts: step.attempts + 1,
     });
 
     let result: string | undefined = undefined;

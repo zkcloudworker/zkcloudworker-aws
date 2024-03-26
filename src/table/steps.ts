@@ -9,64 +9,58 @@ export default class Steps extends Table<StepsData> {
     status: JobStatus;
     result?: string;
     requiredStatus?: JobStatus;
-    isReverse?: boolean;
+    attempts?: number;
   }): Promise<StepsData | undefined> {
-    const { jobId, stepId, status, result, requiredStatus, isReverse } = params;
-    if (status === "finished" && result === undefined && isReverse !== true)
+    const { jobId, stepId, status, result, requiredStatus } = params;
+    if (status === "finished" && result === undefined)
       throw new Error("result is required for finished jobs");
+    if (status === "started" && params.attempts === undefined)
+      throw new Error("attempts is required for started jobs");
+    const attempts: number = params.attempts ?? 1;
     const time: number = Date.now();
-    if (isReverse === true)
-      return await this.updateData(
-        {
-          jobId,
-          stepId,
-        },
-        { "#S": "stepStatus" },
-        {
-          ":status": status,
-        },
-        "set #S = :status"
-      );
-    else
-      return await this.updateData(
-        {
-          jobId,
-          stepId,
-        },
-        status === "finished"
-          ? { "#S": "stepStatus", "#T": "timeFinished", "#R": "result" }
-          : status === "started"
-          ? { "#S": "stepStatus", "#T": "timeStarted" }
-          : status === "used"
-          ? { "#S": "stepStatus", "#T": "timeUsed" }
-          : { "#S": "stepStatus", "#T": "timeFailed" },
-        status === "finished"
-          ? requiredStatus === undefined
-            ? {
-                ":status": status,
-                ":time": time,
-                ":result": result,
-              }
-            : {
-                ":status": status,
-                ":time": time,
-                ":required": requiredStatus,
-                ":result": result,
-              }
-          : requiredStatus === undefined
+    return await this.updateData(
+      {
+        jobId,
+        stepId,
+      },
+      status === "finished"
+        ? { "#S": "stepStatus", "#T": "timeFinished", "#R": "result" }
+        : status === "started"
+        ? { "#S": "stepStatus", "#T": "timeStarted", "#A": "attempts" }
+        : status === "used"
+        ? { "#S": "stepStatus", "#T": "timeUsed" }
+        : { "#S": "stepStatus", "#T": "timeFailed" },
+      status === "finished"
+        ? requiredStatus === undefined
           ? {
               ":status": status,
               ":time": time,
+              ":result": result,
             }
           : {
               ":status": status,
               ":time": time,
-              ":required": requiredStatus ?? "none",
-            },
-        status === "finished"
-          ? "set #S = :status, #T = :time, #R = :result"
-          : "set #S = :status, #T = :time",
-        requiredStatus === undefined ? undefined : "#S = :required"
-      );
+              ":required": requiredStatus,
+              ":result": result,
+            }
+        : requiredStatus === undefined
+        ? {
+            ":status": status,
+            ":time": time,
+            ":attempts": attempts,
+          }
+        : {
+            ":status": status,
+            ":time": time,
+            ":required": requiredStatus ?? "none",
+            ":attempts": attempts,
+          },
+      status === "finished"
+        ? "set #S = :status, #T = :time, #R = :result"
+        : status === "started"
+        ? "set #S = :status, #T = :time, #A = :attempts"
+        : "set #S = :status, #T = :time",
+      requiredStatus === undefined ? undefined : "#S = :required"
+    );
   }
 }

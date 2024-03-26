@@ -5,6 +5,7 @@ service: zkcloudworker
 plugins:
   - serverless-plugin-typescript
   - serverless-prune-plugin
+  - "@digitalmaas/serverless-plugin-lambda-dead-letter"
 
 provider:
   name: aws
@@ -121,6 +122,9 @@ functions:
     handler: zkcloudworker.api
     timeout: 30
     memorySize: 512
+    deadLetter:
+      sqs:
+        queueName: zkcloudworker-dl-queue
     events:
       - http:
           path: zkcloudworker
@@ -130,6 +134,9 @@ functions:
     handler: zkcloudworker.worker
     timeout: 900
     memorySize: 3008
+    deadLetter:
+      sqs:
+        queueName: worker-dl-queue
     fileSystemConfig:
       localMountPath: /mnt/efs
       arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
@@ -157,6 +164,9 @@ functions:
     handler: tasks.check
     timeout: 300
     memorySize: 192
+    deadLetter:
+      sqs:
+        queueName: tasks-dl-queue
     events:
       - schedule:
           rate: rate(60 minutes)
@@ -166,10 +176,16 @@ functions:
     handler: sequencer.run
     timeout: 900
     memorySize: 512
+    deadLetter:
+      sqs:
+        queueName: sequencer-dl-queue
   step:
     handler: sequencer.step
     timeout: 900
     memorySize: 3008
+    deadLetter:
+      sqs:
+        queueName: step-dl-queue
     fileSystemConfig:
       localMountPath: /mnt/efs
       arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898

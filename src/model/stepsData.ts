@@ -1,6 +1,7 @@
 import { JobStatus } from "./jobsData";
 
 export type StepTask = "create" | "merge" | "verify" | "mint" | "send";
+export const MAX_STEP_ATTEMPTS = 5;
 
 export interface StepsData {
   jobId: string;
@@ -15,6 +16,7 @@ export interface StepsData {
   origins: string[];
   stepData: string[];
   timeCreated: number;
+  attempts: number;
   timeStarted?: number;
   timeFinished?: number;
   timeFailed?: number;

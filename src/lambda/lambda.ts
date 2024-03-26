@@ -15,7 +15,9 @@ export default async function callLambda(name: string, payload: any) {
       Payload: payload,
     } as InvokeCommandInput;
     const command = new InvokeCommand(params);
-    await client.send(command);
+    const result = await client.send(command);
+    console.log("Lambda call result", result);
+    if (result.FunctionError) console.error("Lambda call error", result);
     await sleep(1000);
   } catch (error: any) {
     console.error("Error: Lambda call", error);

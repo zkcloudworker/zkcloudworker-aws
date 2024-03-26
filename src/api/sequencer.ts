@@ -2,7 +2,12 @@ import Jobs from "../table/jobs";
 import Steps from "../table/steps";
 import Proofs from "../table/proofs";
 import { JobStatus, JobsData } from "../model/jobsData";
-import { StepsData, StepTask, ProofsData } from "../model/stepsData";
+import {
+  StepsData,
+  StepTask,
+  ProofsData,
+  MAX_STEP_ATTEMPTS,
+} from "../model/stepsData";
 
 import callLambda from "../lambda/lambda";
 import { makeString, sleep } from "zkcloudworker";
@@ -16,7 +21,8 @@ export default class Sequencer {
   jobId?: string;
   startTime: number;
   readonly MAX_RUN_TIME: number = 1000 * 60 * 10; // 10 minutes
-  readonly MAX_JOB_TIME: number = 1000 * 60 * 60 * 2; // 2 hours TODO: enforce this
+  readonly MAX_START_TIME: number = 1000 * 30; // 30 seconds
+  readonly MAX_JOB_TIME: number = 1000 * 60 * 60 * 2; // 2 hours
 
   constructor(params: {
     jobsTable: string;
@@ -139,6 +145,7 @@ export default class Sequencer {
         origins: [i.toString()],
         stepData: [transactions[i]],
         timeCreated: Date.now(),
+        attempts: 1,
         stepStatus: "created" as JobStatus,
       };
       try {
@@ -175,7 +182,7 @@ export default class Sequencer {
     let shouldRun: boolean = true;
     while (shouldRun && Date.now() - this.startTime < this.MAX_RUN_TIME) {
       await sleep(1000);
-      shouldRun = await this.runIteration();
+      shouldRun = (await this.runIteration()) && (await this.checkHealth());
     }
     if (shouldRun) {
       const JobsTable = new Jobs(this.jobsTable);
@@ -185,6 +192,14 @@ export default class Sequencer {
       });
       console.log("Sequencer: run: job", job);
       if (job === undefined) throw new Error("job not found");
+      if (job.timeCreated === undefined) {
+        console.error("Sequencer: run: job.timeStarted is undefined");
+        return;
+      }
+      if (job.jobStatus === undefined) {
+        console.error("Sequencer: run: job.jobStatus is undefined");
+        return;
+      }
 
       if (job.jobStatus === "failed") {
         console.log("Sequencer: run: job is failed, exiting");
@@ -195,7 +210,18 @@ export default class Sequencer {
         return;
       }
       if (Date.now() - job.timeCreated > this.MAX_JOB_TIME) {
-        console.error("Sequencer: run: job is too old, exiting");
+        console.error(
+          "Sequencer: run: job is too old, exiting, jobId:",
+          this.jobId
+        );
+        if (this.jobId !== undefined) {
+          const JobsTable = new Jobs(this.jobsTable);
+          await JobsTable.updateStatus({
+            username: this.username,
+            jobId: this.jobId,
+            status: "failed",
+          });
+        }
         return;
       }
       await callLambda(
@@ -206,8 +232,93 @@ export default class Sequencer {
           jobId: this.jobId,
         })
       );
+      // TODO: check that the sequencer is actually restarted
       console.log("Sequencer: run: restarting");
     } else console.log("Sequencer: run: finished");
+  }
+
+  public async checkHealth(): Promise<boolean> {
+    if (this.jobId === undefined) throw new Error("jobId is undefined");
+    const StepsTable = new Steps(this.stepsTable);
+    const JobsTable = new Jobs(this.jobsTable);
+
+    const results = await StepsTable.queryData(
+      "jobId = :id",
+      {
+        ":id": this.jobId,
+      },
+      "stepId, stepStatus, timeCreated, attempts"
+    );
+    console.log("Sequencer: checkHealth: results", results.length);
+    const unhealthy = results.filter(
+      (result) =>
+        result.stepStatus === "created" &&
+        Date.now() - result.timeCreated > this.MAX_START_TIME
+    );
+    if (unhealthy.length > 0) {
+      console.error("Sequencer: checkHealth: unhealthy", {
+        results: unhealthy.length,
+        jobId: this.jobId,
+      });
+      for (const result of unhealthy) {
+        console.log("Sequencer: checkHealth: restarting unhealthy step", {
+          stepId: result.stepId,
+          attempts: result.attempts,
+        });
+        if (result.attempts > MAX_STEP_ATTEMPTS) {
+          console.error("Sequencer: checkHealth: step failed", {
+            jobId: this.jobId,
+            stepId: result.stepId,
+            attempts: result.attempts,
+          });
+          await StepsTable.updateStatus({
+            jobId: this.jobId,
+            stepId: result.stepId,
+            status: "failed",
+          });
+          await JobsTable.updateStatus({
+            username: this.username,
+            jobId: this.jobId,
+            status: "failed",
+          });
+          return false;
+        } else {
+          await StepsTable.updateStatus({
+            jobId: this.jobId,
+            stepId: result.stepId,
+            status: "created",
+            attempts: result.attempts + 1,
+          });
+          const stepData: StepsData | undefined = await StepsTable.get({
+            jobId: this.jobId,
+            stepId: result.stepId,
+          });
+          if (stepData === undefined) {
+            console.error(
+              "Sequencer: checkHealth: stepData is undefined, exiting"
+            );
+            await JobsTable.updateStatus({
+              username: this.username,
+              jobId: this.jobId,
+              status: "failed",
+            });
+            return false;
+          }
+          try {
+            await callLambda("step", JSON.stringify({ stepData }));
+          } catch (error: any) {
+            console.error("Error: Sequencer: checkHealth:", error);
+            await JobsTable.updateStatus({
+              username: this.username,
+              jobId: this.jobId,
+              status: "failed",
+            });
+            return false;
+          }
+        }
+      }
+    }
+    return true;
   }
 
   public async runIteration(): Promise<boolean> {
@@ -437,53 +548,7 @@ export default class Sequencer {
       console.log("Sequencer: run: no results to merge after trying to lock");
       return true;
     }
-    /*
-    const stepResults = [];
-    //console.log("Sequencer: run: results", results.length);
-    for (let i = 0; i < results.length; i++) {
-      const step = results[i];
-      const updatedStep = await StepsTable.updateStatus({
-        jobId: this.jobId,
-        stepId: step.stepId,
-        status: "used",
-        requiredStatus: "finished",
-      });
-      if (updatedStep === undefined)
-        console.log("Sequencer: run: updateStatus operation failed");
-      else if (updatedStep.stepStatus !== "used")
-        console.log(
-          "Sequencer: run: updateStatus update failed, current status:",
-          updatedStep.stepId,
-          updatedStep.stepStatus
-        );
-      else stepResults.push(step);
-    }
-    if (stepResults.length === 0) {
-      console.log("Sequencer: run: no results to merge after trying to lock");
-      return true;
-    } else {
-      if (stepResults.length % 2 === 1) {
-        // We have odd number of results, we need to return the last one back to the queue
-        await StepsTable.updateStatus({
-          jobId: this.jobId,
-          stepId: stepResults[stepResults.length - 1].stepId,
-          status: "finished",
-          isReverse: true,
-          //result: stepResults[stepResults.length - 1].result,
-        });
-        const updatedStep = await StepsTable.get({
-          jobId: this.jobId,
-          stepId: stepResults[stepResults.length - 1].stepId,
-        });
-        if (updatedStep === undefined)
-          throw new Error("updatedStep is undefined");
-        if (updatedStep.stepStatus !== "finished")
-          throw new Error("updatedStep is not finished");
-        console.log(
-          "Sequencer: run: odd number of results, returning last one"
-        );
-      }
-      */
+
     const mergeStepsNumber = Math.floor(stepResults.length / 2);
     if (mergeStepsNumber > 0) {
       const JobsTable = new Jobs(this.jobsTable);
@@ -552,6 +617,7 @@ export default class Sequencer {
             origins: [...step1.origins, ...step2.origins],
             stepData: [step1.result!, step2.result!],
             timeCreated: Date.now(),
+            attempts: 1,
             stepStatus: "created" as JobStatus,
             billedDuration,
           };
