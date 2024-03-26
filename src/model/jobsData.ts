@@ -11,11 +11,14 @@ export interface JobsData {
   jobData: string[];
   txNumber: number;
   timeCreated: number;
+  timeCreatedString: string;
   timeStarted?: number;
   timeFinished?: number;
   timeFailed?: number;
   timeUsed?: number;
   billedDuration?: number;
   jobStatus: JobStatus;
+  maxAttempts: number;
   result?: string;
+  metadata?: string;
 }

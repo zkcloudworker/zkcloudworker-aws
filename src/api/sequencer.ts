@@ -21,7 +21,7 @@ export default class Sequencer {
   jobId?: string;
   startTime: number;
   readonly MAX_RUN_TIME: number = 1000 * 60 * 10; // 10 minutes
-  readonly MAX_START_TIME: number = 1000 * 30; // 30 seconds
+  readonly MAX_START_TIME: number = 1000 * 60; // 60 seconds
   readonly MAX_JOB_TIME: number = 1000 * 60 * 60 * 2; // 2 hours
 
   constructor(params: {
@@ -47,8 +47,9 @@ export default class Sequencer {
     task: string;
     args: string[];
     txNumber?: number;
+    metadata?: string;
   }): Promise<string | undefined> {
-    const { username, developer, name, jobData, task, args } = params;
+    const { username, developer, name, jobData, task, args, metadata } = params;
     if (this.username !== params.username) throw new Error("username mismatch");
     if ((task === "verify" || task === "send") && jobData.length !== 1)
       throw new Error("jobData length is not 1 for task:verify or send");
@@ -61,6 +62,7 @@ export default class Sequencer {
       task,
       args,
       txNumber: params.txNumber ?? jobData.length,
+      metadata,
     });
     if (jobId !== undefined && task !== "mint")
       await callLambda(
@@ -145,8 +147,9 @@ export default class Sequencer {
         origins: [i.toString()],
         stepData: [transactions[i]],
         timeCreated: Date.now(),
-        attempts: 1,
+        attempts: 0,
         stepStatus: "created" as JobStatus,
+        maxAttempts: 0,
       };
       try {
         await StepsTable.create(stepData);
@@ -179,13 +182,26 @@ export default class Sequencer {
   }
 */
   public async run(): Promise<void> {
+    if (this.jobId === undefined)
+      throw new Error("Error: Sequencer: run: jobId is undefined");
+    const JobsTable = new Jobs(this.jobsTable);
     let shouldRun: boolean = true;
     while (shouldRun && Date.now() - this.startTime < this.MAX_RUN_TIME) {
-      await sleep(1000);
-      shouldRun = (await this.runIteration()) && (await this.checkHealth());
+      await sleep(30000);
+      try {
+        shouldRun = (await this.runIteration()) && (await this.checkHealth());
+      } catch (error: any) {
+        console.error("Error: Sequencer: run: iteration", error);
+        shouldRun = false;
+
+        await JobsTable.updateStatus({
+          username: this.username,
+          jobId: this.jobId,
+          status: "failed",
+        });
+      }
     }
     if (shouldRun) {
-      const JobsTable = new Jobs(this.jobsTable);
       const job = await JobsTable.get({
         id: this.username,
         jobId: this.jobId,
@@ -247,74 +263,187 @@ export default class Sequencer {
       {
         ":id": this.jobId,
       },
-      "stepId, stepStatus, timeCreated, attempts"
+      "stepId, stepStatus, timeCreated, attempts, task, jobTask, timeStarted"
     );
-    console.log("Sequencer: checkHealth: results", results.length);
-    const unhealthy = results.filter(
-      (result) =>
-        result.stepStatus === "created" &&
-        Date.now() - result.timeCreated > this.MAX_START_TIME
-    );
+    //console.log("Sequencer: checkHealth: results", results.length);
+    const timeNow = Date.now();
+    const unhealthy = results.filter((result) => {
+      const delay = timeNow - result.timeCreated;
+      const attempts = result.attempts ?? 0;
+      const allowedDelay = this.MAX_START_TIME * (attempts + 1);
+      const isUnhealthy =
+        result.stepStatus === "created" && delay > allowedDelay;
+      if (isUnhealthy)
+        console.error("Sequencer: checkHealth: unhealthy step detected", {
+          stepStatus: result.stepStatus,
+          stepId: result.stepId,
+          attempts: result.attempts,
+          timeStuck: delay, // in milliseconds
+          allowedDelay,
+          task: result.task,
+          jobTask: result.jobTask,
+          timeCreated: result.timeCreated,
+          timeStarted: result.timeStarted,
+        });
+      return isUnhealthy;
+    });
+    if (unhealthy === undefined) {
+      console.error(
+        "Sequencer: checkHealth: unhealthy is undefined",
+        unhealthy
+      );
+      await JobsTable.updateStatus({
+        username: this.username,
+        jobId: this.jobId,
+        status: "failed",
+      });
+      return false;
+    }
+    if (unhealthy.length === undefined) {
+      console.error(
+        "Sequencer: checkHealth: unhealthy.length is undefined",
+        unhealthy
+      );
+      await JobsTable.updateStatus({
+        username: this.username,
+        jobId: this.jobId,
+        status: "failed",
+      });
+      return false;
+    }
     if (unhealthy.length > 0) {
       console.error("Sequencer: checkHealth: unhealthy", {
         results: unhealthy.length,
         jobId: this.jobId,
       });
       for (const result of unhealthy) {
-        console.log("Sequencer: checkHealth: restarting unhealthy step", {
+        console.log("Sequencer: checkHealth: restarting unhealthy step 1/3", {
+          stepStatus: result.stepStatus,
           stepId: result.stepId,
           attempts: result.attempts,
+          timeStuck: timeNow - result.timeCreated, // in milliseconds
+          task: result.task,
+          jobTask: result.jobTask,
+          timeCreated: result.timeCreated,
+          timeStarted: result.timeStarted,
         });
-        if (result.attempts > MAX_STEP_ATTEMPTS) {
-          console.error("Sequencer: checkHealth: step failed", {
-            jobId: this.jobId,
-            stepId: result.stepId,
-            attempts: result.attempts,
-          });
-          await StepsTable.updateStatus({
-            jobId: this.jobId,
-            stepId: result.stepId,
-            status: "failed",
-          });
+        await sleep(1000);
+        const stepData: StepsData | undefined = await StepsTable.get({
+          jobId: this.jobId,
+          stepId: result.stepId,
+        });
+        if (stepData === undefined) {
+          console.error(
+            "Sequencer: checkHealth: stepData is undefined, exiting"
+          );
           await JobsTable.updateStatus({
             username: this.username,
             jobId: this.jobId,
             status: "failed",
           });
           return false;
-        } else {
-          await StepsTable.updateStatus({
-            jobId: this.jobId,
-            stepId: result.stepId,
-            status: "created",
-            attempts: result.attempts + 1,
-          });
-          const stepData: StepsData | undefined = await StepsTable.get({
-            jobId: this.jobId,
-            stepId: result.stepId,
-          });
-          if (stepData === undefined) {
-            console.error(
-              "Sequencer: checkHealth: stepData is undefined, exiting"
+        }
+        console.log("Sequencer: checkHealth: restarting unhealthy step 2/3", {
+          stepStatus: stepData.stepStatus,
+          stepId: stepData.stepId,
+          attempts: result.attempts,
+          getAttempts: stepData.attempts,
+          timeStuck: timeNow - stepData.timeCreated, // in milliseconds
+          task: stepData.task,
+          jobTask: stepData.jobTask,
+          timeCreated: stepData.timeCreated,
+          timeStarted: stepData.timeStarted,
+          queryStatus: result.stepStatus,
+          getStatus: stepData.stepStatus,
+        });
+        if (
+          timeNow - stepData.timeCreated >
+            this.MAX_START_TIME * (stepData.attempts + 1) &&
+          stepData.stepStatus === "created"
+        ) {
+          if (stepData.attempts > MAX_STEP_ATTEMPTS) {
+            console.error("Sequencer: checkHealth: step failed", {
+              jobId: this.jobId,
+              stepId: result.stepId,
+              attempts: stepData.attempts,
+            });
+            await StepsTable.updateStatus({
+              jobId: this.jobId,
+              stepId: result.stepId,
+              status: "failed",
+            });
+            await JobsTable.updateStatus({
+              username: this.username,
+              jobId: this.jobId,
+              status: "failed",
+            });
+            return false;
+          } else {
+            await StepsTable.updateStatus({
+              jobId: this.jobId,
+              stepId: result.stepId,
+              status: "created",
+              attempts: result.attempts ?? 0 + 1,
+            });
+            await sleep(1000);
+            const stepData: StepsData | undefined = await StepsTable.get({
+              jobId: this.jobId,
+              stepId: result.stepId,
+            });
+            if (stepData === undefined) {
+              console.error(
+                "Sequencer: checkHealth: stepData is undefined, exiting"
+              );
+              await JobsTable.updateStatus({
+                username: this.username,
+                jobId: this.jobId,
+                status: "failed",
+              });
+              return false;
+            }
+            console.log(
+              "Sequencer: checkHealth: restarting unhealthy step 3/3",
+              {
+                stepStatus: stepData.stepStatus,
+                stepId: stepData.stepId,
+                attempts: result.attempts,
+                getAttempts: stepData.attempts,
+                timeStuck: Date.now() - stepData.timeCreated, // in milliseconds
+                task: stepData.task,
+                jobTask: stepData.jobTask,
+                queryStatus: result.stepStatus,
+                getStatus: stepData.stepStatus,
+                timeCreated: stepData.timeCreated,
+                timeStarted: stepData.timeStarted,
+              }
             );
-            await JobsTable.updateStatus({
-              username: this.username,
-              jobId: this.jobId,
-              status: "failed",
-            });
-            return false;
+            try {
+              await callLambda(
+                "step",
+                JSON.stringify({ stepData }),
+                stepData.attempts + 1
+              );
+              await sleep(1000);
+            } catch (error: any) {
+              console.error("Error: Sequencer: checkHealth:", error);
+              await JobsTable.updateStatus({
+                username: this.username,
+                jobId: this.jobId,
+                status: "failed",
+              });
+              return false;
+            }
           }
-          try {
-            await callLambda("step", JSON.stringify({ stepData }));
-          } catch (error: any) {
-            console.error("Error: Sequencer: checkHealth:", error);
-            await JobsTable.updateStatus({
-              username: this.username,
-              jobId: this.jobId,
-              status: "failed",
-            });
-            return false;
-          }
+        } else {
+          console.error("Sequencer: checkHealth: step is not stuck, exiting", {
+            jobId: this.jobId,
+            stepId: result.stepId,
+            attempts: result.attempts,
+            getAttempts: stepData.attempts,
+            queryStatus: result.stepStatus,
+            getStatus: stepData.stepStatus,
+            timeStuck: Date.now() - result.timeCreated, // in milliseconds
+          });
         }
       }
     }
@@ -329,6 +458,16 @@ export default class Sequencer {
     let results = await ProofsTable.queryData("jobId = :id", {
       ":id": this.jobId,
     });
+
+    if (results === undefined) {
+      console.error("Sequencer: runIteration: results is undefined");
+      return true;
+    }
+
+    if (results.length === undefined) {
+      console.error("Sequencer: runIteration: results.length is undefined");
+      return true;
+    }
 
     if (results.length === 0) {
       //console.log("Sequencer: run: no finished results");
@@ -369,7 +508,7 @@ export default class Sequencer {
       }
       if (result.result === undefined) throw new Error("result is undefined");
 
-      if (job.txNumber !== result.origins.length) {
+      if (job.txNumber !== result.origins?.length) {
         /*
         console.log(
           "final result check: jobData length does not match origins length, exiting"
@@ -377,7 +516,7 @@ export default class Sequencer {
         */
         return true;
       }
-      for (let i = 0; i < result.origins.length; i++)
+      for (let i = 0; i < result.origins?.length; i++)
         if (
           result.origins.find((origin) => origin === i.toString()) === undefined
         )
@@ -391,6 +530,7 @@ export default class Sequencer {
           (result.billedDuration ?? 0) +
           (result.timeFinished ?? 0) -
           (result.timeStarted ?? 0),
+        maxAttempts: Math.max(result.attempts, result.maxAttempts),
       });
       await StepsTable.remove({
         jobId: this.jobId,
@@ -411,10 +551,11 @@ export default class Sequencer {
       while (true) {
         console.log(
           "Sequencer: run: rfc-voting results length",
-          results.length,
+          results?.length,
           "total length",
-          txs.length
+          txs?.length
         );
+        let maxAttempts = 0;
         for (let i = 0; i < results.length; i++) {
           const step: StepsData | undefined = await StepsTable.get({
             jobId: this.jobId,
@@ -427,6 +568,7 @@ export default class Sequencer {
             throw new Error("step.time is undefined");
           txs.push(JSON.parse(step.result));
           billedDuration += step.timeFinished - step.timeStarted;
+          maxAttempts = Math.max(maxAttempts, step.attempts, step.maxAttempts);
           await StepsTable.remove({
             jobId: this.jobId,
             stepId: step.stepId,
@@ -436,7 +578,7 @@ export default class Sequencer {
             stepId: step.stepId,
           });
         }
-        if (txs.length === job.txNumber) {
+        if (txs?.length === job.txNumber) {
           const filename = await copyStringToS3(JSON.stringify({ txs }));
           await JobsTable.updateStatus({
             username: this.username,
@@ -444,10 +586,11 @@ export default class Sequencer {
             status: "finished",
             result: filename,
             billedDuration,
+            maxAttempts,
           });
           console.log(
             "Sequencer: run: rfc-voting final result written",
-            txs.length.toString()
+            txs?.length.toString()
           );
           return false;
         } else {
@@ -474,6 +617,7 @@ export default class Sequencer {
         });
         if (step === undefined) throw new Error("step is undefined");
         const origins = step.origins;
+        if (origins === undefined) throw new Error("origins is undefined");
         // find lowest and highest number in origins
         lowest.push(Math.min(...origins.map((origin) => parseInt(origin))));
         highest.push(Math.max(...origins.map((origin) => parseInt(origin))));
@@ -578,6 +722,32 @@ export default class Sequencer {
         if (step1 === undefined || step2 === undefined)
           throw new Error("step is undefined");
 
+        if (step1.name === undefined || step2.name === undefined)
+          throw new Error("name is undefined");
+        if (step1.jobTask === undefined || step2.jobTask === undefined)
+          throw new Error("jobTask is undefined");
+        if (step1.args === undefined || step2.args === undefined)
+          throw new Error("args is undefined");
+        if (step1.developer === undefined || step2.developer === undefined)
+          throw new Error("developer is undefined");
+        if (step1.result === undefined || step2.result === undefined)
+          throw new Error("result is undefined");
+        if (
+          step1.timeStarted === undefined ||
+          step1.timeFinished === undefined ||
+          step2.timeStarted === undefined ||
+          step2.timeFinished === undefined
+        )
+          throw new Error("time is undefined");
+
+        if (
+          step1.attempts === undefined ||
+          step1.maxAttempts === undefined ||
+          step2.attempts === undefined ||
+          step2.maxAttempts === undefined
+        )
+          throw new Error("attempts is undefined");
+
         const name = step1.name;
         const jobTask = step1.jobTask;
         const args = step1.args;
@@ -605,6 +775,12 @@ export default class Sequencer {
             step1.timeStarted +
             step2.timeFinished -
             step2.timeStarted;
+          const maxAttempts = Math.max(
+            step1.attempts,
+            step1.maxAttempts,
+            step2.attempts,
+            step2.maxAttempts
+          );
           const stepData: StepsData = {
             jobId: this.jobId,
             stepId,
@@ -617,15 +793,16 @@ export default class Sequencer {
             origins: [...step1.origins, ...step2.origins],
             stepData: [step1.result!, step2.result!],
             timeCreated: Date.now(),
-            attempts: 1,
+            attempts: 0,
             stepStatus: "created" as JobStatus,
+            maxAttempts,
             billedDuration,
           };
           try {
             await StepsTable.create(stepData);
             await callLambda("step", JSON.stringify({ stepData }));
             console.log(
-              `Sequencer: run: started merging ${stepData.origins.length} proofs`
+              `Sequencer: run: started merging ${stepData.origins?.length} proofs`
             );
             await StepsTable.remove({
               jobId: this.jobId,
