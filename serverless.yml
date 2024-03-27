@@ -129,6 +129,7 @@ functions:
     handler: zkcloudworker.api
     timeout: 30
     memorySize: 512
+    #reservedConcurrency: 5 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
     deadLetter:
       sqs:
         queueName: zkcloudworker-dl-queue
