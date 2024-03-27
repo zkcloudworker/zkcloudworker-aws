@@ -21,7 +21,7 @@ export default async function callLambda(
     } as InvokeCommandInput;
     const command = new InvokeCommand(params);
     const result = await client.send(command);
-    console.log("Lambda call result", result);
+    //console.log("Lambda call result", result);
     console.log("Lambda call:", name, "id:", result.$metadata.requestId);
     if (
       result.FunctionError ||

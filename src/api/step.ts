@@ -19,13 +19,14 @@ export async function runStep(
     attempts: step.attempts,
   });
   Memory.info(`start`);
+  /*
   // TODO remove after testing
   const emulateError = Math.random() < 0.5;
   if (emulateError) {
     console.error("runStep: emulating error");
     return;
   }
-
+  */
   const StepsTable = new Steps(process.env.STEPS_TABLE!);
 
   try {

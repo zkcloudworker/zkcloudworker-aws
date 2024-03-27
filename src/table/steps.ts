@@ -86,13 +86,25 @@ export default class Steps extends Table<StepsData> {
         values = { ...values, ":required": requiredStatus };
       }
 
-      return await this.updateData(
+      if (attempts !== undefined && status === "created")
+        console.log(
+          `attempts: ${attempts}, jobId: ${jobId}, stepId: ${stepId}, names: ${JSON.stringify(
+            names
+          )}, values: ${JSON.stringify(
+            values
+          )}, updateExpression: ${updateExpression}, conditionExpression: ${conditionExpression}`
+        );
+
+      const updateResult = await this.updateData(
         key,
         names,
         values,
         updateExpression,
         conditionExpression
       );
+      if (attempts !== undefined && status === "created")
+        console.log(`updateData result: ${updateResult}`);
+      return updateResult;
     } catch (e) {
       console.error(`Steps.updateStatus error:`, e);
       try {
