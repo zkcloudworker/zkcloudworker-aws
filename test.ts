@@ -1,6 +1,8 @@
 import type { Handler, Context, Callback } from "aws-lambda";
 import { cloud as cloudFunc, runZip } from "./src//api/cloud";
 import os from "os";
+import fs from "fs/promises";
+import { listFiles } from "./src/mina/cache";
 import {
   Field,
   PublicKey,
@@ -9,6 +11,14 @@ import {
   Encoding,
   MerkleMap,
   Struct,
+  SmartContract,
+  state,
+  State,
+  method,
+  Mina,
+  AccountUpdate,
+  setNumberOfWorkers,
+  ZkProgram,
 } from "o1js";
 import { makeString } from "zkcloudworker";
 import { checkInternet } from "./src/api/internet";
@@ -68,6 +78,11 @@ const cloud: Handler = async (
     const numberOfCPUCores = cpuCores.length;
     console.log("CPU cores:", numberOfCPUCores);
     console.log("test started");
+
+    const cacheDir = "/mnt/efs/cache";
+    await listFiles(cacheDir);
+    await fs.rm(cacheDir, { recursive: true });
+    await listFiles(cacheDir);
     /*
     try {
       const result = await runZip({
@@ -81,7 +96,10 @@ const cloud: Handler = async (
     }
     */
 
-    await checkInternet();
+    //await checkInternet();
+
+    setNumberOfWorkers(6);
+    await arm2();
 
     const ELEMENTS_NUMBER = 10;
     const elements: MapElement[] = [];
@@ -123,5 +141,78 @@ const cloud: Handler = async (
     return 200;
   }
 };
+
+async function arm() {
+  console.log("arm 1");
+  class TokenAccount extends SmartContract {
+    @state(Field) value = State<Field>();
+
+    @method update(value: Field) {
+      const oldValue = this.value.getAndRequireEquals();
+      oldValue.assertEquals(value.sub(Field(1)));
+      this.value.set(value);
+    }
+  }
+
+  const Local = Mina.LocalBlockchain({ proofsEnabled: true });
+  Mina.setActiveInstance(Local);
+  const deployer = Local.testAccounts[0].privateKey;
+  const zkAppTokenPrivateKey = PrivateKey.random();
+  const zkAppTokenPublicKey = zkAppTokenPrivateKey.toPublicKey();
+  const zkToken = new TokenAccount(zkAppTokenPublicKey);
+  const sender = deployer.toPublicKey();
+  const transactionFee = 150_000_000;
+  console.log("arm 2");
+
+  await TokenAccount.compile();
+  console.log("arm 3");
+  const transaction = await Mina.transaction(
+    { sender, fee: transactionFee, memo: "arm" },
+    () => {
+      AccountUpdate.fundNewAccount(sender);
+      zkToken.deploy({});
+    }
+  );
+  console.log("arm 4");
+  transaction.sign([deployer, zkAppTokenPrivateKey]);
+  console.log("arm 5");
+  const tx = await transaction.send();
+  console.log("arm 6");
+  console.log("tx", tx);
+}
+
+async function arm2() {
+  console.log("arm 1");
+  class Element extends Struct({
+    key: Field,
+    value1: Field,
+    value2: Field,
+  }) {}
+
+  const MyZkProgram = ZkProgram({
+    name: "MyZkProgram",
+    publicInput: Element,
+
+    methods: {
+      create: {
+        privateInputs: [],
+
+        method(element: Element) {
+          element.value1.assertEquals(element.value2);
+        },
+      },
+    },
+  });
+
+  await MyZkProgram.compile();
+  console.log("arm 2");
+  const proof = await MyZkProgram.create({
+    key: Field(1),
+    value1: Field(2),
+    value2: Field(2),
+  });
+  console.log("arm 3");
+  console.log("proof", proof);
+}
 
 export { cloud };
