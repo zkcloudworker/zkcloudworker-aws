@@ -172,7 +172,7 @@ functions:
   mocked-sequencer:
     handler: mocked.sequencer
     timeout: 30
-    memorySize: 128
+    memorySize: 256
     reservedConcurrency: 30
     deadLetter:
       sqs:

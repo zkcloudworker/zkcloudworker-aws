@@ -1,11 +1,10 @@
 import { Handler, Context } from "aws-lambda";
 import callLambda from "./src/lambda/lambda";
-import { sleep } from "zkcloudworker";
 
 const sequencer: Handler = async (event: any, context: Context) => {
   try {
     console.log("run", event);
-    if (event.delay && event.count) {
+    if (event.delay !== undefined && event.count !== undefined) {
       const startTime = event.startTime ?? Date.now();
       await run(event.delay, event.count, startTime);
     } else console.error("no event.delay or event.count");
@@ -30,11 +29,13 @@ async function run(
   count: number,
   startTime: number
 ): Promise<void> {
-  let shouldRun: boolean = count > 0;
-  console.log("Sequencer: run:", { delay, count, startTime });
-  await sleep(delay < 10000 ? 10000 : delay);
-  let counter = 0;
-  if (shouldRun && Date.now() - startTime < MAX_RUN_TIME) {
+  console.log("Sequencer: start:", { delay, count, startTime });
+  let shouldRun: boolean = count > 1;
+  const runTime = Date.now() - startTime;
+  if (shouldRun && runTime < MAX_RUN_TIME) {
+    console.log("Sequencer: run: waiting, emulating runIteration()", delay);
+    await sleep(delay > 10000 ? 10000 : delay);
+    console.log("Sequencer: run: calling lambda");
     await callLambda(
       "mocked-sequencer",
       JSON.stringify({
@@ -43,8 +44,12 @@ async function run(
         startTime: startTime,
       })
     );
-    console.log("Sequencer: run: restarting");
-  } else console.log("Sequencer: run: finished");
+    console.log("Sequencer: run: restarting", { shouldRun, runTime });
+  } else console.log("Sequencer: run: finished", { shouldRun, runTime });
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export { sequencer };
