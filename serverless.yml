@@ -130,7 +130,7 @@ functions:
     handler: zkcloudworker.api
     timeout: 30
     memorySize: 512
-    reservedConcurrency: 10 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
+    reservedConcurrency: 20 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
     deadLetter:
       sqs:
         queueName: zkcloudworker-dl-queue
@@ -141,8 +141,9 @@ functions:
           cors: true
   worker:
     handler: zkcloudworker.worker
-    timeout: 900
-    memorySize: 3008
+    timeout: 300
+    memorySize: 10240
+    reservedConcurrency: 20
     deadLetter:
       sqs:
         queueName: worker-dl-queue
@@ -160,6 +161,7 @@ functions:
     handler: test.cloud
     timeout: 120
     memorySize: 10240
+    reservedConcurrency: 2
     fileSystemConfig:
       localMountPath: /mnt/efs
       arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
@@ -172,7 +174,7 @@ functions:
   mocked-sequencer:
     handler: mocked.sequencer
     timeout: 30
-    memorySize: 256
+    memorySize: 192
     reservedConcurrency: 30
     deadLetter:
       sqs:
@@ -181,6 +183,7 @@ functions:
     handler: tasks.check
     timeout: 300
     memorySize: 192
+    reservedConcurrency: 20
     deadLetter:
       sqs:
         queueName: tasks-dl-queue
@@ -192,14 +195,14 @@ functions:
   sequencer:
     handler: sequencer.run
     timeout: 900
-    memorySize: 512
+    memorySize: 384
     reservedConcurrency: 20
     deadLetter:
       sqs:
         queueName: sequencer-dl-queue
   step:
-    handler: sequencer.step
-    timeout: 900
+    handler: step.run
+    timeout: 300
     memorySize: 10240
     reservedConcurrency: 20
     deadLetter:
