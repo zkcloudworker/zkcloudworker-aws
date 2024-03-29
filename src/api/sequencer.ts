@@ -10,7 +10,7 @@ import {
 } from "../model/stepsData";
 
 import callLambda from "../lambda/lambda";
-import { makeString, sleep, formatTime } from "zkcloudworker";
+import { makeString, sleep, formatTime } from "../utils/utils";
 import { S3File, copyStringToS3 } from "../storage/s3";
 
 export default class Sequencer {
