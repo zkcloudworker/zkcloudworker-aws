@@ -13,6 +13,7 @@ provider:
   runtime: nodejs18.x
   region: eu-west-1
   logRetentionInDays: 7
+  #architecture: arm64 #o1js is not compatible yet - https://github.com/o1-labs/o1js/issues/1525
   environment:
     TASKS_TABLE: ${file(./env.json):TASKS_TABLE, env:TASKS_TABLE}
     DEPLOYERS_TABLE: ${file(./env.json):DEPLOYERS_TABLE, env:DEPLOYERS_TABLE}
@@ -129,7 +130,7 @@ functions:
     handler: zkcloudworker.api
     timeout: 30
     memorySize: 512
-    #reservedConcurrency: 5 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
+    reservedConcurrency: 10 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
     deadLetter:
       sqs:
         queueName: zkcloudworker-dl-queue
@@ -157,8 +158,8 @@ functions:
 
   test:
     handler: test.cloud
-    timeout: 900
-    memorySize: 3008
+    timeout: 120
+    memorySize: 10240
     fileSystemConfig:
       localMountPath: /mnt/efs
       arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
@@ -168,6 +169,14 @@ functions:
       subnetIds:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
+  mocked-sequencer:
+    handler: mocked.sequencer
+    timeout: 30
+    memorySize: 128
+    reservedConcurrency: 30
+    deadLetter:
+      sqs:
+        queueName: mocked-sequencer-dl-queue
   tasks:
     handler: tasks.check
     timeout: 300
@@ -184,13 +193,15 @@ functions:
     handler: sequencer.run
     timeout: 900
     memorySize: 512
+    reservedConcurrency: 20
     deadLetter:
       sqs:
         queueName: sequencer-dl-queue
   step:
     handler: sequencer.step
     timeout: 900
-    memorySize: 3008
+    memorySize: 10240
+    reservedConcurrency: 20
     deadLetter:
       sqs:
         queueName: step-dl-queue

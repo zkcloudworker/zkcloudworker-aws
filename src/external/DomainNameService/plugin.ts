@@ -10,6 +10,7 @@ import {
   Signature,
   fetchAccount,
   Mina,
+  setNumberOfWorkers,
 } from "o1js";
 import { getDeployer } from "../../mina/deployers";
 import { minaInit } from "../../mina/init";
@@ -29,6 +30,7 @@ export class DomainNameServicePlugin extends BackendPlugin {
     super(params);
   }
   public async compile(cache: Cache): Promise<void> {
+    setNumberOfWorkers(6);
     if (DomainNameServicePlugin.mapUpdateVerificationKey === undefined)
       DomainNameServicePlugin.mapUpdateVerificationKey = (
         await MapUpdate.compile({
@@ -53,6 +55,7 @@ export class DomainNameServicePlugin extends BackendPlugin {
     const cpuCores = os.cpus();
     const numberOfCPUCores = cpuCores.length;
     console.log("CPU cores:", numberOfCPUCores);
+    setNumberOfWorkers(6);
     if (DomainNameServicePlugin.mapUpdateVerificationKey === undefined)
       throw new Error("verificationKey is undefined");
 
