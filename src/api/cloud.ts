@@ -6,6 +6,7 @@ import { Cache } from "o1js";
 import { runCLI } from "jest";
 import { minaInit } from "../mina/init";
 
+/*
 const { BUCKET } = process.env;
 const downloadZip = false;
 
@@ -114,3 +115,5 @@ export async function cloud(
   console.log("cloud result", result);
   return result;
 }
+
+*/

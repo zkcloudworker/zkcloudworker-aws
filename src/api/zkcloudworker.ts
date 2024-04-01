@@ -13,11 +13,11 @@ const { BUCKET } = process.env;
 
 export async function zkCloudWorkerDeploy(params: {
   name: string;
-  username: string;
+  id: string;
   jobId: string;
 }) {
   console.log("zkCloudWorkerDeploy", params);
-  const { name, username, jobId } = params;
+  const { name, id, jobId } = params;
   const timeStarted = Date.now();
   console.time("all");
   Memory.info("start");
@@ -25,7 +25,7 @@ export async function zkCloudWorkerDeploy(params: {
 
   try {
     await JobsTable.updateStatus({
-      username,
+      id,
       jobId: jobId,
       status: "started",
     });
@@ -66,7 +66,7 @@ export async function zkCloudWorkerDeploy(params: {
     await fs.rm(contractsDir + "/" + fileName);
     await listFiles(contractsDir, true);
     await JobsTable.updateStatus({
-      username,
+      id,
       jobId: jobId,
       status: "finished",
       result: "deployed",
@@ -79,7 +79,7 @@ export async function zkCloudWorkerDeploy(params: {
     console.error(err);
     console.error("Error deploying package");
     await JobsTable.updateStatus({
-      username,
+      id,
       jobId: jobId,
       status: "failed",
       result: "deploy error: " + err.toString(),
@@ -92,12 +92,12 @@ export async function zkCloudWorkerDeploy(params: {
 }
 
 export async function zkCloudWorkerRunJestOracle(params: {
-  name: string;
-  username: string;
+  repo: string;
+  id: string;
   jobId: string;
 }) {
   console.log("zkCloudWorkerRunJestOracle", params);
-  const { name, username, jobId } = params;
+  const { repo, id, jobId } = params;
   const timeStarted = Date.now();
   console.time("all");
   Memory.info("start");
@@ -105,13 +105,13 @@ export async function zkCloudWorkerRunJestOracle(params: {
 
   try {
     const job: JobsData | undefined = await JobsTable.get({
-      id: username,
+      id: id,
       jobId,
     });
     if (job === undefined) throw new Error("job not found");
-    if (job.jobName !== name) throw new Error("job name mismatch");
+    if (job.repo !== repo) throw new Error("job name mismatch");
     await JobsTable.updateStatus({
-      username,
+      id,
       jobId: jobId,
       status: "started",
     });
@@ -142,7 +142,7 @@ export async function zkCloudWorkerRunJestOracle(params: {
     console.log("jest result", jestResult.results?.success);
 
     await JobsTable.updateStatus({
-      username,
+      id,
       jobId: jobId,
       status: "finished",
       result: jestResult.results?.success ? "success" : "failure",
@@ -155,82 +155,7 @@ export async function zkCloudWorkerRunJestOracle(params: {
     console.error(err);
     console.error("worker: Error running package");
     await JobsTable.updateStatus({
-      username,
-      jobId: jobId,
-      status: "failed",
-      result: "run error: " + err.toString(),
-      billedDuration: Date.now() - timeStarted,
-    });
-    Memory.info("run error");
-    console.timeEnd("all");
-    await sleep(1000);
-  }
-}
-
-export async function zkCloudWorkerRunTypeScriptOracle(params: {
-  name: string;
-  username: string;
-  jobId: string;
-}) {
-  console.log("zkCloudWorkerRun", params);
-  const { name, username, jobId } = params;
-  const timeStarted = Date.now();
-  console.time("all");
-  Memory.info("start");
-  const JobsTable = new Jobs(process.env.JOBS_TABLE!);
-
-  try {
-    const job: JobsData | undefined = await JobsTable.get({
-      id: username,
-      jobId,
-    });
-    if (job === undefined) throw new Error("job not found");
-    if (job.jobName !== name) throw new Error("job name mismatch");
-    await JobsTable.updateStatus({
-      username,
-      jobId: jobId,
-      status: "started",
-    });
-    const contractsDirRoot = "/mnt/efs/worker";
-    const contractsDir = contractsDirRoot + "/" + name;
-    const cacheDir = "/mnt/efs/cache";
-    const fileName = name + ".zip";
-    const files = [fileName];
-    const functionName = job.task;
-    const args = job.args;
-
-    await listFiles(contractsDir, true);
-
-    const relativeDir = "../../../../mnt/efs/worker/" + name + "/dist/index.js";
-    await listFiles(contractsDir, true);
-    await listFiles(contractsDir + "/dist", true);
-
-    console.log("Importing contracts...");
-
-    const code = await import(relativeDir);
-    console.log("imported contracts");
-    minaInit();
-    const cache: Cache = Cache.FileSystem(cacheDir);
-    const cloud = new CloudWorker(cache);
-    console.log("running function", functionName, args);
-    const result = await code[functionName](cloud, args);
-    console.log("function result:", result);
-
-    await JobsTable.updateStatus({
-      username,
-      jobId: jobId,
-      status: "finished",
-      result,
-      billedDuration: Date.now() - timeStarted,
-    });
-
-    console.timeEnd("all");
-    await sleep(1000);
-  } catch (err: any) {
-    console.error(err);
-    console.error("worker: Error running package");
-    await JobsTable.updateStatus({
-      username,
+      id,
       jobId: jobId,
       status: "failed",
       result: "run error: " + err.toString(),

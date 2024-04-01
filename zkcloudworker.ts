@@ -6,10 +6,9 @@ import Jobs from "./src/table/jobs";
 import callLambda from "./src/lambda/lambda";
 import {
   zkCloudWorkerDeploy,
-  zkCloudWorkerRunTypeScriptOracle,
   zkCloudWorkerRunJestOracle,
 } from "./src/api/zkcloudworker";
-import { getBackupPlugin } from "./src/api/plugin";
+import { isWorkerExist, getWorker } from "./src/api/worker";
 import { S3File } from "./src/storage/s3";
 
 const ZKCLOUDWORKER_AUTH = process.env.ZKCLOUDWORKER_AUTH!;
@@ -77,14 +76,13 @@ const api: Handler = async (
             }
             const { packageName } = body.data;
 
-            const jobIdTask = await createJob({
+            const jobId = await createJob({
               command: "deploy",
-              username: id,
+              id,
               developer: "@dfst",
-              name: packageName,
-              jobData: [],
+              repo: packageName,
               task: "deploy",
-              args: [],
+              args: "",
               jobsTable: process.env.JOBS_TABLE!,
             });
             callback(null, {
@@ -93,106 +91,118 @@ const api: Handler = async (
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Credentials": true,
               },
-              body: jobIdTask ?? "error",
+              body: jobId ?? "error",
             });
             return;
           }
           break;
 
-        case "createJob":
+        case "recursiveProof":
           {
-            if (
-              body.data.transactions === undefined ||
-              body.data.developer === undefined ||
-              body.data.name === undefined ||
-              body.data.task === undefined ||
-              body.data.args === undefined
-            ) {
-              console.error("Wrong createJob command", body.data);
-              callback(null, {
-                statusCode: 200,
-                headers: {
-                  "Access-Control-Allow-Origin": "*",
-                  "Access-Control-Allow-Credentials": true,
-                },
-                body: "Wrong createJob command",
-              });
-              return;
-            }
-            const { transactions, developer, name, task, args, metadata } =
+            const { transactions, developer, repo, task, args, metadata } =
               body.data;
-            if (developer === "@staketab") {
-              try {
-                await getBackupPlugin({
-                  developer,
-                  name,
-                  task,
-                  args,
-                });
-              } catch (error) {
-                callback(null, {
-                  statusCode: 200,
-                  headers: {
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Credentials": true,
-                  },
-                  body: "error : no such plugin",
-                });
-                return;
-              }
-              const filename = "staketab." + Date.now().toString() + ".json";
-              const file = new S3File(process.env.BUCKET!, filename);
-              await file.put(
-                JSON.stringify({ transactions }),
-                "application/json"
-              );
-              const sequencer = new Sequencer({
-                jobsTable: process.env.JOBS_TABLE!,
-                stepsTable: process.env.STEPS_TABLE!,
-                proofsTable: process.env.PROOFS_TABLE!,
-                username: id,
-              });
-              const jobIdTask = await sequencer.createJob({
-                username: id,
+            if (
+              transactions === undefined ||
+              developer === undefined ||
+              repo === undefined ||
+              (await isWorkerExist({
                 developer,
-                name,
-                jobData: [filename],
-                task,
-                args,
-                txNumber: transactions.length,
-                metadata,
-              });
+                repo,
+              })) === false
+            ) {
+              console.error("Wrong recursiveProof command", body.data);
               callback(null, {
                 statusCode: 200,
                 headers: {
                   "Access-Control-Allow-Origin": "*",
                   "Access-Control-Allow-Credentials": true,
                 },
-                body: jobIdTask ?? "error",
-              });
-              return;
-            } else {
-              const jobIdTask = await createJob({
-                command: "createJob",
-                username: id,
-                developer,
-                name,
-                jobData: transactions,
-                task,
-                args,
-                jobsTable: process.env.JOBS_TABLE!,
-                metadata,
-              });
-              callback(null, {
-                statusCode: 200,
-                headers: {
-                  "Access-Control-Allow-Origin": "*",
-                  "Access-Control-Allow-Credentials": true,
-                },
-                body: jobIdTask ?? "error",
+                body: "Wrong recursiveProof command",
               });
               return;
             }
+
+            const filename =
+              developer +
+              "/" +
+              "recursiveProof." +
+              Date.now().toString() +
+              ".json";
+            const file = new S3File(process.env.BUCKET!, filename);
+            await file.put(
+              JSON.stringify({ transactions }),
+              "application/json"
+            );
+            const sequencer = new Sequencer({
+              jobsTable: process.env.JOBS_TABLE!,
+              stepsTable: process.env.STEPS_TABLE!,
+              proofsTable: process.env.PROOFS_TABLE!,
+              id,
+            });
+            const jobId = await sequencer.createJob({
+              id,
+              developer,
+              repo,
+              filename,
+              task: task ?? "recursiveProof",
+              args: args,
+              txNumber: transactions.length,
+              metadata: metadata ?? "",
+            });
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+              },
+              body: jobId ?? "error",
+            });
+            return;
+          }
+          break;
+
+        case "execute":
+          {
+            const { developer, repo, task, args, metadata } = body.data;
+            if (
+              developer === undefined ||
+              repo === undefined ||
+              (await isWorkerExist({
+                developer,
+                repo,
+              })) === false
+            ) {
+              console.error("Wrong execute command", body.data);
+              callback(null, {
+                statusCode: 200,
+                headers: {
+                  "Access-Control-Allow-Origin": "*",
+                  "Access-Control-Allow-Credentials": true,
+                },
+                body: "Wrong execute command",
+              });
+              return;
+            }
+
+            const jobId = await createJob({
+              command: "execute",
+              id,
+              developer,
+              repo,
+              task,
+              args,
+              metadata,
+              jobsTable: process.env.JOBS_TABLE!,
+            });
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+              },
+              body: jobId ?? "error",
+            });
+            return;
           }
           break;
 
@@ -213,7 +223,7 @@ const api: Handler = async (
             jobsTable: process.env.JOBS_TABLE!,
             stepsTable: process.env.STEPS_TABLE!,
             proofsTable: process.env.PROOFS_TABLE!,
-            username: id,
+            id,
             jobId: body.data.jobId,
           });
           const jobResultTree = await sequencerResultTree.getJobStatus();
@@ -268,25 +278,11 @@ const worker: Handler = async (event: any, context: Context) => {
   let success = false;
   try {
     console.log("worker", event);
-    if (event.username && event.jobId && event.command && event.name) {
+    if (event.id && event.jobId && event.command && event.name) {
       if (event.command === "deploy") {
         await zkCloudWorkerDeploy({
           name: event.name,
-          username: event.username,
-          jobId: event.jobId,
-        });
-        success = true;
-      } else if (event.command === "createJob") {
-        await zkCloudWorkerRunTypeScriptOracle({
-          name: event.name,
-          username: event.username,
-          jobId: event.jobId,
-        });
-        success = true;
-      } else if (event.command === "createJestJob") {
-        await zkCloudWorkerRunJestOracle({
-          name: event.name,
-          username: event.username,
+          id: event.id,
           jobId: event.jobId,
         });
         success = true;
@@ -295,7 +291,7 @@ const worker: Handler = async (event: any, context: Context) => {
         console.error("worker: failed");
         const JobsTable = new Jobs(process.env.JOBS_TABLE!);
         await JobsTable.updateStatus({
-          username: event.username,
+          id: event.id,
           jobId: event.jobId,
           status: "failed",
           result: "worker: unknown command",
@@ -319,41 +315,27 @@ const worker: Handler = async (event: any, context: Context) => {
 
 async function createJob(params: {
   command: string;
-  username: string;
+  id: string;
   developer: string;
-  name: string;
-  jobData: string[];
+  repo: string;
   task: string;
-  args: string[];
+  args: string;
   jobsTable: string;
   metadata?: string;
 }): Promise<string | undefined> {
-  const {
-    command,
-    username,
-    developer,
-    name,
-    jobData,
-    task,
-    args,
-    jobsTable,
-    metadata,
-  } = params;
+  const { command, id, developer, repo, task, args, jobsTable, metadata } =
+    params;
   const JobsTable = new Jobs(jobsTable);
   const jobId = await JobsTable.createJob({
-    username,
+    id,
     developer,
-    jobName: name,
-    jobData,
+    repo,
     task,
     args,
-    txNumber: jobData.length,
+    txNumber: 1,
     metadata,
   });
-  await callLambda(
-    "worker",
-    JSON.stringify({ command, username, jobId, name })
-  );
+  await callLambda("worker", JSON.stringify({ command, id, jobId, name }));
   return jobId;
 }
 

@@ -1,5 +1,4 @@
 import type { Handler, Context, Callback } from "aws-lambda";
-import { cloud as cloudFunc, runZip } from "./src//api/cloud";
 import os from "os";
 import fs from "fs/promises";
 import { listFiles } from "./src/mina/cache";

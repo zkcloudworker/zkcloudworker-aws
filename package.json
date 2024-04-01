@@ -13,7 +13,7 @@
     "web3",
     "zero knowledge"
   ],
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "dfst.io",
   "license": "Apache-2.0",
   "scripts": {
@@ -28,7 +28,7 @@
     "@types/adm-zip": "^0.5.5",
     "@types/aws-lambda": "^8.10.136",
     "@types/jsonwebtoken": "^9.0.6",
-    "@types/node": "^20.11.30",
+    "@types/node": "^20.12.2",
     "@types/serverless": "^3.12.22",
     "serverless": "^3.38.0",
     "serverless-plugin-typescript": "^2.1.5",
@@ -46,7 +46,7 @@
     "jest": "^29.7.0",
     "jsonwebtoken": "^9.0.2",
     "o1js": "^0.17.0",
-    "zkcloudworker": "^0.1.17"
+    "zkcloudworker": "^0.2.2"
   },
   "packageManager": "yarn@4.1.1"
 }

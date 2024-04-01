@@ -2,9 +2,8 @@ import Table from "./table";
 import TasksData from "../model/tasksData";
 
 export default class Tasks extends Table<TasksData> {
-
   public async remove(id: string): Promise<void> {
-    await super.remove({ id: id })
+    await super.remove({ id: id });
   }
 }
 
