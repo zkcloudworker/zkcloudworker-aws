@@ -5,10 +5,13 @@ export interface JobsData {
   jobId: string;
 
   developer: string;
-  jobName: string;
-  task: string;
-  args: string[];
-  jobData: string[];
+  repo: string;
+  task?: string;
+  userId?: string;
+  args?: string;
+  metadata?: string;
+
+  filename?: string;
   txNumber: number;
   timeCreated: number;
   timeCreatedString: string;
@@ -20,5 +23,4 @@ export interface JobsData {
   jobStatus: JobStatus;
   maxAttempts: number;
   result?: string;
-  metadata?: string;
 }

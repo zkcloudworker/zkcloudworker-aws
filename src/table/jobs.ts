@@ -4,47 +4,38 @@ import { makeString } from "zkcloudworker";
 
 export default class Jobs extends Table<JobsData> {
   public async createJob(params: {
-    username: string;
+    id: string;
     developer: string;
-    jobName: string;
-    task: string;
-    args: string[];
-    jobData: string[];
-    isStarted?: boolean;
-    timeStarted?: number;
-    txNumber: number;
+    repo: string;
+    task?: string;
+    userId?: string;
+    args?: string;
     metadata?: string;
+    filename?: string;
+    timeCreated?: number;
+    txNumber: number;
   }): Promise<string | undefined> {
-    const {
-      username,
-      developer,
-      jobName,
-      jobData,
-      task,
-      args,
-      isStarted,
-      timeStarted,
-      metadata,
-    } = params;
-    const timeCreated: number = timeStarted ?? Date.now();
+    const { id, developer, repo, filename, task, userId, args, metadata } =
+      params;
+    const timeCreated: number = params.timeCreated ?? Date.now();
     const jobId: string =
-      username + "." + timeCreated.toString() + "." + makeString(32);
+      id + "." + timeCreated.toString() + "." + makeString(32);
     const item: JobsData = {
-      id: username,
+      id,
       jobId,
       developer,
-      jobName,
+      repo,
       task,
+      userId,
       args,
-      jobData,
+      metadata,
+      filename,
       txNumber: params.txNumber,
       timeCreated,
       timeCreatedString: new Date(timeCreated).toISOString(),
       jobStatus: "created" as JobStatus,
       maxAttempts: 0,
-      metadata,
     };
-    if (isStarted === true) item.timeStarted = timeCreated;
     try {
       await this.create(item);
       return jobId;
@@ -55,15 +46,14 @@ export default class Jobs extends Table<JobsData> {
   }
 
   public async updateStatus(params: {
-    username: string;
+    id: string;
     jobId: string;
     status: JobStatus;
     result?: string;
     maxAttempts?: number;
     billedDuration?: number;
   }): Promise<void> {
-    const { username, jobId, status, result, billedDuration, maxAttempts } =
-      params;
+    const { id, jobId, status, result, billedDuration, maxAttempts } = params;
     if (
       status === "finished" &&
       (result === undefined ||
@@ -76,7 +66,7 @@ export default class Jobs extends Table<JobsData> {
     const time: number = Date.now();
     await this.updateData(
       {
-        id: username,
+        id: id,
         jobId,
       },
       status === "finished"

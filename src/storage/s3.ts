@@ -46,7 +46,7 @@ export class S3File {
         Body: data,
         ContentType: mimeType ?? "application/octet-stream",
       };
-      console.log("S3File: put", params);
+      //console.log("S3File: put", params);
       const command = new PutObjectCommand(params);
       const response = await this._client.send(command);
       console.log("Success: S3File: put");

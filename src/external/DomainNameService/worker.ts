@@ -1,7 +1,6 @@
-import { BackendPlugin, sleep, fee } from "zkcloudworker";
+import { zkCloudWorker, Cloud, sleep, fee } from "zkcloudworker";
 import os from "os";
 import {
-  Cache,
   verify,
   JsonProof,
   VerificationKey,
@@ -12,8 +11,6 @@ import {
   Mina,
   setNumberOfWorkers,
 } from "o1js";
-import { getDeployer } from "../../mina/deployers";
-import { minaInit } from "../../mina/init";
 import {
   MapTransition,
   MapUpdate,
@@ -22,22 +19,24 @@ import {
 } from "./rollup/transaction";
 import { Storage } from "./contract/storage";
 
-export class DomainNameServicePlugin extends BackendPlugin {
+export class DomainNameServicePlugin extends zkCloudWorker {
   static mapUpdateVerificationKey: VerificationKey | undefined = undefined;
   static mapContractVerificationKey: VerificationKey | undefined = undefined;
 
-  constructor(params: { name: string; task: string; args: string[] }) {
-    super(params);
+  constructor(cloud: Cloud) {
+    super(cloud);
   }
-  public async compile(cache: Cache): Promise<void> {
+  public async compile(): Promise<void> {
     setNumberOfWorkers(6);
-    if (DomainNameServicePlugin.mapUpdateVerificationKey === undefined)
-      DomainNameServicePlugin.mapUpdateVerificationKey = (
-        await MapUpdate.compile({
-          cache,
-        })
-      ).verificationKey;
-    else console.log("mapUpdateVerificationKey already exists");
+    if (DomainNameServicePlugin.mapUpdateVerificationKey !== undefined)
+      console.log("mapUpdateVerificationKey already exists");
+    //if (DomainNameServicePlugin.mapUpdateVerificationKey === undefined)
+    DomainNameServicePlugin.mapUpdateVerificationKey = (
+      await MapUpdate.compile({
+        cache: this.cloud.cache,
+      })
+    ).verificationKey;
+    //else console.log("mapUpdateVerificationKey already exists");
     /*
     if (
       (this.task === "send" || this.task === "mint") &&
@@ -122,18 +121,12 @@ export class DomainNameServicePlugin extends BackendPlugin {
     }
   }
 
-  public async verify(proof: string): Promise<string | undefined> {
-    if (DomainNameServicePlugin.mapUpdateVerificationKey === undefined)
-      throw new Error("verificationKey is undefined");
-    const ok = await verify(
-      JSON.parse(proof) as JsonProof,
-      DomainNameServicePlugin.mapUpdateVerificationKey
-    );
-    return ok ? "true" : "false";
+  public async execute(): Promise<string | undefined> {
+    throw new Error("not implemented");
   }
-
+  /*
   public async send(transaction: string): Promise<string | undefined> {
-    /*
+    
     minaInit();
     const deployer = await getDeployer();
     const sender = deployer.toPublicKey();
@@ -214,13 +207,14 @@ export class DomainNameServicePlugin extends BackendPlugin {
     const hash: string | undefined = txSent.hash;
     if (hash === undefined) throw new Error("hash is undefined");
     return hash;
-    */
+    
     throw new Error("not implemented");
   }
 
   public async mint(transaction: string): Promise<string | undefined> {
     throw new Error("not implemented");
   }
+  */
 }
 
 async function fetchMinaAccount(publicKey: PublicKey) {

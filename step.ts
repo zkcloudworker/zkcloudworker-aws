@@ -3,8 +3,9 @@ import { StepsData } from "./src/model/stepsData";
 import Jobs from "./src/table/jobs";
 import Steps from "./src/table/steps";
 import { runStep } from "./src/api/step";
-import { BackendPlugin } from "zkcloudworker";
-import { getBackupPlugin } from "./src/api/plugin";
+import { zkCloudWorker } from "zkcloudworker";
+import { getWorker } from "./src/api/worker";
+import { StepCloudWorker } from "./src/api/cloudobject";
 
 const run: Handler = async (event: any, context: Context) => {
   if (event.stepData === undefined) {
@@ -15,15 +16,15 @@ const run: Handler = async (event: any, context: Context) => {
     };
   }
   const step = event.stepData as StepsData;
-  console.log("step", step.name, step.jobId, step.stepId);
+  console.log("step", step);
   try {
-    const plugin: BackendPlugin = await getBackupPlugin({
+    const cloud = new StepCloudWorker(step);
+    const worker: zkCloudWorker = await getWorker({
       developer: step.developer,
-      name: step.name,
-      task: step.task,
-      args: step.args,
+      repo: step.repo,
+      cloud,
     });
-    await runStep(step, plugin);
+    await runStep(step, worker);
     return {
       statusCode: 200,
       body: "ok",
@@ -39,7 +40,7 @@ const run: Handler = async (event: any, context: Context) => {
 
     const JobsTable = new Jobs(process.env.JOBS_TABLE!);
     await JobsTable.updateStatus({
-      username: step.username,
+      id: step.id,
       jobId: step.jobId,
       status: "failed",
       billedDuration: step.billedDuration ?? 0,

@@ -2,14 +2,13 @@ import Steps from "../table/steps";
 import Proofs from "../table/proofs";
 import Jobs from "../table/jobs";
 import { StepsData, MAX_STEP_ATTEMPTS } from "../model/stepsData";
-import callLambda from "../lambda/lambda";
-import { BackendPlugin, Memory } from "zkcloudworker";
-import { Cache } from "o1js";
+import { zkCloudWorker, Memory } from "zkcloudworker";
+import { cacheDir } from "./cloudobject";
 import { listFiles } from "../mina/cache";
 
 export async function runStep(
   step: StepsData,
-  plugin: BackendPlugin
+  worker: zkCloudWorker
 ): Promise<void> {
   console.time("runStep");
   console.log(`runStep start:`, {
@@ -48,13 +47,12 @@ export async function runStep(
     });
 
     let result: string | undefined = undefined;
-    const cacheDir = "/mnt/efs/cache";
+
     await listFiles(cacheDir);
-    const cache: Cache = Cache.FileSystem(cacheDir);
 
     console.log(`Compiling...`);
     console.time(`compiled`);
-    await plugin.compile(cache);
+    await worker.compile();
     console.timeEnd(`compiled`);
     Memory.info(`compiled`);
     await listFiles(cacheDir);
@@ -63,36 +61,35 @@ export async function runStep(
       if (step.stepData.length !== 1)
         throw new Error("Input length not 1 for create");
       console.time(`created proof`);
-      result = await plugin.create(step.stepData[0]);
+      result = await worker.create(step.stepData[0]);
       console.timeEnd(`created proof`);
     } else if (step.task === "merge") {
       if (step.stepData.length !== 2)
         throw new Error("Input length not 2 for merge");
 
       console.time(`step: merged proofs`);
-      result = await plugin.merge(step.stepData[0], step.stepData[1]);
+      result = await worker.merge(step.stepData[0], step.stepData[1]);
       console.timeEnd(`step: merged proofs`);
-    } else if (step.task === "verify") {
-      if (step.stepData.length !== 1)
-        throw new Error("Input length not 1 for verify");
-      console.time(`step: verified proof`);
-      result = await plugin.verify(step.stepData[0]);
-      console.timeEnd(`step: verified proof`);
-    } else if (step.task === "send") {
-      if (step.stepData.length !== 1)
-        throw new Error("Input length not 1 for send");
-      console.time(`step: sent`);
-      result = await plugin.send(step.stepData[0]);
-      console.timeEnd(`step: sent`);
-    } else if (step.task === "mint") {
-      if (step.stepData.length !== 1)
-        throw new Error("Input length not 1 for mint");
-      console.time(`step: minted`);
-      result = await plugin.mint(step.stepData[0]);
-      console.timeEnd(`step: minted`);
-    } else throw new Error("unknown task");
-    Memory.info(`calculated or verified or minted`);
-    if (result === undefined) throw new Error("result is undefined");
+    } else throw new Error("unsupported task");
+    Memory.info(`calculated`);
+    if (result === undefined) {
+      console.error("runStep: result is undefined", step);
+      await StepsTable.updateStatus({
+        jobId: step.jobId,
+        stepId: step.stepId,
+        status: "failed",
+      });
+      const JobsTable = new Jobs(process.env.JOBS_TABLE!);
+      await JobsTable.updateStatus({
+        id: step.id,
+        jobId: step.jobId,
+        status: "failed",
+        billedDuration: step.billedDuration ?? 0,
+      });
+      Memory.info(`failed`);
+      console.timeEnd("runStep");
+      return;
+    }
 
     await StepsTable.updateStatus({
       jobId: step.jobId,
@@ -106,17 +103,6 @@ export async function runStep(
       jobId: step.jobId,
       stepId: step.stepId,
     });
-
-    /*
-    await callLambda(
-      "sequencer",
-      JSON.stringify({
-        task: "run",
-        username: step.username,
-        jobId: step.jobId,
-      })
-    );
-    */
   } catch (error) {
     console.error("runStep error:", (<any>error).toString());
     await StepsTable.updateStatus({
@@ -127,7 +113,7 @@ export async function runStep(
 
     const JobsTable = new Jobs(process.env.JOBS_TABLE!);
     await JobsTable.updateStatus({
-      username: step.username,
+      id: step.id,
       jobId: step.jobId,
       status: "failed",
       billedDuration: step.billedDuration ?? 0,

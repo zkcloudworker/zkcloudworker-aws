@@ -1,18 +1,20 @@
 import { JobStatus } from "./jobsData";
 
-export type StepTask = "create" | "merge" | "verify" | "mint" | "send";
+export type StepTask = "create" | "merge";
 export const MAX_STEP_ATTEMPTS = 5;
 
 export interface StepsData {
   jobId: string;
   stepId: string;
 
-  username: string;
+  id: string;
   developer: string;
-  name: string;
-  jobTask: string;
-  args: string[];
+  repo: string;
+  jobTask?: string;
+  args?: string;
   task: StepTask;
+  userId?: string;
+  metadata?: string;
   origins: string[];
   stepData: string[];
   timeCreated: number;
