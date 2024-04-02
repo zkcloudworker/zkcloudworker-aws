@@ -1,11 +1,11 @@
 import { Handler, Context } from "aws-lambda";
 import { StepsData } from "./src/model/stepsData";
-import Jobs from "./src/table/jobs";
-import Steps from "./src/table/steps";
+import { Jobs } from "./src/table/jobs";
+import { Steps } from "./src/table/steps";
 import { runStep } from "./src/api/step";
 import { zkCloudWorker } from "zkcloudworker";
 import { getWorker } from "./src/api/worker";
-import { StepCloudWorker } from "./src/api/cloudobject";
+import { StepCloudWorker } from "./src/api/cloud";
 
 const run: Handler = async (event: any, context: Context) => {
   if (event.stepData === undefined) {

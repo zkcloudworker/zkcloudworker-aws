@@ -1,13 +1,10 @@
 import { Handler, Context, Callback } from "aws-lambda";
 import { verifyJWT } from "./src/api/jwt";
 import Sequencer from "./src/api/sequencer";
-import JobsTable from "./src/table/jobs";
-import Jobs from "./src/table/jobs";
+import { Jobs } from "./src/table/jobs";
 import callLambda from "./src/lambda/lambda";
-import {
-  zkCloudWorkerDeploy,
-  zkCloudWorkerRunJestOracle,
-} from "./src/api/zkcloudworker";
+import { deploy } from "./src/api/deploy";
+import { execute } from "./src/api/execute";
 import { isWorkerExist, getWorker } from "./src/api/worker";
 import { S3File } from "./src/storage/s3";
 
@@ -44,7 +41,7 @@ const api: Handler = async (
       }
       switch (body.command) {
         case "queryBilling":
-          const jobsTable = new JobsTable(process.env.JOBS_TABLE!);
+          const jobsTable = new Jobs(process.env.JOBS_TABLE!);
           const billingResult = await jobsTable.queryBilling(id);
           callback(null, {
             statusCode: 200,
@@ -207,35 +204,37 @@ const api: Handler = async (
           break;
 
         case "jobResult":
-          if (body.data.jobId === undefined) {
-            console.error("No jobId");
+          {
+            if (body.data.jobId === undefined) {
+              console.error("No jobId");
+              callback(null, {
+                statusCode: 200,
+                headers: {
+                  "Access-Control-Allow-Origin": "*",
+                  "Access-Control-Allow-Credentials": true,
+                },
+                body: "No jobId",
+              });
+              return;
+            }
+            const sequencer = new Sequencer({
+              jobsTable: process.env.JOBS_TABLE!,
+              stepsTable: process.env.STEPS_TABLE!,
+              proofsTable: process.env.PROOFS_TABLE!,
+              id,
+              jobId: body.data.jobId,
+            });
+            const jobResult = await sequencer.getJobStatus();
             callback(null, {
               statusCode: 200,
               headers: {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Credentials": true,
               },
-              body: "No jobId",
+              body: JSON.stringify(jobResult, null, 2) ?? "error",
             });
             return;
           }
-          const sequencerResultTree = new Sequencer({
-            jobsTable: process.env.JOBS_TABLE!,
-            stepsTable: process.env.STEPS_TABLE!,
-            proofsTable: process.env.PROOFS_TABLE!,
-            id,
-            jobId: body.data.jobId,
-          });
-          const jobResultTree = await sequencerResultTree.getJobStatus();
-          callback(null, {
-            statusCode: 200,
-            headers: {
-              "Access-Control-Allow-Origin": "*",
-              "Access-Control-Allow-Credentials": true,
-            },
-            body: JSON.stringify(jobResultTree, null, 2) ?? "error",
-          });
-          return;
           break;
 
         default:
@@ -276,25 +275,47 @@ const api: Handler = async (
 
 const worker: Handler = async (event: any, context: Context) => {
   let success = false;
+  const JobsTable = new Jobs(process.env.JOBS_TABLE!);
+  const { command, id, jobId, developer, repo } = event;
   try {
     console.log("worker", event);
-    if (event.id && event.jobId && event.command && event.name) {
-      if (event.command === "deploy") {
-        await zkCloudWorkerDeploy({
-          name: event.name,
-          id: event.id,
-          jobId: event.jobId,
-        });
-        success = true;
-      } else console.error("worker: unknown command");
+    if (command && id && jobId && developer && repo) {
+      switch (event.command) {
+        case "deploy":
+          {
+            success = await deploy({
+              developer,
+              repo,
+              id,
+              jobId,
+            });
+            success = true;
+          }
+          break;
+
+        case "execute":
+          {
+            success = await execute({
+              developer,
+              repo,
+              id,
+              jobId,
+            });
+          }
+          break;
+
+        default:
+          console.error("worker: unknown command");
+      }
+
       if (success === false) {
         console.error("worker: failed");
-        const JobsTable = new Jobs(process.env.JOBS_TABLE!);
+
         await JobsTable.updateStatus({
           id: event.id,
           jobId: event.jobId,
           status: "failed",
-          result: "worker: unknown command",
+          result: "worker: failed",
           billedDuration: 0,
         });
       }
@@ -306,6 +327,13 @@ const worker: Handler = async (event: any, context: Context) => {
     };
   } catch (error) {
     console.error("worker: catch", (<any>error).toString());
+    await JobsTable.updateStatus({
+      id: event.id,
+      jobId: event.jobId,
+      status: "failed",
+      result: "worker: catch error",
+      billedDuration: 0,
+    });
     return {
       statusCode: 200,
       body: "worker run error",
@@ -335,7 +363,12 @@ async function createJob(params: {
     txNumber: 1,
     metadata,
   });
-  await callLambda("worker", JSON.stringify({ command, id, jobId, name }));
+  if (jobId !== undefined)
+    await callLambda(
+      "worker",
+      JSON.stringify({ command, id, jobId, developer, repo })
+    );
+  else console.error("createJob: jobId is undefined");
   return jobId;
 }
 

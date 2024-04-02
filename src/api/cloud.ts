@@ -1,119 +1,88 @@
-import { listFiles, loadCache } from "../mina/cache";
-import { unzip } from "../storage/zip";
-import fs from "fs/promises";
-import { CloudWorker } from "./cloudobject";
-import { Cache } from "o1js";
-import { runCLI } from "jest";
+import { Cache, PrivateKey } from "o1js";
+import { getDeployer } from "../mina/deployers";
 import { minaInit } from "../mina/init";
+import { Cloud } from "zkcloudworker";
+import { StepsData } from "../model/stepsData";
+import { JobsData } from "../model/jobsData";
 
-/*
-const { BUCKET } = process.env;
-const downloadZip = false;
+export const cacheDir = "/mnt/efs/cache";
 
-export async function runZip(params: {
-  fileName: string;
-  functionName: string;
-  args: string[];
-}) {
-  const { fileName, functionName, args } = params;
-  console.log("runZip", fileName, functionName, params);
-  const contractsDir = "/mnt/efs/zip";
-  const cacheDir = "/mnt/efs/cache";
-  const files = [fileName];
-
-  if (downloadZip) {
-    // Copy compiled from TypeScript to JavaScript source code of the contracts
-    // from S3 bucket to AWS lambda /tmp/contracts folder
-
-    await fs.rm(contractsDir, { recursive: true });
-    await listFiles(contractsDir, true);
-    await listFiles(cacheDir, false);
-
-    await loadCache({
-      cacheBucket: BUCKET!,
-      folder: contractsDir,
-      files: files,
-      overwrite: true,
-    });
-    await listFiles(contractsDir, true);
-    console.log("loaded cache");
-
-    console.time("unzipped");
-    await unzip({
-      folder: contractsDir,
-      filename: fileName,
-      targetDir: contractsDir,
-    });
-    console.timeEnd("unzipped");
+export class CloudWorker extends Cloud {
+  constructor(params: {
+    jobId: string;
+    stepId: string;
+    cache: Cache;
+    developer: string;
+    repo: string;
+    task?: string;
+    userId?: string;
+    args?: string;
+    metadata?: string;
+  }) {
+    super(params);
   }
-  await listFiles(contractsDir, true);
-
-  const macDir = contractsDir + "/mac";
-  const relativeDir = "../../../../mnt/efs/zip/mac/dist/index.js";
-  await listFiles(macDir, true);
-  await listFiles(macDir + "/dist", true);
-
-  const jestConfig = {
-    roots: ["../../../../mnt/efs/zip/mac/dist/tests"],
-    //testRegex: "\\.spec\\.js$",
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const jestResult = await runCLI(jestConfig as any, [
-    "../../../../mnt/efs/zip/mac",
-  ]);
-  console.log("jest result", jestResult.results?.success);
-
-  console.log("Importing contracts...", __filename, "folder", __dirname);
-  //await listFiles(relativeDir, true);
-
-  try {
-    const zip = await import(relativeDir);
-    console.log("imported contracts");
-    const functionName = "compile";
+  async getDeployer(): Promise<PrivateKey> {
     minaInit();
-    const cache: Cache = Cache.FileSystem(cacheDir);
-    const cloud = new CloudWorker(cache);
-    const result = await zip[functionName](cloud);
-    console.log("compile function done", result);
-    return result;
-  } catch (error: any) {
-    console.error("cloud contracts catch", (error as any).toString());
+    const deployer = await getDeployer(0);
+    return deployer;
+  }
+  async log(msg: string): Promise<void> {
+    console.log("CloudWorker:", msg);
+  }
+
+  async getDataByKey(key: string): Promise<string | undefined> {
+    throw new Error("Method not implemented.");
+  }
+
+  async saveDataByKey(key: string, data: string): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  async saveFile(filename: string, value: Buffer): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  async loadFile(filename: string): Promise<Buffer | undefined> {
+    throw new Error("Method not implemented.");
+  }
+
+  async loadEnvironment(password: string): Promise<void> {
+    // TODO: use dotenv to load environment variables
+    throw new Error("Method not implemented.");
   }
 }
 
-export async function cloud(
-  fileNames: string[],
-  functionName: string,
-  params: string[]
-) {
-  console.log("cloud", fileNames, functionName, params);
-  const contractsDir = "/mnt/efs/cloud";
-  const cacheDir = "/mnt/efs/cache";
-  const files = fileNames;
-
-  // Copy compiled from TypeScript to JavaScript source code of the contracts
-  // from S3 bucket to AWS lambda /tmp/contracts folder
-  await listFiles(contractsDir, true);
-  await listFiles(cacheDir, false);
-  await loadCache({
-    cacheBucket: BUCKET!,
-    folder: contractsDir,
-    files: files,
-    overwrite: true,
-  });
-  await listFiles(contractsDir, true);
-  //await listFiles(cacheDir, true);
-  //const file = "a.txt";
-  //await fs.writeFile(`${contractsDir}/${file}`, "a.txt content", "utf8");
-  //await listFiles(contractsDir, true);
-
-  const contracts = await import(contractsDir + "/" + fileNames[0]);
-  console.log("imported contracts");
-
-  const result = await contracts[functionName](params);
-  console.log("cloud result", result);
-  return result;
+export class StepCloudWorker extends CloudWorker {
+  constructor(step: StepsData) {
+    const cache: Cache = Cache.FileSystem(cacheDir);
+    super({
+      jobId: step.jobId,
+      stepId: step.stepId,
+      cache,
+      developer: step.developer,
+      repo: step.repo,
+      task: step.task,
+      userId: step.userId,
+      args: step.args,
+      metadata: step.metadata,
+    });
+  }
 }
 
-*/
+export class ExecuteCloudWorker extends CloudWorker {
+  constructor(job: JobsData) {
+    const { jobId, developer, repo, task, userId, args, metadata } = job;
+    const cache: Cache = Cache.FileSystem(cacheDir);
+    super({
+      jobId,
+      stepId: "execute",
+      cache,
+      developer,
+      repo,
+      task,
+      userId,
+      args,
+      metadata,
+    });
+  }
+}

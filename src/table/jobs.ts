@@ -2,7 +2,7 @@ import Table from "./table";
 import { JobsData, JobStatus } from "../model/jobsData";
 import { makeString } from "zkcloudworker";
 
-export default class Jobs extends Table<JobsData> {
+export class Jobs extends Table<JobsData> {
   public async createJob(params: {
     id: string;
     developer: string;

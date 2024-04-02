@@ -1,5 +1,5 @@
 import fs from "fs/promises";
-import { S3File } from "../storage/s3";
+import { S3File } from "./s3";
 
 export async function listFiles(
   folder: string,
@@ -24,25 +24,14 @@ export async function listFiles(
   }
 }
 
-/*
-
-import { Cache } from "o1js";
-import S3File from "../storage/s3";
-
-
-export function getCache(cacheBucket: string, debug?: boolean): Cache {
-  return FileSystem(cacheBucket, debug);
-}
-
-*/
-
-export async function loadCache(params: {
-  cacheBucket: string;
+export async function copyFiles(params: {
+  bucket: string;
   folder: string;
   files: string[];
   overwrite?: boolean;
+  move?: boolean;
 }): Promise<void> {
-  const { cacheBucket, folder, files, overwrite } = params;
+  const { bucket, folder, files, overwrite, move } = params;
   const existingFiles = await listFiles(folder, true);
   for (const file of files) {
     if (overwrite === true || !existingFiles.includes(file)) {
@@ -53,10 +42,14 @@ export async function loadCache(params: {
           await listFiles(folder, true);
         }
         console.log(`downloading ${file}`);
-        const s3File = new S3File(cacheBucket, file);
+        const s3File = new S3File(bucket, file);
         const data = await s3File.get();
         await fs.writeFile(`${folder}/${file}`, data.Body);
         console.log(`downloaded ${file}`);
+        if (move === true) {
+          console.log(`removing ${file} from cache`);
+          await s3File.remove();
+        }
       } catch (error) {
         console.log(`error downloading ${file}`, error);
       }
