@@ -1,23 +1,19 @@
-import { listFiles, loadCache } from "../mina/cache";
+import { listFiles, copyFiles } from "../storage/cache";
 import { unzip } from "../storage/zip";
 import fs from "fs/promises";
-import { CloudWorker } from "./cloudobject";
-import { Cache } from "o1js";
-import { runCLI } from "jest";
-import { minaInit } from "../mina/init";
-import Jobs from "../table/jobs";
-import { JobsData } from "../model/jobsData";
+import { Jobs } from "../table/jobs";
 import { Memory, sleep } from "zkcloudworker";
 
 const { BUCKET } = process.env;
 
-export async function zkCloudWorkerDeploy(params: {
-  name: string;
+export async function deploy(params: {
+  developer: string;
+  repo: string;
   id: string;
   jobId: string;
-}) {
+}): Promise<boolean> {
   console.log("zkCloudWorkerDeploy", params);
-  const { name, id, jobId } = params;
+  const { developer, repo, id, jobId } = params;
   const timeStarted = Date.now();
   console.time("all");
   Memory.info("start");
@@ -30,10 +26,11 @@ export async function zkCloudWorkerDeploy(params: {
       status: "started",
     });
     const contractsDirRoot = "/mnt/efs/worker";
-    const contractsDir = contractsDirRoot + "/" + name;
+    const contractsDir = contractsDirRoot + "/" + developer + "/" + repo;
     const cacheDir = "/mnt/efs/cache";
-    const fileName = name + ".zip";
-    const files = [fileName];
+    const fileName = repo + ".zip";
+    const fullFileName = developer + "/" + fileName;
+    if (BUCKET === undefined) throw new Error("BUCKET is undefined");
 
     // Copy compiled from TypeScript to JavaScript source code of the contracts
     // from S3 bucket to AWS lambda /tmp/contracts folder
@@ -46,11 +43,12 @@ export async function zkCloudWorkerDeploy(params: {
     await listFiles(contractsDir, true);
     await listFiles(cacheDir, false);
 
-    await loadCache({
-      cacheBucket: BUCKET!,
+    await copyFiles({
+      bucket: BUCKET,
       folder: contractsDir,
-      files: files,
+      files: [fullFileName],
       overwrite: true,
+      move: true,
     });
     await listFiles(contractsDir, true);
     console.log("loaded cache");
@@ -65,6 +63,7 @@ export async function zkCloudWorkerDeploy(params: {
     await listFiles(contractsDir, true);
     await fs.rm(contractsDir + "/" + fileName);
     await listFiles(contractsDir, true);
+
     await JobsTable.updateStatus({
       id,
       jobId: jobId,
@@ -75,6 +74,7 @@ export async function zkCloudWorkerDeploy(params: {
 
     console.timeEnd("all");
     await sleep(1000);
+    return true;
   } catch (err: any) {
     console.error(err);
     console.error("Error deploying package");
@@ -88,9 +88,11 @@ export async function zkCloudWorkerDeploy(params: {
     Memory.info("deploy error");
     console.timeEnd("all");
     await sleep(1000);
+    return false;
   }
 }
 
+/*
 export async function zkCloudWorkerRunJestOracle(params: {
   repo: string;
   id: string;
@@ -129,9 +131,9 @@ export async function zkCloudWorkerRunJestOracle(params: {
     await listFiles(contractsDir, true);
     await listFiles(contractsDir + "/dist", true);
 
-    /*
-    Jest Oracle code for Proof-Of-Knowledge NFTs
-    */
+    
+    //Jest Oracle code for Proof-Of-Knowledge NFTs
+    
     const jestConfig = {
       roots: [relativeDir + "/tests"],
       //testRegex: "\\.spec\\.js$",
@@ -166,3 +168,4 @@ export async function zkCloudWorkerRunJestOracle(params: {
     await sleep(1000);
   }
 }
+*/

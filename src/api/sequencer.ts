@@ -1,17 +1,12 @@
-import Jobs from "../table/jobs";
-import Steps from "../table/steps";
-import Proofs from "../table/proofs";
+import { Jobs } from "../table/jobs";
+import { Steps } from "../table/steps";
+import { Proofs } from "../table/proofs";
 import { JobStatus, JobsData } from "../model/jobsData";
-import {
-  StepsData,
-  StepTask,
-  ProofsData,
-  MAX_STEP_ATTEMPTS,
-} from "../model/stepsData";
+import { StepsData, StepTask } from "../model/stepsData";
 
 import callLambda from "../lambda/lambda";
 import { makeString, sleep, formatTime } from "../utils/utils";
-import { S3File, copyStringToS3 } from "../storage/s3";
+import { S3File } from "../storage/s3";
 
 export default class Sequencer {
   jobsTable: string;
@@ -578,6 +573,10 @@ export default class Sequencer {
           jobId: this.jobId,
           stepId: resultMetadata.stepId,
         });
+        if (job.filename !== undefined) {
+          const file = new S3File(process.env.BUCKET!, job.filename);
+          await file.remove();
+        } else console.error("Sequencer: run: job.filename is undefined");
         console.log("Sequencer: run: final result written");
         return false;
       }

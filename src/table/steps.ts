@@ -2,7 +2,7 @@ import Table from "./table";
 import { StepsData } from "../model/stepsData";
 import { JobStatus } from "../model/jobsData";
 
-export default class Steps extends Table<StepsData> {
+export class Steps extends Table<StepsData> {
   public async updateStatus(params: {
     jobId: string;
     stepId: string;
