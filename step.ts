@@ -16,7 +16,14 @@ const run: Handler = async (event: any, context: Context) => {
     };
   }
   const step = event.stepData as StepsData;
-  console.log("step", step);
+  console.log("step", {
+    jobId: step.jobId,
+    stepId: step.stepId,
+    developer: step.developer,
+    repo: step.repo,
+    task: step.task,
+    metadata: step.metadata,
+  });
   try {
     const cloud = new StepCloudWorker(step);
     const worker: zkCloudWorker = await getWorker({

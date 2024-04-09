@@ -1,6 +1,6 @@
 import Table from "./table";
 import { StepsData } from "../model/stepsData";
-import { JobStatus } from "../model/jobsData";
+import { JobStatus } from "zkcloudworker";
 
 export class Steps extends Table<StepsData> {
   public async updateStatus(params: {

@@ -26,25 +26,26 @@ export async function listFiles(
 
 export async function copyFiles(params: {
   bucket: string;
+  developer: string;
   folder: string;
   files: string[];
   overwrite?: boolean;
   move?: boolean;
 }): Promise<void> {
-  const { bucket, folder, files, overwrite, move } = params;
-  const existingFiles = await listFiles(folder, true);
+  const { bucket, developer, folder, files, overwrite, move } = params;
+  const existingFiles = await listFiles(`${folder}/${developer}`, true);
   for (const file of files) {
     if (overwrite === true || !existingFiles.includes(file)) {
       try {
         if (existingFiles.includes(file)) {
           console.log(`deleting ${file}`);
-          await fs.unlink(`${folder}/${file}`);
-          await listFiles(folder, true);
+          await fs.unlink(`${folder}/${developer}/${file}`);
+          await listFiles(`${folder}/${developer}`, true);
         }
         console.log(`downloading ${file}`);
-        const s3File = new S3File(bucket, file);
+        const s3File = new S3File(bucket, `${developer}/${file}`);
         const data = await s3File.get();
-        await fs.writeFile(`${folder}/${file}`, data.Body);
+        await fs.writeFile(`${folder}/${developer}/${file}`, data.Body);
         console.log(`downloaded ${file}`);
         if (move === true) {
           console.log(`removing ${file} from cache`);

@@ -1,4 +1,4 @@
-import { JobStatus } from "./jobsData";
+import { JobStatus } from "zkcloudworker";
 
 export type StepTask = "create" | "merge";
 export const MAX_STEP_ATTEMPTS = 5;

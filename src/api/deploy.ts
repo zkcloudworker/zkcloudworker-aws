@@ -1,8 +1,9 @@
-import { listFiles, copyFiles } from "../storage/cache";
-import { unzip } from "../storage/zip";
+import { listFiles, copyFiles } from "../storage/files";
+import { unzip } from "../storage/install";
 import fs from "fs/promises";
 import { Jobs } from "../table/jobs";
-import { Memory, sleep } from "zkcloudworker";
+import { Memory, sleep, LocalCloud, JobData } from "zkcloudworker";
+import { Cache } from "o1js";
 
 const { BUCKET } = process.env;
 
@@ -12,20 +13,23 @@ export async function deploy(params: {
   id: string;
   jobId: string;
 }): Promise<boolean> {
-  console.log("zkCloudWorkerDeploy", params);
+  console.log("deploy", params);
   const { developer, repo, id, jobId } = params;
   const timeStarted = Date.now();
-  console.time("all");
+  console.time("deployed");
   Memory.info("start");
   const JobsTable = new Jobs(process.env.JOBS_TABLE!);
 
   try {
-    await JobsTable.updateStatus({
-      id,
-      jobId: jobId,
-      status: "started",
-    });
+    if (jobId !== "test")
+      await JobsTable.updateStatus({
+        id,
+        jobId: jobId,
+        status: "started",
+      });
     const contractsDirRoot = "/mnt/efs/worker";
+    const corepackDir = "/mnt/efs/corepack";
+    const developerDir = contractsDirRoot + "/" + developer;
     const contractsDir = contractsDirRoot + "/" + developer + "/" + repo;
     const cacheDir = "/mnt/efs/cache";
     const fileName = repo + ".zip";
@@ -35,58 +39,94 @@ export async function deploy(params: {
     // Copy compiled from TypeScript to JavaScript source code of the contracts
     // from S3 bucket to AWS lambda /tmp/contracts folder
 
+    await fs.rm(contractsDirRoot, { recursive: true });
     await listFiles(contractsDirRoot, true);
+    await listFiles(corepackDir, true);
+    await listFiles(developerDir, true);
     await listFiles(contractsDir, true);
-    await fs.rm(contractsDir, { recursive: true });
-    //await fs.rm(contractsDirRoot, { recursive: true });
+    //await fs.rm(contractsDir, { recursive: true });
+
     //await listFiles(contractsDirRoot, true);
-    await listFiles(contractsDir, true);
+    //await listFiles(contractsDir, true);
     await listFiles(cacheDir, false);
 
     await copyFiles({
       bucket: BUCKET,
-      folder: contractsDir,
-      files: [fullFileName],
+      developer: developer,
+      folder: contractsDirRoot,
+      files: [fileName],
       overwrite: true,
-      move: true,
+      //move: true,
     });
+    await listFiles(developerDir, true);
     await listFiles(contractsDir, true);
-    console.log("loaded cache");
+    console.log("loaded repo");
 
     console.time("unzipped");
     await unzip({
-      folder: contractsDir,
-      filename: fileName,
-      targetDir: contractsDir,
+      folder: developerDir,
+      repo,
     });
     console.timeEnd("unzipped");
+    await listFiles(developerDir, true);
     await listFiles(contractsDir, true);
-    await fs.rm(contractsDir + "/" + fileName);
-    await listFiles(contractsDir, true);
+    await fs.rm(developerDir + "/" + fileName);
+    await listFiles(developerDir, true);
 
-    await JobsTable.updateStatus({
-      id,
-      jobId: jobId,
-      status: "finished",
-      result: "deployed",
-      billedDuration: Date.now() - timeStarted,
-    });
+    if (jobId !== "test")
+      await JobsTable.updateStatus({
+        id,
+        jobId: jobId,
+        status: "finished",
+        result: "deployed",
+        billedDuration: Date.now() - timeStarted,
+      });
 
-    console.timeEnd("all");
+    Memory.info("deployed");
+    console.timeEnd("deployed");
+    console.log("Importing worker from:", contractsDir);
+    const zkcloudworker = await import(contractsDir);
+    console.log("Getting zkCloudWorker object...");
+
+    const functionName = "zkcloudworker";
+    const timeCreated = Date.now();
+    const job: JobData = {
+      id: "local",
+      jobId: "jobId",
+      developer: "@dfst",
+      repo: "simple-example",
+      task: "example",
+      userId: "userId",
+      args: Math.ceil(Math.random() * 100).toString(),
+      metadata: "simple-example",
+      txNumber: 1,
+      timeCreated,
+      timeCreatedString: new Date(timeCreated).toISOString(),
+      timeStarted: timeCreated,
+      jobStatus: "started",
+      maxAttempts: 0,
+    } as JobData;
+    const cache = Cache.FileSystem(cacheDir);
+    const cloud = new LocalCloud({ job, cache });
+    const worker = await zkcloudworker[functionName](cloud);
+    console.log("Executing job...");
+    const result = await worker.execute();
+    console.log("Job result:", result);
     await sleep(1000);
     return true;
   } catch (err: any) {
     console.error(err);
     console.error("Error deploying package");
-    await JobsTable.updateStatus({
-      id,
-      jobId: jobId,
-      status: "failed",
-      result: "deploy error: " + err.toString(),
-      billedDuration: Date.now() - timeStarted,
-    });
+    if (jobId !== "test")
+      await JobsTable.updateStatus({
+        id,
+        jobId: jobId,
+        status: "failed",
+        result: "deploy error: " + err.toString(),
+        billedDuration: Date.now() - timeStarted,
+      });
     Memory.info("deploy error");
-    console.timeEnd("all");
+    console.timeEnd("deployed");
     await sleep(1000);
     return false;
   }
@@ -106,7 +146,7 @@ export async function zkCloudWorkerRunJestOracle(params: {
   const JobsTable = new Jobs(process.env.JOBS_TABLE!);
 
   try {
-    const job: JobsData | undefined = await JobsTable.get({
+    const job: JobData | undefined = await JobsTable.get({
       id: id,
       jobId,
     });
