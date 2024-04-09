@@ -28,7 +28,6 @@ export async function deploy(params: {
         status: "started",
       });
     const contractsDirRoot = "/mnt/efs/worker";
-    const corepackDir = "/mnt/efs/corepack";
     const developerDir = contractsDirRoot + "/" + developer;
     const contractsDir = contractsDirRoot + "/" + developer + "/" + repo;
     const cacheDir = "/mnt/efs/cache";
@@ -41,7 +40,6 @@ export async function deploy(params: {
 
     await fs.rm(contractsDirRoot, { recursive: true });
     await listFiles(contractsDirRoot, true);
-    await listFiles(corepackDir, true);
     await listFiles(developerDir, true);
     await listFiles(contractsDir, true);
     //await fs.rm(contractsDir, { recursive: true });
@@ -84,8 +82,11 @@ export async function deploy(params: {
 
     Memory.info("deployed");
     console.timeEnd("deployed");
-    console.log("Importing worker from:", contractsDir);
-    const zkcloudworker = await import(contractsDir);
+
+    const distDir = contractsDir + "/dist";
+    await listFiles(distDir, true);
+    console.log("Importing worker from:", distDir);
+    const zkcloudworker = await import(distDir);
     console.log("Getting zkCloudWorker object...");
 
     const functionName = "zkcloudworker";
@@ -113,6 +114,7 @@ export async function deploy(params: {
     const result = await worker.execute();
     console.log("Job result:", result);
     await sleep(1000);
+
     return true;
   } catch (err: any) {
     console.error(err);

@@ -73,6 +73,7 @@ const cloud: Handler = async (
   try {
     console.time("test");
     console.log("event", event);
+    /*
     const cpuCores = os.cpus();
     console.log(cpuCores);
     for (const core of cpuCores) {
@@ -80,6 +81,7 @@ const cloud: Handler = async (
     }
     const numberOfCPUCores = cpuCores.length;
     console.log("CPU cores:", numberOfCPUCores);
+    */
     console.log("test started");
 
     const cacheDir = "/mnt/efs/cache";
@@ -88,7 +90,7 @@ const cloud: Handler = async (
 
     await deploy({
       developer: "dfst",
-      repo: "simple-example",
+      repo: "simple-example-2",
       id: "test",
       jobId: "test",
     });
