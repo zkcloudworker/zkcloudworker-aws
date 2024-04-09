@@ -1,7 +1,7 @@
 import type { Handler, Context, Callback } from "aws-lambda";
 import os from "os";
 import fs from "fs/promises";
-import { listFiles } from "./src/storage/cache";
+import { listFiles } from "./src/storage/files";
 import {
   Field,
   PublicKey,
@@ -21,7 +21,9 @@ import {
 } from "o1js";
 import { makeString } from "zkcloudworker";
 import { checkInternet } from "./src/api/internet";
+import { deploy } from "./src/api/deploy";
 
+/*
 class Storage extends Struct({
   hashString: [Field, Field],
 }) {
@@ -61,6 +63,8 @@ export class MapElement extends Struct({
   }
 }
 
+*/
+
 const cloud: Handler = async (
   event: any,
   context: Context,
@@ -80,8 +84,17 @@ const cloud: Handler = async (
 
     const cacheDir = "/mnt/efs/cache";
     await listFiles(cacheDir);
-    await fs.rm(cacheDir, { recursive: true });
-    await listFiles(cacheDir);
+    setNumberOfWorkers(6);
+
+    await deploy({
+      developer: "dfst",
+      repo: "simple-example",
+      id: "test",
+      jobId: "test",
+    });
+
+    //await fs.rm(cacheDir, { recursive: true });
+    //await listFiles(cacheDir);
     /*
     try {
       const result = await runZip({
@@ -97,7 +110,7 @@ const cloud: Handler = async (
 
     //await checkInternet();
 
-    setNumberOfWorkers(6);
+    /*
     await arm2();
 
     const ELEMENTS_NUMBER = 10;
@@ -131,7 +144,7 @@ const cloud: Handler = async (
       const root = map.getRoot();
       console.timeEnd(`created a block of ${m} items`);
     }
-
+    */
     console.log("test finished");
     console.timeEnd("test");
     return 200;

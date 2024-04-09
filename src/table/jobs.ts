@@ -1,8 +1,7 @@
 import Table from "./table";
-import { JobsData, JobStatus } from "../model/jobsData";
-import { makeString } from "zkcloudworker";
+import { JobData, JobStatus, makeString } from "zkcloudworker";
 
-export class Jobs extends Table<JobsData> {
+export class Jobs extends Table<JobData> {
   public async createJob(params: {
     id: string;
     developer: string;
@@ -20,7 +19,7 @@ export class Jobs extends Table<JobsData> {
     const timeCreated: number = params.timeCreated ?? Date.now();
     const jobId: string =
       id + "." + timeCreated.toString() + "." + makeString(32);
-    const item: JobsData = {
+    const item: JobData = {
       id,
       jobId,
       developer,
@@ -97,7 +96,7 @@ export class Jobs extends Table<JobsData> {
     );
   }
 
-  public async queryBilling(id: string): Promise<JobsData[]> {
+  public async queryBilling(id: string): Promise<JobData[]> {
     return await this.queryData(
       "id = :id",
       { ":id": id },

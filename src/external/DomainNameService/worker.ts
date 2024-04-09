@@ -1,4 +1,10 @@
-import { zkCloudWorker, Cloud, sleep, fee } from "zkcloudworker";
+import {
+  zkCloudWorker,
+  Cloud,
+  sleep,
+  fee,
+  DeployedSmartContract,
+} from "zkcloudworker";
 import os from "os";
 import {
   verify,
@@ -122,6 +128,10 @@ export class DomainNameServicePlugin extends zkCloudWorker {
   }
 
   public async execute(): Promise<string | undefined> {
+    throw new Error("not implemented");
+  }
+
+  public async deployedContracts(): Promise<DeployedSmartContract[]> {
     throw new Error("not implemented");
   }
   /*

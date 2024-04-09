@@ -1,9 +1,8 @@
 import { Cache, PrivateKey } from "o1js";
 import { getDeployer } from "../mina/deployers";
 import { minaInit } from "../mina/init";
-import { Cloud } from "zkcloudworker";
+import { Cloud, JobData } from "zkcloudworker";
 import { StepsData } from "../model/stepsData";
-import { JobsData } from "../model/jobsData";
 
 export const cacheDir = "/mnt/efs/cache";
 
@@ -70,7 +69,7 @@ export class StepCloudWorker extends CloudWorker {
 }
 
 export class ExecuteCloudWorker extends CloudWorker {
-  constructor(job: JobsData) {
+  constructor(job: JobData) {
     const { jobId, developer, repo, task, userId, args, metadata } = job;
     const cache: Cache = Cache.FileSystem(cacheDir);
     super({

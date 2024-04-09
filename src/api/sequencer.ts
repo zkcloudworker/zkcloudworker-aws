@@ -1,7 +1,7 @@
 import { Jobs } from "../table/jobs";
 import { Steps } from "../table/steps";
 import { Proofs } from "../table/proofs";
-import { JobStatus, JobsData } from "../model/jobsData";
+import { JobStatus, JobData } from "zkcloudworker";
 import { StepsData, StepTask } from "../model/stepsData";
 
 import callLambda from "../lambda/lambda";
@@ -83,7 +83,7 @@ export default class Sequencer {
     if (this.jobId === undefined) throw new Error("jobId is undefined");
     const JobsTable = new Jobs(this.jobsTable);
     const StepsTable = new Steps(this.stepsTable);
-    const job: JobsData | undefined = await JobsTable.get({
+    const job: JobData | undefined = await JobsTable.get({
       id: this.id,
       jobId: this.jobId,
     });
@@ -821,10 +821,10 @@ export default class Sequencer {
     }
   }
 
-  public async getJobStatus(): Promise<JobsData> {
+  public async getJobStatus(): Promise<JobData> {
     if (this.jobId === undefined) throw new Error("jobId is undefined");
     const JobsTable = new Jobs(this.jobsTable);
-    const job: JobsData | undefined = await JobsTable.get({
+    const job: JobData | undefined = await JobsTable.get({
       id: this.id,
       jobId: this.jobId,
     });

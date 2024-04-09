@@ -4,7 +4,7 @@ import { Jobs } from "../table/jobs";
 import { StepsData, MAX_STEP_ATTEMPTS } from "../model/stepsData";
 import { zkCloudWorker, Memory } from "zkcloudworker";
 import { cacheDir } from "./cloud";
-import { listFiles } from "../storage/cache";
+import { listFiles } from "../storage/files";
 
 export async function runStep(
   step: StepsData,
@@ -48,13 +48,6 @@ export async function runStep(
 
     let result: string | undefined = undefined;
 
-    await listFiles(cacheDir);
-
-    console.log(`Compiling...`);
-    console.time(`compiled`);
-    await worker.compile();
-    console.timeEnd(`compiled`);
-    Memory.info(`compiled`);
     await listFiles(cacheDir);
 
     if (step.task === "create") {

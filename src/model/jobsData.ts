@@ -1,6 +1,6 @@
 export type JobStatus = "created" | "started" | "finished" | "failed" | "used";
 
-export interface JobsData {
+export interface JobData {
   id: string;
   jobId: string;
 
