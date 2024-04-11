@@ -10,7 +10,7 @@ plugins:
 provider:
   name: aws
   versionFunctions: false
-  runtime: nodejs18.x
+  runtime: nodejs20.x
   region: eu-west-1
   logRetentionInDays: 7
   #architecture: arm64 #o1js is not compatible yet - https://github.com/o1-labs/o1js/issues/1525
