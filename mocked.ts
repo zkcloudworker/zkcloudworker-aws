@@ -1,5 +1,5 @@
 import { Handler, Context } from "aws-lambda";
-import callLambda from "./src/lambda/lambda";
+import { callLambda } from "./src/lambda/lambda";
 
 const sequencer: Handler = async (event: any, context: Context) => {
   try {

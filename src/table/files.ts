@@ -1,4 +1,4 @@
-import Table from "./table";
+import { Table } from "./table";
 import { FileData } from "../model/fileData";
 
 export class FilesTable extends Table<FileData> {

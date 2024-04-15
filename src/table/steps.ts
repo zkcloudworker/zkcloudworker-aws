@@ -1,4 +1,4 @@
-import Table from "./table";
+import { Table } from "./table";
 import { StepsData } from "../model/stepsData";
 import { JobStatus } from "zkcloudworker";
 
@@ -126,57 +126,5 @@ export class Steps extends Table<StepsData> {
       }
       return undefined;
     }
-    /*
-      return await this.updateData(
-        {
-          jobId,
-          stepId,
-        },
-        status === "finished"
-          ? { "#S": "stepStatus", "#T": "timeFinished", "#R": "result" }
-          : status === "started"
-          ? { "#S": "stepStatus", "#T": "timeStarted", "#A": "attempts" }
-          : status === "used"
-          ? { "#S": "stepStatus", "#T": "timeUsed" }
-          : status === "created"
-          ? { "#S": "stepStatus", "#T": "timeCreated", "#A": "attempts" }
-          : { "#S": "stepStatus", "#T": "timeFailed" },
-        status === "finished"
-          ? requiredStatus === undefined
-            ? {
-                ":status": status,
-                ":time": time,
-                ":result": result,
-              }
-            : {
-                ":status": status,
-                ":time": time,
-                ":required": requiredStatus,
-                ":result": result,
-              }
-          : requiredStatus === undefined
-          ? status === "started"
-            ? {
-                ":status": status,
-                ":time": time,
-                ":attempts": attempts,
-              }
-            : {
-                ":status": status,
-                ":time": time,
-              }
-          : {
-              ":status": status,
-              ":time": time,
-              ":required": requiredStatus ?? "none",
-            },
-        status === "finished"
-          ? "set #S = :status, #T = :time, #R = :result"
-          : status === "started"
-          ? "set #S = :status, #T = :time, #A = :attempts"
-          : "set #S = :status, #T = :time",
-        requiredStatus === undefined ? undefined : "#S = :required"
-      );
-      */
   }
 }

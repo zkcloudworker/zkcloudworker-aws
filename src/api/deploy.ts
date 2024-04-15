@@ -108,7 +108,12 @@ export async function deploy(params: {
       maxAttempts: 0,
     } as JobData;
     const cache = Cache.FileSystem(cacheDir);
-    const cloud = new LocalCloud({ job, cache });
+    const cloud = new LocalCloud({
+      job,
+      cache,
+      chain: "local",
+      localWorker: zkcloudworker,
+    });
     const worker = await zkcloudworker[functionName](cloud);
     console.log("Executing job...");
     const result = await worker.execute();

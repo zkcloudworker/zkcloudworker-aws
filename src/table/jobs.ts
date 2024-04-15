@@ -1,5 +1,5 @@
-import Table from "./table";
-import { JobData, JobStatus, makeString } from "zkcloudworker";
+import { Table } from "./table";
+import { JobData, JobStatus, blockchain, makeString } from "zkcloudworker";
 
 export class Jobs extends Table<JobData> {
   public async createJob(params: {
@@ -10,12 +10,24 @@ export class Jobs extends Table<JobData> {
     userId?: string;
     args?: string;
     metadata?: string;
+    webhook?: string;
+    chain: blockchain;
     filename?: string;
     timeCreated?: number;
     txNumber: number;
   }): Promise<string | undefined> {
-    const { id, developer, repo, filename, task, userId, args, metadata } =
-      params;
+    const {
+      id,
+      developer,
+      repo,
+      filename,
+      task,
+      userId,
+      args,
+      metadata,
+      chain,
+      webhook,
+    } = params;
     const timeCreated: number = params.timeCreated ?? Date.now();
     const jobId: string =
       id + "." + timeCreated.toString() + "." + makeString(32);
@@ -28,6 +40,8 @@ export class Jobs extends Table<JobData> {
       userId,
       args,
       metadata,
+      chain,
+      webhook,
       filename,
       txNumber: params.txNumber,
       timeCreated,

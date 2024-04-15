@@ -18,6 +18,7 @@ provider:
     TASKS_TABLE: ${file(./env.json):TASKS_TABLE, env:TASKS_TABLE}
     DEPLOYERS_TABLE: ${file(./env.json):DEPLOYERS_TABLE, env:DEPLOYERS_TABLE}
     FILES_TABLE: ${file(./env.json):FILES_TABLE, env:FILES_TABLE}
+    TRANSACTIONS_TABLE: ${file(./env.json):TRANSACTIONS_TABLE, env:TRANSACTIONS_TABLE}
     JOBS_TABLE: ${file(./env.json):JOBS_TABLE, env:JOBS_TABLE}
     STEPS_TABLE: ${file(./env.json):STEPS_TABLE, env:STEPS_TABLE}
     PROOFS_TABLE: ${file(./env.json):PROOFS_TABLE, env:PROOFS_TABLE}
@@ -62,6 +63,15 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOBS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TRANSACTIONS_TABLE}"
     - Effect: Allow
       Action:
         - dynamodb:Query
@@ -236,9 +246,13 @@ resources:
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
+          - AttributeName: taskId
+            AttributeType: S
         KeySchema:
           - AttributeName: id
             KeyType: HASH
+          - AttributeName: taskId
+            KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.TASKS_TABLE}
     FilesDynamoDbTable:
@@ -257,6 +271,22 @@ resources:
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.FILES_TABLE}
+    TransactionsDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: repoId
+            AttributeType: S
+          - AttributeName: txId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: repoId
+            KeyType: HASH
+          - AttributeName: txId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.TRANSACTIONS_TABLE}
     JobsDynamoDbTable:
       Type: "AWS::DynamoDB::Table"
       DeletionPolicy: Delete

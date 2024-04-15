@@ -1,5 +1,5 @@
 import { zkCloudWorker, Cloud } from "zkcloudworker";
-import { DomainNameServicePlugin } from "../external/DomainNameService/worker";
+import { zkcloudworker as DomainNameServiceWorker } from "../external/DomainNameService/worker";
 
 export async function isWorkerExist(params: {
   developer: string;
@@ -29,6 +29,6 @@ export async function getWorker(params: {
         throw new Error("unknown repo");
     }
   } else if (developer === "@staketab") {
-    return new DomainNameServicePlugin(cloud);
+    return await DomainNameServiceWorker(cloud);
   } else throw new Error("unknown developer");
 }

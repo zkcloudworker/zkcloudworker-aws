@@ -4,7 +4,7 @@ import {
   InvokeCommandInput,
 } from "@aws-sdk/client-lambda";
 
-export default async function callLambda(
+export async function callLambda(
   name: string,
   payload: any,
   attempt: number = 0

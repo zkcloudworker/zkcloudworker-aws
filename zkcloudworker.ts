@@ -1,12 +1,13 @@
 import { Handler, Context, Callback } from "aws-lambda";
 import { verifyJWT } from "./src/api/jwt";
-import Sequencer from "./src/api/sequencer";
+import { Sequencer } from "./src/api/sequencer";
 import { Jobs } from "./src/table/jobs";
-import callLambda from "./src/lambda/lambda";
+import { callLambda } from "./src/lambda/lambda";
 import { deploy } from "./src/api/deploy";
 import { execute } from "./src/api/execute";
 import { isWorkerExist, getWorker } from "./src/api/worker";
 import { S3File } from "./src/storage/s3";
+import { blockchain } from "zkcloudworker";
 
 const ZKCLOUDWORKER_AUTH = process.env.ZKCLOUDWORKER_AUTH!;
 
@@ -24,8 +25,10 @@ const api: Handler = async (
       body.auth === ZKCLOUDWORKER_AUTH &&
       body.command &&
       body.data &&
-      body.jwtToken
+      body.jwtToken &&
+      body.chain
     ) {
+      const { command, data, jwtToken, chain, webhook } = body;
       const id: string | undefined = verifyJWT(body.jwtToken);
       if (id === undefined) {
         console.error("Wrong jwtToken");
@@ -39,7 +42,7 @@ const api: Handler = async (
         });
         return;
       }
-      switch (body.command) {
+      switch (command) {
         case "queryBilling":
           const jobsTable = new Jobs(process.env.JOBS_TABLE!);
           const billingResult = await jobsTable.queryBilling(id);
@@ -81,6 +84,8 @@ const api: Handler = async (
               task: "deploy",
               args: "",
               jobsTable: process.env.JOBS_TABLE!,
+              chain,
+              webhook,
             });
             callback(null, {
               statusCode: 200,
@@ -145,6 +150,8 @@ const api: Handler = async (
               args: args,
               txNumber: transactions.length,
               metadata: metadata ?? "",
+              chain,
+              webhook,
             });
             callback(null, {
               statusCode: 200,
@@ -190,6 +197,8 @@ const api: Handler = async (
               args,
               metadata,
               jobsTable: process.env.JOBS_TABLE!,
+              chain,
+              webhook,
             });
             callback(null, {
               statusCode: 200,
@@ -350,9 +359,21 @@ async function createJob(params: {
   args: string;
   jobsTable: string;
   metadata?: string;
+  chain: blockchain;
+  webhook?: string;
 }): Promise<string | undefined> {
-  const { command, id, developer, repo, task, args, jobsTable, metadata } =
-    params;
+  const {
+    command,
+    id,
+    developer,
+    repo,
+    task,
+    args,
+    jobsTable,
+    metadata,
+    chain,
+    webhook,
+  } = params;
   const JobsTable = new Jobs(jobsTable);
   const jobId = await JobsTable.createJob({
     id,
@@ -362,6 +383,8 @@ async function createJob(params: {
     args,
     txNumber: 1,
     metadata,
+    chain,
+    webhook,
   });
   if (jobId !== undefined)
     await callLambda(
