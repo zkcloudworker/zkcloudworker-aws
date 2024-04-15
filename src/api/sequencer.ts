@@ -1,14 +1,20 @@
 import { Jobs } from "../table/jobs";
 import { Steps } from "../table/steps";
 import { Proofs } from "../table/proofs";
-import { JobStatus, JobData } from "zkcloudworker";
+import {
+  JobStatus,
+  JobData,
+  blockchain,
+  makeString,
+  sleep,
+  formatTime,
+} from "zkcloudworker";
 import { StepsData, StepTask } from "../model/stepsData";
 
-import callLambda from "../lambda/lambda";
-import { makeString, sleep, formatTime } from "../utils/utils";
+import { callLambda } from "../lambda/lambda";
 import { S3File } from "../storage/s3";
 
-export default class Sequencer {
+export class Sequencer {
   jobsTable: string;
   stepsTable: string;
   proofsTable: string;
@@ -43,9 +49,21 @@ export default class Sequencer {
     args?: string;
     txNumber: number;
     metadata?: string;
+    webhook?: string;
+    chain: blockchain;
   }): Promise<string | undefined> {
-    const { id, developer, repo, filename, task, args, metadata, txNumber } =
-      params;
+    const {
+      id,
+      developer,
+      repo,
+      filename,
+      task,
+      args,
+      metadata,
+      txNumber,
+      webhook,
+      chain,
+    } = params;
     if (this.id !== params.id) throw new Error("id mismatch");
     const JobsTable = new Jobs(this.jobsTable);
     const jobId = await JobsTable.createJob({
@@ -57,6 +75,8 @@ export default class Sequencer {
       args,
       txNumber,
       metadata,
+      webhook,
+      chain,
     });
     if (jobId !== undefined)
       await callLambda(
@@ -135,6 +155,7 @@ export default class Sequencer {
         jobTask: job.task,
         args: job.args,
         metadata: job.metadata,
+        chain: job.chain,
         userId: job.userId,
         task: "create" as StepTask,
         origins: [i.toString()],
@@ -719,8 +740,10 @@ export default class Sequencer {
           const metadata = step1.metadata;
           const userId = step1.userId;
           const repo = step1.repo;
+          const chain = step1.chain;
           if (repo !== step2.repo) throw new Error("repo mismatch");
           if (jobTask !== step2.jobTask) throw new Error("jobTask mismatch");
+          if (step1.chain !== step2.chain) throw new Error("chain mismatch");
           if (args.length !== step2.args.length)
             throw new Error("arguments mismatch");
           if (developer !== step2.developer)
@@ -758,6 +781,7 @@ export default class Sequencer {
               developer,
               repo,
               metadata,
+              chain,
               userId,
               jobTask,
               args,

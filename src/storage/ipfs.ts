@@ -6,7 +6,7 @@ import {
 import axios from "axios";
 import FormData from "form-data";
 
-export default class IPFS {
+export class IPFS {
   private auth: string;
 
   constructor(token: string) {
@@ -125,53 +125,3 @@ export default class IPFS {
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-/*
-// NFTStorage raises errors in AWS Lambda environment - needs to be replaced
-import { NFTStorage, Blob } from "nft.storage";
-import axios from "axios";
-
-export default class IPFS {
-  private storage: NFTStorage;
-
-  constructor(token: string) {
-    this.storage = new NFTStorage({ token });
-  }
-
-  public async add(file: any): Promise<string | undefined> {
-    try {
-      const data = new Blob([JSON.stringify(file)]);
-      const cid = await this.storage.storeBlob(data);
-      return cid;
-    } catch (err) {
-      console.error(err);
-      return undefined;
-    }
-  }
-
-  public async addLink(file: any): Promise<string | undefined> {
-    try {
-      console.log("addLink", file);
-      let response = await axios.get(file, {
-        responseType: "arraybuffer",
-      });
-      console.log("addLink data:", response.data ? "yes" : "no");
-      //console.log("addLink response", response);
-      const data = Buffer.from(response.data, "binary");
-      const { cid, car } = await NFTStorage.encodeBlob(new Blob([data]));
-      console.log(`addLink CID: ${cid}`);
-
-      await this.storage.storeCar(car, {
-        onStoredChunk: (size) =>
-          console.log(
-            `Stored a chunk of ${size} bytes to https://ipfs.io/ipfs/${cid}`,
-          ),
-      });
-      return `${cid}`;
-    } catch (err) {
-      console.error(err);
-      return undefined;
-    }
-  }
-}
-*/

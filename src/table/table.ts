@@ -11,7 +11,7 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 
-export default class Table<T> {
+export class Table<T> {
   private _client: DynamoDBClient;
   private tableName: string;
 

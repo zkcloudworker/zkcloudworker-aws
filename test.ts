@@ -161,7 +161,7 @@ async function arm() {
   class TokenAccount extends SmartContract {
     @state(Field) value = State<Field>();
 
-    @method update(value: Field) {
+    @method async update(value: Field) {
       const oldValue = this.value.getAndRequireEquals();
       oldValue.assertEquals(value.sub(Field(1)));
       this.value.set(value);
@@ -182,9 +182,9 @@ async function arm() {
   console.log("arm 3");
   const transaction = await Mina.transaction(
     { sender, fee: transactionFee, memo: "arm" },
-    () => {
+    async () => {
       AccountUpdate.fundNewAccount(sender);
-      zkToken.deploy({});
+      await zkToken.deploy({});
     }
   );
   console.log("arm 4");
@@ -211,7 +211,7 @@ async function arm2() {
       create: {
         privateInputs: [],
 
-        method(element: Element) {
+        async method(element: Element) {
           element.value1.assertEquals(element.value2);
         },
       },

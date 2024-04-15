@@ -48,7 +48,7 @@ export async function execute(params: {
       jobId,
       status: "started",
     });
-    const result = await worker.execute();
+    const result = await worker.execute([]);
     if (result !== undefined) {
       await JobsTable.updateStatus({
         id,

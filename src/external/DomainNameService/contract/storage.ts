@@ -1,5 +1,6 @@
-import { Struct, Field } from "o1js";
+import { Struct, Field, Encoding } from "o1js";
 import axios from "axios";
+import { makeString } from "zkcloudworker";
 
 /**
  * Storage is the hash of the IPFS or Arweave storage where the metadata is written
@@ -22,12 +23,37 @@ export class Storage extends Struct({
     a.hashString[0].assertEquals(b.hashString[0]);
     a.hashString[1].assertEquals(b.hashString[1]);
   }
+
+  static fromIpfsHash(hash: string): Storage {
+    const fields = Encoding.stringToFields("i:" + hash);
+    if (fields.length !== 2) throw new Error("Invalid IPFS hash");
+    return new Storage({ hashString: [fields[0], fields[1]] });
+  }
+
+  toIpfsHash(): string {
+    const hash = Encoding.stringFromFields(this.hashString);
+    if (hash.startsWith("i:")) {
+      return hash.substring(2);
+    } else throw new Error("Invalid IPFS hash");
+  }
 }
+
+const ipfsData: { [key: string]: string } = {};
+let useLocalIpfsData = false;
 
 export async function saveToIPFS(
   data: any,
   PinataJWT: string | undefined
 ): Promise<string | undefined> {
+  if (PinataJWT === "local") {
+    const hash = makeString(
+      `QmTosaezLecDB7bAoUoXcrJzeBavHNZyPbPff1QHWw8xus`.length
+    );
+    ipfsData[hash] = JSON.stringify(data, null, 2);
+    useLocalIpfsData = true;
+    return hash;
+  }
+
   try {
     const str = JSON.stringify(data, null, 2);
     const auth = "Bearer " + PinataJWT ?? "";
@@ -58,6 +84,9 @@ export async function saveToIPFS(
 }
 
 export async function loadFromIPFS(hash: string): Promise<any | undefined> {
+  if (useLocalIpfsData) {
+    return JSON.parse(ipfsData[hash]);
+  }
   try {
     const url =
       "https://salmon-effective-amphibian-898.mypinata.cloud/ipfs/" +
