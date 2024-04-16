@@ -12,7 +12,12 @@ export async function isWorkerExist(params: {
         return false;
     }
   } else if (developer === "@staketab") {
-    return true;
+    switch (repo) {
+      case "nameservice":
+        return true;
+      default:
+        return false;
+    }
   }
   return false;
 }
@@ -29,6 +34,11 @@ export async function getWorker(params: {
         throw new Error("unknown repo");
     }
   } else if (developer === "@staketab") {
-    return await DomainNameServiceWorker(cloud);
+    switch (repo) {
+      case "nameservice":
+        return await DomainNameServiceWorker(cloud);
+      default:
+        throw new Error("unknown repo");
+    }
   } else throw new Error("unknown developer");
 }

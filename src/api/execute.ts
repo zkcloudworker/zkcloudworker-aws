@@ -55,7 +55,8 @@ export async function createExecuteJob(params: {
     })) === false
   ) {
     console.error("Wrong execute command", {
-      ...params,
+      command,
+      ...data,
       transactions: undefined,
     });
 
@@ -79,6 +80,7 @@ export async function createExecuteJob(params: {
     repo,
     filename,
     task,
+    taskId,
     args,
     txNumber: 1,
     metadata,
@@ -170,8 +172,10 @@ export async function execute(params: {
         status: "finished",
         result: result,
         billedDuration: Date.now() - timeStarted,
+        maxAttempts: 1,
       });
       Memory.info(`finished`);
+      console.timeEnd("zkCloudWorker Execute");
       return true;
     } else {
       await JobsTable.updateStatus({
@@ -179,9 +183,11 @@ export async function execute(params: {
         jobId,
         status: "failed",
         result: "execute error",
+        maxAttempts: 1,
         billedDuration: Date.now() - timeStarted,
       });
       Memory.info(`failed`);
+      console.timeEnd("zkCloudWorker Execute");
       return false;
     }
   } catch (error: any) {
@@ -193,6 +199,7 @@ export async function execute(params: {
       result: "execute error",
       billedDuration: Date.now() - timeStarted,
     });
+    console.timeEnd("zkCloudWorker Execute");
     return false;
   }
 }

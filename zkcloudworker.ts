@@ -5,6 +5,7 @@ import { Jobs } from "./src/table/jobs";
 import { deploy } from "./src/api/deploy";
 import { execute, createExecuteJob } from "./src/api/execute";
 import { createRecursiveProofJob } from "./src/api/recursive";
+import { CloudWorker } from "./src/api/cloud";
 
 const ZKCLOUDWORKER_AUTH = process.env.ZKCLOUDWORKER_AUTH!;
 
@@ -14,7 +15,7 @@ const api: Handler = async (
   callback: Callback
 ) => {
   try {
-    //console.log("event", event.body);
+    console.log("api", event.body);
     const body = JSON.parse(event.body);
     if (
       body &&
@@ -25,7 +26,7 @@ const api: Handler = async (
       body.jwtToken &&
       body.chain
     ) {
-      const { command, data, jwtToken, chain, webhook } = body;
+      const { command, data, chain, webhook } = body;
       const id: string | undefined = verifyJWT(body.jwtToken);
       if (id === undefined) {
         console.error("Wrong jwtToken");
@@ -71,7 +72,7 @@ const api: Handler = async (
         case "deploy": {
           const result = await createExecuteJob({
             command: "deploy",
-            data,
+            data: { ...data, chain, webhook, id },
           });
           callback(null, {
             statusCode: 200,
@@ -85,7 +86,12 @@ const api: Handler = async (
         }
 
         case "recursiveProof": {
-          const result = await createRecursiveProofJob(data);
+          const result = await createRecursiveProofJob({
+            ...data,
+            chain,
+            webhook,
+            id,
+          });
           callback(null, {
             statusCode: 200,
             headers: {
@@ -100,7 +106,7 @@ const api: Handler = async (
         case "execute": {
           const result = await createExecuteJob({
             command: "execute",
-            data,
+            data: { ...data, chain, webhook, id },
           });
           callback(null, {
             statusCode: 200,
@@ -109,6 +115,29 @@ const api: Handler = async (
               "Access-Control-Allow-Credentials": true,
             },
             body: JSON.stringify(result, null, 2),
+          });
+          return;
+        }
+
+        case "sendTransaction": {
+          const { developer, repo, transaction } = data;
+          const result = await CloudWorker.addTransaction({
+            id,
+            developer,
+            repo,
+            transaction,
+          });
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify(
+              { success: result !== undefined, txId: result },
+              null,
+              2
+            ),
           });
           return;
         }

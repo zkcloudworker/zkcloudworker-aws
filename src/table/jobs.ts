@@ -77,7 +77,7 @@ export class Jobs extends Table<JobData> {
         maxAttempts === undefined)
     )
       throw new Error(
-        "result and billingDuration is required for finished jobs"
+        "result, maxAttempts and billingDuration is required for finished jobs"
       );
     const time: number = Date.now();
     await this.updateData(
