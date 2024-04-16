@@ -12,6 +12,9 @@ import {
 import { StepsData } from "../model/stepsData";
 import { Transactions } from "../table/transactions";
 import { Tasks } from "../table/tasks";
+import { createRecursiveProofJob } from "./recursive";
+import { createExecuteJob } from "./execute";
+import { Sequencer } from "./sequencer";
 
 export const cacheDir = "/mnt/efs/cache";
 const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
@@ -68,14 +71,14 @@ export class CloudWorker extends Cloud {
     this.webhook = webhook;
   }
   async getDeployer(): Promise<PrivateKey> {
-    minaInit();
-    const deployer = await getDeployer(0);
+    minaInit(this.chain);
+    const deployer = await getDeployer(4, this.chain);
     return deployer;
   }
 
   public async releaseDeployer(txsHashes: string[]): Promise<void> {
     // TODO: add txsHashes to the DynamoDB tables: Jobs, Deployers
-    console.log("LocalCloud: releaseDeployer", txsHashes);
+    console.log("Cloud: releaseDeployer", txsHashes);
   }
 
   async log(msg: string): Promise<void> {
@@ -172,7 +175,21 @@ export class CloudWorker extends Cloud {
     args?: string;
     metadata?: string;
   }): Promise<string> {
-    throw new Error("Method not implemented.");
+    const result = await createRecursiveProofJob({
+      id: this.id,
+      developer: this.developer,
+      transactions: data.transactions,
+      repo: this.repo,
+      task: data.task ?? "recursiveProof",
+      args: data.args,
+      metadata: data.metadata,
+      userId: data.userId,
+      chain: this.chain,
+      webhook: this.webhook,
+    });
+    if (result.success === false || result.jobId === undefined) {
+      throw new Error(`cloud: recursiveProof: ${result.error}`);
+    } else return result.jobId;
   }
 
   public async execute(data: {
@@ -182,11 +199,35 @@ export class CloudWorker extends Cloud {
     args?: string;
     metadata?: string;
   }): Promise<string> {
-    throw new Error("Method not implemented.");
+    const result = await createExecuteJob({
+      command: "execute",
+      data: {
+        id: this.id,
+        developer: this.developer,
+        transactions: data.transactions,
+        repo: this.repo,
+        task: data.task,
+        args: data.args,
+        metadata: data.metadata,
+        chain: this.chain,
+        webhook: this.webhook,
+      },
+    });
+    if (result.success === false || result.jobId === undefined) {
+      throw new Error(`cloud: recursiveProof: ${result.error}`);
+    } else return result.jobId;
   }
 
   public async jobResult(jobId: string): Promise<JobData | undefined> {
-    throw new Error("Method not implemented.");
+    const sequencer = new Sequencer({
+      jobsTable: process.env.JOBS_TABLE!,
+      stepsTable: process.env.STEPS_TABLE!,
+      proofsTable: process.env.PROOFS_TABLE!,
+      id: this.id,
+      jobId,
+    });
+    const jobResult = await sequencer.getJobStatus();
+    return jobResult;
   }
 
   public async addTask(data: {
@@ -209,7 +250,6 @@ export class CloudWorker extends Cloud {
       args,
       metadata,
       chain: this.chain,
-      webhook: this.webhook,
     };
     await tasksTable.create(taskData);
     return taskData.taskId;
