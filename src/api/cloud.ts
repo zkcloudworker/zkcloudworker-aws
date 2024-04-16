@@ -38,6 +38,7 @@ export class CloudWorker extends Cloud {
     chain: blockchain;
     webhook?: string;
   }) {
+    console.log("CloudWorker: constructor", params);
     const {
       id,
       jobId,
@@ -141,9 +142,12 @@ export class CloudWorker extends Cloud {
 
   public async getTransactions(): Promise<CloudTransaction[]> {
     const transactionsTable = new Transactions(TRANSACTIONS_TABLE);
+    const repoId = this.id + ":" + this.developer + ":" + this.repo;
+    console.log("getTransactions: repoId", repoId);
     let results = await transactionsTable.queryData("repoId = :id", {
-      ":id": this.id + ":" + this.developer + ":" + this.repo,
+      ":id": repoId,
     });
+    console.log("getTransactions: results", results);
 
     if (results === undefined) {
       console.error("getTransactions: results is undefined");
@@ -156,7 +160,7 @@ export class CloudWorker extends Cloud {
     }
 
     if (results.length === 0) {
-      //console.log("Sequencer: run: no finished results");
+      console.log("getTransactions: no results");
       return [];
     }
     return results.map((result) => {
@@ -236,6 +240,7 @@ export class CloudWorker extends Cloud {
     args?: string;
     metadata?: string;
   }): Promise<string> {
+    console.log("addTask", data);
     const { task, userId, args, metadata } = data;
     const timeCreated = Date.now();
     const tasksTable = new Tasks(TASKS_TABLE);
@@ -251,6 +256,7 @@ export class CloudWorker extends Cloud {
       metadata,
       chain: this.chain,
     };
+    console.log("addTask: taskData", taskData);
     await tasksTable.create(taskData);
     return taskData.taskId;
   }
@@ -301,10 +307,10 @@ export class StepCloudWorker extends CloudWorker {
 
 export class ExecuteCloudWorker extends CloudWorker {
   constructor(job: JobData) {
-    const { jobId, developer, repo, task, userId, args, metadata } = job;
+    const { jobId, developer, repo, task, userId, args, metadata, id } = job;
     const cache: Cache = Cache.FileSystem(cacheDir);
     super({
-      id: jobId,
+      id,
       jobId,
       developer,
       repo,

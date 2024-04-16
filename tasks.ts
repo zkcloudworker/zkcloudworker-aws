@@ -11,7 +11,7 @@ export const check: Handler = async () => {
     const count: number = data?.length ?? 0;
 
     if (count > 0) {
-      console.log("count", count, "items:", data);
+      console.log("count", count);
 
       let i: number;
       const time = Date.now();
@@ -19,9 +19,9 @@ export const check: Handler = async () => {
         const startTime = data[i].startTime;
         if (startTime !== undefined && startTime < time) continue;
         console.log("item", i, ":", data[i]);
-        if (data[i].timeCreated + 2 * 60 * 60 * 1000 > time) {
+        if (data[i].timeCreated + 2 * 60 * 60 * 1000 < time) {
           console.error("Removing stuck task", data[i]);
-          await table.remove(data[i].id);
+          await table.remove({ id: data[i].id, taskId: data[i].taskId });
         }
         console.log("Executing");
         await createExecuteJob({
