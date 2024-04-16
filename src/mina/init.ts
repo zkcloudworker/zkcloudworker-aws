@@ -1,17 +1,30 @@
-import { initBlockchain, MinaNetworkInstance, Berkeley } from "zkcloudworker";
+import {
+  initBlockchain,
+  MinaNetwork,
+  MinaNetworkInstance,
+  blockchain,
+  Devnet,
+} from "zkcloudworker";
 
-export function minaInit(): MinaNetworkInstance {
-  return initBlockchain("berkeley");
+let networkInstance: MinaNetwork = Devnet;
+
+export async function minaInit(
+  chain: blockchain = "devnet"
+): Promise<MinaNetworkInstance> {
+  const networkInstance = await initBlockchain(chain);
+  return networkInstance;
 }
 
+/*
 export function explorerAccount(): string {
-  return Berkeley.explorerAccountUrl!;
+  return networkInstance.network.explorerAccountUrl!;
 }
 
 export function explorerTransaction(): string {
-  return Berkeley.explorerTransactionUrl!;
+  return networkInstance.network.explorerTransactionUrl!;
 }
 
 export function chainId(): string {
-  return Berkeley.chainId!;
+  return networkInstance.network.chainId!;
 }
+*/

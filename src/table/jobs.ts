@@ -6,6 +6,7 @@ export class Jobs extends Table<JobData> {
     id: string;
     developer: string;
     repo: string;
+    taskId?: string;
     task?: string;
     userId?: string;
     args?: string;
@@ -20,6 +21,7 @@ export class Jobs extends Table<JobData> {
       id,
       developer,
       repo,
+      taskId,
       filename,
       task,
       userId,
@@ -36,6 +38,7 @@ export class Jobs extends Table<JobData> {
       jobId,
       developer,
       repo,
+      taskId,
       task,
       userId,
       args,

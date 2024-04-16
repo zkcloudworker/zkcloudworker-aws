@@ -1,17 +1,114 @@
-import { zkCloudWorker, Memory } from "zkcloudworker";
+import { zkCloudWorker, Memory, blockchain } from "zkcloudworker";
 import { ExecuteCloudWorker } from "./cloud";
+import { isWorkerExist } from "./worker";
 import { Jobs } from "../table/jobs";
 import { getWorker } from "./worker";
+import { callLambda } from "../lambda/lambda";
+import { S3File } from "../storage/s3";
+import { minaInit } from "../mina/init";
 
 const MAX_JOB_AGE: number = 1000 * 60 * 60; // 60 minutes
 
+export async function createExecuteJob(params: {
+  command: string;
+  data: {
+    id: string;
+    developer: string;
+    taskId?: string;
+    transactions: string[];
+    repo: string;
+    task: string;
+    args?: string;
+    metadata?: string;
+    chain: blockchain;
+    webhook?: string;
+  };
+}): Promise<{
+  success: boolean;
+  jobId: string | undefined;
+  error: string | undefined;
+}> {
+  const { command, data } = params;
+  const {
+    id,
+    developer,
+    repo,
+    transactions,
+    task,
+    args,
+    metadata,
+    chain,
+    webhook,
+    taskId,
+  } = data;
+
+  if (
+    id === undefined ||
+    transactions === undefined ||
+    developer === undefined ||
+    repo === undefined ||
+    chain === undefined ||
+    (taskId === undefined && command === "task") ||
+    (await isWorkerExist({
+      developer,
+      repo,
+    })) === false
+  ) {
+    console.error("Wrong execute command", {
+      ...params,
+      transactions: undefined,
+    });
+
+    return {
+      success: false,
+      jobId: undefined,
+      error: "Wrong execute command",
+    };
+  }
+
+  let filename: string | undefined = undefined;
+  if (transactions.length > 0) {
+    filename = developer + "/" + "execute." + Date.now().toString() + ".json";
+    const file = new S3File(process.env.BUCKET!, filename);
+    await file.put(JSON.stringify({ transactions }), "application/json");
+  }
+  const JobsTable = new Jobs(process.env.JOBS_TABLE!);
+  const jobId = await JobsTable.createJob({
+    id,
+    developer,
+    repo,
+    filename,
+    task,
+    args,
+    txNumber: 1,
+    metadata,
+    chain,
+    webhook,
+  });
+  if (jobId !== undefined) {
+    await callLambda(
+      "worker",
+      JSON.stringify({ command, id, jobId, developer, repo })
+    );
+    return { success: true, jobId, error: undefined };
+  } else {
+    console.error("execute: createJob: jobId is undefined");
+    return {
+      success: false,
+      jobId: undefined,
+      error: "execute: createJob: jobId is undefined",
+    };
+  }
+}
+
 export async function execute(params: {
+  command: string;
   developer: string;
   repo: string;
   id: string;
   jobId: string;
 }): Promise<boolean> {
-  const { developer, repo, id, jobId } = params;
+  const { developer, repo, id, jobId, command } = params;
   const timeStarted = Date.now();
   console.time("zkCloudWorker Execute");
   console.log(`zkCloudWorker Execute start:`, params);
@@ -48,7 +145,24 @@ export async function execute(params: {
       jobId,
       status: "started",
     });
-    const result = await worker.execute([]);
+    let transactions: string[] = [];
+    if (job.filename !== undefined) {
+      const file = new S3File(process.env.BUCKET!, job.filename);
+      const data = await file.get();
+      const streamToString = await data.Body?.transformToString("utf8");
+      if (streamToString === undefined) {
+        throw new Error("Error: streamToString is undefined");
+      }
+      const json = JSON.parse(streamToString.toString());
+      transactions = json.transactions;
+      console.log("execute: number of transactions:", transactions.length);
+    }
+    await minaInit(job.chain);
+    const result =
+      command === "execute"
+        ? await worker.execute(transactions)
+        : await worker.task();
+
     if (result !== undefined) {
       await JobsTable.updateStatus({
         id,
@@ -57,6 +171,7 @@ export async function execute(params: {
         result: result,
         billedDuration: Date.now() - timeStarted,
       });
+      Memory.info(`finished`);
       return true;
     } else {
       await JobsTable.updateStatus({
@@ -66,6 +181,7 @@ export async function execute(params: {
         result: "execute error",
         billedDuration: Date.now() - timeStarted,
       });
+      Memory.info(`failed`);
       return false;
     }
   } catch (error: any) {

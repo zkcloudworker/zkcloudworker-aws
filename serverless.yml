@@ -196,14 +196,14 @@ functions:
   tasks:
     handler: tasks.check
     timeout: 300
-    memorySize: 192
+    memorySize: 256
     reservedConcurrency: 20
     deadLetter:
       sqs:
         queueName: tasks-dl-queue
     events:
       - schedule:
-          rate: rate(60 minutes)
+          rate: rate(5 minutes)
           enabled: true
           name: ts
   sequencer:

@@ -2,12 +2,9 @@ import { Handler, Context, Callback } from "aws-lambda";
 import { verifyJWT } from "./src/api/jwt";
 import { Sequencer } from "./src/api/sequencer";
 import { Jobs } from "./src/table/jobs";
-import { callLambda } from "./src/lambda/lambda";
 import { deploy } from "./src/api/deploy";
-import { execute } from "./src/api/execute";
-import { isWorkerExist, getWorker } from "./src/api/worker";
-import { S3File } from "./src/storage/s3";
-import { blockchain } from "zkcloudworker";
+import { execute, createExecuteJob } from "./src/api/execute";
+import { createRecursiveProofJob } from "./src/api/recursive";
 
 const ZKCLOUDWORKER_AUTH = process.env.ZKCLOUDWORKER_AUTH!;
 
@@ -43,6 +40,17 @@ const api: Handler = async (
         return;
       }
       switch (command) {
+        case "getBalance":
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify("1", null, 2), // TODO: get actual balance
+          });
+          return;
+
         case "queryBilling":
           const jobsTable = new Jobs(process.env.JOBS_TABLE!);
           const billingResult = await jobsTable.queryBilling(id);
@@ -60,191 +68,82 @@ const api: Handler = async (
           return;
           break;
 
-        case "deploy":
-          {
-            if (body.data.packageName === undefined) {
-              console.error("Wrong deploy command", body.data);
-              callback(null, {
-                statusCode: 200,
-                headers: {
-                  "Access-Control-Allow-Origin": "*",
-                  "Access-Control-Allow-Credentials": true,
-                },
-                body: "Wrong deploy command",
-              });
-              return;
-            }
-            const { packageName } = body.data;
+        case "deploy": {
+          const result = await createExecuteJob({
+            command: "deploy",
+            data,
+          });
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify(result, null, 2),
+          });
+          return;
+        }
 
-            const jobId = await createJob({
-              command: "deploy",
-              id,
-              developer: "@dfst",
-              repo: packageName,
-              task: "deploy",
-              args: "",
-              jobsTable: process.env.JOBS_TABLE!,
-              chain,
-              webhook,
-            });
+        case "recursiveProof": {
+          const result = await createRecursiveProofJob(data);
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify(result, null, 2),
+          });
+          return;
+        }
+
+        case "execute": {
+          const result = await createExecuteJob({
+            command: "execute",
+            data,
+          });
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify(result, null, 2),
+          });
+          return;
+        }
+
+        case "jobResult": {
+          if (body.data.jobId === undefined) {
+            console.error("No jobId");
             callback(null, {
               statusCode: 200,
               headers: {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Credentials": true,
               },
-              body: jobId ?? "error",
+              body: "No jobId",
             });
             return;
           }
-          break;
-
-        case "recursiveProof":
-          {
-            const { transactions, developer, repo, task, args, metadata } =
-              body.data;
-            if (
-              transactions === undefined ||
-              developer === undefined ||
-              repo === undefined ||
-              (await isWorkerExist({
-                developer,
-                repo,
-              })) === false
-            ) {
-              console.error("Wrong recursiveProof command", body.data);
-              callback(null, {
-                statusCode: 200,
-                headers: {
-                  "Access-Control-Allow-Origin": "*",
-                  "Access-Control-Allow-Credentials": true,
-                },
-                body: "Wrong recursiveProof command",
-              });
-              return;
-            }
-
-            const filename =
-              developer +
-              "/" +
-              "recursiveProof." +
-              Date.now().toString() +
-              ".json";
-            const file = new S3File(process.env.BUCKET!, filename);
-            await file.put(
-              JSON.stringify({ transactions }),
-              "application/json"
-            );
-            const sequencer = new Sequencer({
-              jobsTable: process.env.JOBS_TABLE!,
-              stepsTable: process.env.STEPS_TABLE!,
-              proofsTable: process.env.PROOFS_TABLE!,
-              id,
-            });
-            const jobId = await sequencer.createJob({
-              id,
-              developer,
-              repo,
-              filename,
-              task: task ?? "recursiveProof",
-              args: args,
-              txNumber: transactions.length,
-              metadata: metadata ?? "",
-              chain,
-              webhook,
-            });
-            callback(null, {
-              statusCode: 200,
-              headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Credentials": true,
-              },
-              body: jobId ?? "error",
-            });
-            return;
-          }
-          break;
-
-        case "execute":
-          {
-            const { developer, repo, task, args, metadata } = body.data;
-            if (
-              developer === undefined ||
-              repo === undefined ||
-              (await isWorkerExist({
-                developer,
-                repo,
-              })) === false
-            ) {
-              console.error("Wrong execute command", body.data);
-              callback(null, {
-                statusCode: 200,
-                headers: {
-                  "Access-Control-Allow-Origin": "*",
-                  "Access-Control-Allow-Credentials": true,
-                },
-                body: "Wrong execute command",
-              });
-              return;
-            }
-
-            const jobId = await createJob({
-              command: "execute",
-              id,
-              developer,
-              repo,
-              task,
-              args,
-              metadata,
-              jobsTable: process.env.JOBS_TABLE!,
-              chain,
-              webhook,
-            });
-            callback(null, {
-              statusCode: 200,
-              headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Credentials": true,
-              },
-              body: jobId ?? "error",
-            });
-            return;
-          }
-          break;
-
-        case "jobResult":
-          {
-            if (body.data.jobId === undefined) {
-              console.error("No jobId");
-              callback(null, {
-                statusCode: 200,
-                headers: {
-                  "Access-Control-Allow-Origin": "*",
-                  "Access-Control-Allow-Credentials": true,
-                },
-                body: "No jobId",
-              });
-              return;
-            }
-            const sequencer = new Sequencer({
-              jobsTable: process.env.JOBS_TABLE!,
-              stepsTable: process.env.STEPS_TABLE!,
-              proofsTable: process.env.PROOFS_TABLE!,
-              id,
-              jobId: body.data.jobId,
-            });
-            const jobResult = await sequencer.getJobStatus();
-            callback(null, {
-              statusCode: 200,
-              headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Credentials": true,
-              },
-              body: JSON.stringify(jobResult, null, 2) ?? "error",
-            });
-            return;
-          }
-          break;
+          const sequencer = new Sequencer({
+            jobsTable: process.env.JOBS_TABLE!,
+            stepsTable: process.env.STEPS_TABLE!,
+            proofsTable: process.env.PROOFS_TABLE!,
+            id,
+            jobId: body.data.jobId,
+          });
+          const jobResult = await sequencer.getJobStatus();
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify(jobResult, null, 2) ?? "error",
+          });
+          return;
+        }
 
         default:
           console.error("Wrong command");
@@ -305,6 +204,19 @@ const worker: Handler = async (event: any, context: Context) => {
         case "execute":
           {
             success = await execute({
+              command,
+              developer,
+              repo,
+              id,
+              jobId,
+            });
+          }
+          break;
+
+        case "task":
+          {
+            success = await execute({
+              command,
               developer,
               repo,
               id,
@@ -349,50 +261,5 @@ const worker: Handler = async (event: any, context: Context) => {
     };
   }
 };
-
-async function createJob(params: {
-  command: string;
-  id: string;
-  developer: string;
-  repo: string;
-  task: string;
-  args: string;
-  jobsTable: string;
-  metadata?: string;
-  chain: blockchain;
-  webhook?: string;
-}): Promise<string | undefined> {
-  const {
-    command,
-    id,
-    developer,
-    repo,
-    task,
-    args,
-    jobsTable,
-    metadata,
-    chain,
-    webhook,
-  } = params;
-  const JobsTable = new Jobs(jobsTable);
-  const jobId = await JobsTable.createJob({
-    id,
-    developer,
-    repo,
-    task,
-    args,
-    txNumber: 1,
-    metadata,
-    chain,
-    webhook,
-  });
-  if (jobId !== undefined)
-    await callLambda(
-      "worker",
-      JSON.stringify({ command, id, jobId, developer, repo })
-    );
-  else console.error("createJob: jobId is undefined");
-  return jobId;
-}
 
 export { worker, api };

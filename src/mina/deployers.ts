@@ -1,5 +1,10 @@
 import { PrivateKey, PublicKey } from "o1js";
-import { accountBalanceMina, makeString, sleep } from "zkcloudworker";
+import {
+  accountBalanceMina,
+  makeString,
+  sleep,
+  blockchain,
+} from "zkcloudworker";
 import { GASTANKS } from "./gastanks";
 import { Deployers } from "../table/deployers";
 import { check } from "../../tasks";
@@ -12,8 +17,10 @@ var deployer3: number | undefined;
 
 //TODO stop relying on AWS saving state in short term and replace with DynamoDB table logic
 export async function getDeployer(
-  minimumBalance: number = GASTANK_MINLIMIT
+  minimumBalance: number = GASTANK_MINLIMIT,
+  chain: blockchain = "devnet"
 ): Promise<PrivateKey> {
+  if (chain !== "devnet") throw new Error("Only devnet is supported for now");
   let count = 0;
   let i: number = Math.floor(Math.random() * (GASTANKS.length - 1));
   let replenish: boolean = await checkGasTank(GASTANKS[i], minimumBalance);

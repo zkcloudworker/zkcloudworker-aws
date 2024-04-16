@@ -9,6 +9,7 @@ export async function callLambda(
   payload: any,
   attempt: number = 0
 ) {
+  // TODO: Check user balance before calling lambda
   try {
     //console.log("Lambda call:", name);
     if (attempt > 0) console.log("Attempt:", attempt);

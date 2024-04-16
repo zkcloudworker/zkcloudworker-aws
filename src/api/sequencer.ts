@@ -44,11 +44,13 @@ export class Sequencer {
     id: string;
     developer: string;
     repo: string;
+    taskId?: string;
     filename: string;
     task?: string;
     args?: string;
     txNumber: number;
     metadata?: string;
+    userId?: string;
     webhook?: string;
     chain: blockchain;
   }): Promise<string | undefined> {
@@ -56,10 +58,12 @@ export class Sequencer {
       id,
       developer,
       repo,
+      taskId,
       filename,
       task,
       args,
       metadata,
+      userId,
       txNumber,
       webhook,
       chain,
@@ -70,11 +74,13 @@ export class Sequencer {
       id,
       developer,
       repo,
+      taskId,
       filename,
       task,
       args,
       txNumber,
       metadata,
+      userId,
       webhook,
       chain,
     });
