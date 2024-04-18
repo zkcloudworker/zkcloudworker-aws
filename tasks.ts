@@ -23,11 +23,24 @@ export const check: Handler = async () => {
           console.error("Removing stuck task", data[i]);
           await table.remove({ id: data[i].id, taskId: data[i].taskId });
         }
-        console.log("Executing");
+        if (data[i].attempts > (data[i].maxAttempts ?? 5)) {
+          console.error("Removing task exceeding max attempts", data[i]);
+          await table.remove({ id: data[i].id, taskId: data[i].taskId });
+        }
+        console.log(
+          "Executing task",
+          data[i].task,
+          data[i].taskId,
+          "for",
+          data[i].id,
+          "at",
+          time
+        );
         await createExecuteJob({
           command: "task",
           data: { ...data[i], transactions: [] },
         });
+        await table.increaseAttempts(data[i]);
       }
     }
 

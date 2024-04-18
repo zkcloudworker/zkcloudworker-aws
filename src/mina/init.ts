@@ -11,6 +11,7 @@ let networkInstance: MinaNetwork = Devnet;
 export async function minaInit(
   chain: blockchain = "devnet"
 ): Promise<MinaNetworkInstance> {
+  console.log("minaInit", chain);
   const networkInstance = await initBlockchain(chain);
   return networkInstance;
 }

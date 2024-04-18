@@ -1,4 +1,4 @@
-import { Struct, Field, Encoding } from "o1js";
+import { Struct, Field, Encoding, Provable } from "o1js";
 import axios from "axios";
 import { makeString } from "zkcloudworker";
 
@@ -9,7 +9,7 @@ import { makeString } from "zkcloudworker";
  * @property hashString The hash string of the storage
  */
 export class Storage extends Struct({
-  hashString: [Field, Field],
+  hashString: Provable.Array(Field, 2),
 }) {
   constructor(value: { hashString: [Field, Field] }) {
     super(value);
@@ -47,11 +47,12 @@ export async function saveToIPFS(params: {
   name: string;
 }): Promise<string | undefined> {
   const { data, pinataJWT, name } = params;
+  console.log("saveToIPFS:", { name });
   if (pinataJWT === "local") {
     const hash = makeString(
       `QmTosaezLecDB7bAoUoXcrJzeBavHNZyPbPff1QHWw8xus`.length
     );
-    ipfsData[hash] = JSON.stringify(data, null, 2);
+    ipfsData[hash] = data;
     useLocalIpfsData = true;
     return hash;
   }
@@ -89,14 +90,14 @@ export async function saveToIPFS(params: {
     console.log("saveToIPFS result:", res.data);
     return res.data.IpfsHash;
   } catch (error: any) {
-    console.error("saveToIPFS:", error);
+    console.error("saveToIPFS error:", error?.message);
     return undefined;
   }
 }
 
 export async function loadFromIPFS(hash: string): Promise<any | undefined> {
   if (useLocalIpfsData) {
-    return JSON.parse(ipfsData[hash]);
+    return ipfsData[hash];
   }
   try {
     const url =
@@ -107,7 +108,7 @@ export async function loadFromIPFS(hash: string): Promise<any | undefined> {
     const result = await axios.get(url);
     return result.data;
   } catch (error: any) {
-    console.error("loadFromIPFS:", error);
+    console.error("loadFromIPFS error:", error?.message);
     return undefined;
   }
 }

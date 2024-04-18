@@ -36,17 +36,17 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.554.0",
-    "@aws-sdk/client-kms": "^3.555.0",
-    "@aws-sdk/client-lambda": "^3.554.0",
-    "@aws-sdk/client-s3": "^3.554.0",
-    "@aws-sdk/util-dynamodb": "^3.554.0",
+    "@aws-sdk/client-dynamodb": "^3.556.0",
+    "@aws-sdk/client-kms": "^3.556.0",
+    "@aws-sdk/client-lambda": "^3.556.0",
+    "@aws-sdk/client-s3": "^3.556.0",
+    "@aws-sdk/util-dynamodb": "^3.556.0",
     "adm-zip": "^0.5.12",
     "axios": "^1.6.8",
     "jest": "^29.7.0",
     "jsonwebtoken": "^9.0.2",
     "o1js": "^0.18.0",
-    "zkcloudworker": "^0.3.8"
+    "zkcloudworker": "^0.3.14"
   },
   "packageManager": "yarn@4.1.1"
 }

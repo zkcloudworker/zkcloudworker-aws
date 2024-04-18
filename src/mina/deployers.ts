@@ -7,7 +7,6 @@ import {
 } from "zkcloudworker";
 import { GASTANKS } from "./gastanks";
 import { Deployers } from "../table/deployers";
-import { check } from "../../tasks";
 const GASTANK_MINLIMIT = 4;
 const DELAY = 60 * 60 * 1000; // 1 hour
 
@@ -55,7 +54,12 @@ async function checkGasTank(
   const gasTankPublicKeyMina = gasTankPrivateKeyMina.toPublicKey();
   const publicKey = gasTankPublicKeyMina.toBase58();
 
-  const balanceGasTank = await accountBalanceMina(gasTankPublicKeyMina);
+  let balanceGasTank = 0;
+  try {
+    balanceGasTank = await accountBalanceMina(gasTankPublicKeyMina);
+  } catch (error) {
+    console.error("Error: checkGasTank accountBalanceMina", error);
+  }
   const replenishGasTank: boolean =
     minimumBalance === 0 ? false : balanceGasTank < minimumBalance;
   console.log(
