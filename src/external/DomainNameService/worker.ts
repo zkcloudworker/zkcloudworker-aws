@@ -280,7 +280,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       ),
       task: "txTask",
       maxAttempts: 12,
-      metadata: this.cloud.metadata,
+      metadata: `tx processing`,
       userId: this.cloud.userId,
     });
     return "txTask added";
@@ -340,6 +340,28 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       await this.cloud.deleteTask(this.cloud.taskId);
       console.timeEnd("proveBlock");
       return "block is already proved";
+    }
+
+    const previousBlockAddress = block.previousBlock.get();
+    await fetchMinaAccount({
+      publicKey: previousBlockAddress,
+      tokenId,
+      force: true,
+    });
+    if (!Mina.hasAccount(previousBlockAddress, tokenId)) {
+      console.log(
+        `Previous block ${previousBlockAddress.toBase58()} not found`
+      );
+      console.timeEnd("proveBlock");
+      return "previous block is not found";
+    }
+
+    const previousBlock = new BlockContract(previousBlockAddress, tokenId);
+    const oldRoot = previousBlock.root.get();
+    if (oldRoot.toJSON() !== proof.publicInput.oldRoot.toJSON()) {
+      console.error(`Invalid previous block root`);
+      console.timeEnd("proveBlock");
+      return "Invalid previous block root";
     }
 
     await this.compile();
@@ -691,7 +713,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
           2
         ),
         task: "proveBlock",
-        metadata: this.cloud.metadata,
+        metadata: `prove block ${args.blockNumber}`,
         userId: this.cloud.userId,
       });
     }
@@ -1093,7 +1115,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
           2
         ),
         task: "validateBlock",
-        metadata: this.cloud.metadata,
+        metadata: `block ${blockNumber} validation`,
         userId: this.cloud.userId,
       });
       for (let i = 0; i < length; i++) {
