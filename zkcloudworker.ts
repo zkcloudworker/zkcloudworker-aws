@@ -36,7 +36,7 @@ const api: Handler = async (
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Credentials": true,
           },
-          body: "Wrong jwtToken",
+          body: "error: Wrong jwtToken",
         });
         return;
       }
@@ -119,13 +119,13 @@ const api: Handler = async (
           return;
         }
 
-        case "sendTransaction": {
-          const { developer, repo, transaction } = data;
-          const result = await CloudWorker.addTransaction({
+        case "sendTransactions": {
+          const { developer, repo, transactions } = data;
+          const result = await CloudWorker.addTransactions({
             id,
             developer,
             repo,
-            transaction,
+            transactions,
           });
           callback(null, {
             statusCode: 200,
@@ -134,7 +134,7 @@ const api: Handler = async (
               "Access-Control-Allow-Credentials": true,
             },
             body: JSON.stringify(
-              { success: result !== undefined, txId: result },
+              result === undefined ? { success: false } : result,
               null,
               2
             ),
@@ -151,7 +151,7 @@ const api: Handler = async (
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Credentials": true,
               },
-              body: "No jobId",
+              body: "error: No jobId",
             });
             return;
           }
@@ -182,7 +182,7 @@ const api: Handler = async (
               "Access-Control-Allow-Origin": "*",
               "Access-Control-Allow-Credentials": true,
             },
-            body: "Wrong command",
+            body: "error: wrong command",
           });
       }
 
@@ -286,7 +286,7 @@ const worker: Handler = async (event: any, context: Context) => {
     });
     return {
       statusCode: 200,
-      body: "worker run error",
+      body: "error: worker run error",
     };
   }
 };

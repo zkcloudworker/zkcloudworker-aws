@@ -127,29 +127,36 @@ export class CloudWorker extends Cloud {
     throw new Error("Method not implemented.");
   }
 
-  public static async addTransaction(data: {
+  public static async addTransactions(data: {
     id: string;
     developer: string;
     repo: string;
-    transaction: string;
-  }): Promise<string | undefined> {
-    const { id, developer, repo, transaction } = data;
-    const timeReceived = Date.now();
-    const repoId = id + ":" + developer + ":" + repo;
-    const txId = timeReceived.toString() + "." + makeString(32);
+    transactions: string[];
+  }): Promise<string[]> {
+    const { id, developer, repo, transactions } = data;
     const transactionsTable = new Transactions(TRANSACTIONS_TABLE);
-    try {
-      await transactionsTable.create({
-        txId,
-        repoId,
-        transaction,
-        timeReceived,
-      });
-      return txId;
-    } catch (error) {
-      console.error("addTransaction: ", error);
-      return undefined;
+    const repoId = id + ":" + developer + ":" + repo;
+    const txId: string[] = [];
+
+    for (let i = 0; i < transactions.length; i++) {
+      const timeReceived = Date.now();
+      const transactionId = timeReceived.toString() + "." + makeString(32);
+
+      try {
+        await transactionsTable.create({
+          txId: transactionId,
+          repoId,
+          transaction: transactions[i],
+          timeReceived,
+        });
+        txId.push(transactionId);
+      } catch (error) {
+        console.error("addTransaction: error", error);
+        txId.push("error");
+      }
     }
+
+    return txId;
   }
 
   public async deleteTransaction(txId: string): Promise<void> {

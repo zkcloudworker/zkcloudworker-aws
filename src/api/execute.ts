@@ -1,4 +1,10 @@
-import { zkCloudWorker, Memory, blockchain } from "zkcloudworker";
+import {
+  zkCloudWorker,
+  Memory,
+  blockchain,
+  JobData,
+  JobStatus,
+} from "zkcloudworker";
 import { ExecuteCloudWorker } from "./cloud";
 import { isWorkerExist } from "./worker";
 import { Jobs } from "../table/jobs";
@@ -19,14 +25,17 @@ export async function createExecuteJob(params: {
     repo: string;
     task: string;
     args?: string;
+    userId?: string;
     metadata?: string;
     chain: blockchain;
     webhook?: string;
+    mode?: string;
   };
 }): Promise<{
   success: boolean;
-  jobId: string | undefined;
-  error: string | undefined;
+  jobId?: string;
+  result?: string;
+  error?: string;
 }> {
   const { command, data } = params;
   const {
@@ -37,9 +46,11 @@ export async function createExecuteJob(params: {
     task,
     args,
     metadata,
+    userId,
     chain,
     webhook,
     taskId,
+    mode,
   } = data;
 
   if (
@@ -63,44 +74,118 @@ export async function createExecuteJob(params: {
     return {
       success: false,
       jobId: undefined,
-      error: "Wrong execute command",
+      error: "error: wrong execute command",
     };
   }
 
-  let filename: string | undefined = undefined;
-  if (transactions.length > 0) {
-    filename = developer + "/" + "execute." + Date.now().toString() + ".json";
-    const file = new S3File(process.env.BUCKET!, filename);
-    await file.put(JSON.stringify({ transactions }), "application/json");
-  }
-  const JobsTable = new Jobs(process.env.JOBS_TABLE!);
-  const jobId = await JobsTable.createJob({
-    id,
-    developer,
-    repo,
-    filename,
-    task,
-    taskId,
-    args,
-    txNumber: 1,
-    metadata,
-    chain,
-    webhook,
-  });
-  if (jobId !== undefined) {
-    await callLambda(
-      "worker",
-      JSON.stringify({ command, id, jobId, developer, repo })
-    );
-    return { success: true, jobId, error: undefined };
-  } else {
-    console.error("execute: createJob: jobId is undefined");
-    return {
-      success: false,
-      jobId: undefined,
-      error: "execute: createJob: jobId is undefined",
+  if (mode === "sync") {
+    const timeCreated = Date.now();
+    const item: JobData = {
+      id,
+      jobId: "sync",
+      developer,
+      repo,
+      taskId,
+      task,
+      userId,
+      args,
+      metadata,
+      chain,
+      webhook,
+      txNumber: transactions.length,
+      timeCreated,
+      timeCreatedString: new Date(timeCreated).toISOString(),
+      jobStatus: "started" as JobStatus,
+      maxAttempts: 0,
     };
+    try {
+      const result = await executeSync({
+        command,
+        developer,
+        repo,
+        job: item,
+        transactions,
+      });
+      if (result !== undefined) return { success: true, result };
+      else {
+        console.error("error: execute: executeSync");
+        return {
+          success: false,
+          error: "error: execute: executeSync",
+        };
+      }
+    } catch (error: any) {
+      console.error("error: catch: execute: executeSync", error);
+      return {
+        success: false,
+        jobId: undefined,
+        error: "error: catch: execute: executeSync",
+      };
+    }
+  } else {
+    let filename: string | undefined = undefined;
+    if (transactions.length > 0) {
+      filename = developer + "/" + "execute." + Date.now().toString() + ".json";
+      const file = new S3File(process.env.BUCKET!, filename);
+      await file.put(JSON.stringify({ transactions }), "application/json");
+    }
+    const JobsTable = new Jobs(process.env.JOBS_TABLE!);
+    const jobId = await JobsTable.createJob({
+      id,
+      developer,
+      repo,
+      filename,
+      task,
+      taskId,
+      args,
+      txNumber: 1,
+      metadata,
+      chain,
+      webhook,
+    });
+    if (jobId !== undefined) {
+      await callLambda(
+        "worker",
+        JSON.stringify({ command, id, jobId, developer, repo })
+      );
+      return { success: true, jobId, error: undefined };
+    } else {
+      console.error("error: execute: createJob: jobId is undefined");
+      return {
+        success: false,
+        jobId: undefined,
+        error: "error: execute: createJob: jobId is undefined",
+      };
+    }
   }
+}
+
+export async function executeSync(params: {
+  command: string;
+  developer: string;
+  repo: string;
+  job: JobData;
+  transactions: string[];
+}): Promise<string | undefined> {
+  const { command, developer, repo, job, transactions } = params;
+  Memory.info(`start`);
+  console.time("zkCloudWorker Execute Sync");
+  const cloud = new ExecuteCloudWorker(job);
+  const worker: zkCloudWorker = await getWorker({
+    developer: developer,
+    repo: repo,
+    cloud,
+  });
+
+  await minaInit(job.chain);
+  const result =
+    command === "execute"
+      ? await worker.execute(transactions)
+      : await worker.task();
+
+  Memory.info(`finished`);
+  console.timeEnd("zkCloudWorker Execute Sync");
+  return result;
 }
 
 export async function execute(params: {
@@ -116,8 +201,6 @@ export async function execute(params: {
   console.log(`zkCloudWorker Execute start:`, params);
   const JobsTable = new Jobs(process.env.JOBS_TABLE!);
   try {
-    Memory.info(`start`);
-
     const job = await JobsTable.get({
       id,
       jobId,
@@ -136,12 +219,7 @@ export async function execute(params: {
       console.error("zkCloudWorker Execute: job is too old, exiting");
       return false;
     }
-    const cloud = new ExecuteCloudWorker(job);
-    const worker: zkCloudWorker = await getWorker({
-      developer: developer,
-      repo: repo,
-      cloud,
-    });
+
     await JobsTable.updateStatus({
       id,
       jobId,
@@ -159,11 +237,14 @@ export async function execute(params: {
       transactions = json.transactions;
       console.log("execute: number of transactions:", transactions.length);
     }
-    await minaInit(job.chain);
-    const result =
-      command === "execute"
-        ? await worker.execute(transactions)
-        : await worker.task();
+
+    const result = await executeSync({
+      command,
+      developer,
+      repo,
+      job,
+      transactions,
+    });
 
     if (result !== undefined) {
       await JobsTable.updateStatus({
@@ -174,7 +255,6 @@ export async function execute(params: {
         billedDuration: Date.now() - timeStarted,
         maxAttempts: 1,
       });
-      Memory.info(`finished`);
       console.timeEnd("zkCloudWorker Execute");
       return true;
     } else {

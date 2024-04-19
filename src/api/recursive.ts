@@ -50,7 +50,7 @@ export async function createRecursiveProofJob(params: {
     return {
       success: false,
       jobId: undefined,
-      error: "Wrong recursiveProof command",
+      error: "error: wrong recursiveProof command",
     };
   }
 

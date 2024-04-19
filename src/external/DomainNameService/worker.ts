@@ -7,6 +7,7 @@ import {
   sleep,
   getNetworkIdHash,
   CloudTransaction,
+  makeString,
 } from "zkcloudworker";
 import os from "os";
 import assert from "node:assert/strict";
@@ -239,6 +240,16 @@ export class DomainNameServiceWorker extends zkCloudWorker {
   }
 
   private async txTask(): Promise<string | undefined> {
+    const txToken = await this.cloud.getDataByKey("txToken");
+    if (
+      txToken === undefined ||
+      this.cloud.args === undefined ||
+      txToken !== JSON.parse(this.cloud.args).txToken
+    ) {
+      console.error("txToken is undefined or expired, exiting");
+      await this.cloud.deleteTask(this.cloud.taskId);
+      return "exiting txTask";
+    }
     const transactions = await this.cloud.getTransactions();
     console.log(`txTask with ${transactions.length} transaction(s)`);
     if (transactions.length !== 0) {
@@ -252,6 +263,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         ).toLocaleString()}...`
       );
       try {
+        // TODO: Use processTransactions ???
         const result = await this.createRollupBlock(transactions);
         return result;
       } catch (error) {
@@ -270,16 +282,19 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     console.log(`Adding txTask...`);
     if (args.contractAddress === undefined)
       throw new Error("args.contractAddress is undefined");
+    const txToken = makeString(32);
+    await this.cloud.saveDataByKey("txToken", txToken);
     await this.cloud.addTask({
       args: JSON.stringify(
         {
           contractAddress: args.contractAddress,
+          txToken,
         },
         null,
         2
       ),
       task: "txTask",
-      maxAttempts: 12,
+      maxAttempts: 24,
       metadata: `tx processing`,
       userId: this.cloud.userId,
     });
@@ -666,7 +681,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         fee: await fee(),
         memo: validated
           ? `block ${blockNumber} is valid`
-          : `block ${blockNumber} is invalid`,
+          : `bad block ${blockNumber}`,
       },
       async () => {
         validated
@@ -696,7 +711,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       const jobId = await this.cloud.recursiveProof({
         transactions: proofData,
         task: "proofMap",
-        metadata: this.cloud.metadata,
+        metadata: `block ${args.blockNumber} proof creation`,
         userId: this.cloud.userId,
         args: JSON.stringify({ timeCreated: timeCreated.toJSON() }),
       });
@@ -829,7 +844,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
   ): Promise<string | undefined> {
     const MIN_TRANSACTIONS = 2;
     const MAX_TRANSACTIONS = 4;
-    const MIN_TIME_BETWEEN_BLOCKS = 1000 * 60 * 20; // 20 minutes
+    const MIN_TIME_BETWEEN_BLOCKS = 1000 * 60 * 17; // 20 minutes, including block creation time
 
     if (txs.length < MIN_TRANSACTIONS) {
       console.log("Not enough transactions to create a block:", txs.length);
@@ -870,8 +885,8 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         }
         if (timeStarted > Date.now() - MIN_TIME_BETWEEN_BLOCKS) {
           console.log("Not enough time between blocks:", {
-            lastBlockTme: timeStarted.toLocaleString(),
-            now: Date.now().toLocaleString(),
+            lastBlockTme: new Date(timeStarted).toLocaleString(),
+            now: new Date().toLocaleString(),
           });
           return "Not enough time between blocks";
         }
@@ -971,7 +986,12 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     const mapHash = await saveToIPFS({
       data: mapJson,
       pinataJWT: process.env.PINATA_JWT!,
-      name: `${contractAddress.toBase58()}.block.${blockNumber}.map.json`,
+      name: `block.${blockNumber}.map.${contractAddress.toBase58()}.json`,
+      keyvalues: {
+        blockNumber: blockNumber.toString(),
+        type: "Merkle Map",
+        contractAddress: contractAddress.toBase58(),
+      },
     });
     if (mapHash === undefined) throw new Error("mapHash is undefined");
     const json = {
@@ -999,7 +1019,12 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     const hash = await saveToIPFS({
       data: json,
       pinataJWT: process.env.PINATA_JWT!,
-      name: `${contractAddress.toBase58()}.block.${blockNumber}.json`,
+      name: `block.${blockNumber}.${contractAddress.toBase58()}.json`,
+      keyvalues: {
+        blockNumber: blockNumber.toString(),
+        type: "block data",
+        contractAddress: contractAddress.toBase58(),
+      },
     });
     if (hash === undefined) throw new Error("hash is undefined");
 
@@ -1074,7 +1099,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     await fetchMinaAccount({ publicKey: blockProducer.publicKey, force: true });
 
     console.log(`Sending tx for block ${blockNumber}...`);
-    const memo = `block ${blockNumber}`;
+    const memo = `block ${blockNumber} created: ${count} txs`.substring(0, 30);
     const tx = await Mina.transaction(
       { sender: blockProducer.publicKey, fee: await fee(), memo },
       async () => {
