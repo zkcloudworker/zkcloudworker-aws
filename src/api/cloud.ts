@@ -11,6 +11,7 @@ import {
 } from "zkcloudworker";
 import { StepsData } from "../model/stepsData";
 import { Transactions } from "../table/transactions";
+import { KeyValue } from "../table/kv";
 import { Tasks } from "../table/tasks";
 import { createRecursiveProofJob } from "./recursive";
 import { createExecuteJob } from "./execute";
@@ -19,6 +20,7 @@ import { Sequencer } from "./sequencer";
 export const cacheDir = "/mnt/efs/cache";
 const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
 const TASKS_TABLE = process.env.TASKS_TABLE!;
+const KV_TABLE = process.env.KV_TABLE!;
 
 export class CloudWorker extends Cloud {
   webhook?: string; // TODO: add webhook call to Sequencer
@@ -72,7 +74,6 @@ export class CloudWorker extends Cloud {
     this.webhook = webhook;
   }
   async getDeployer(): Promise<PrivateKey> {
-    minaInit(this.chain);
     const deployer = await getDeployer(4, this.chain);
     return deployer;
   }
@@ -87,11 +88,30 @@ export class CloudWorker extends Cloud {
   }
 
   async getDataByKey(key: string): Promise<string | undefined> {
-    throw new Error("Method not implemented.");
+    const kvTable = new KeyValue(KV_TABLE);
+    const result = await kvTable.get({
+      repoId: this.repoId(),
+      keyId: key,
+    });
+    return result?.valueJSON;
+  }
+
+  private repoId(): string {
+    return this.id + ":" + this.developer + ":" + this.repo;
   }
 
   async saveDataByKey(key: string, data: string): Promise<void> {
-    throw new Error("Method not implemented.");
+    const kvTable = new KeyValue(KV_TABLE);
+    try {
+      await kvTable.create({
+        repoId: this.repoId(),
+        keyId: key,
+        valueJSON: data,
+      });
+    } catch (error) {
+      console.error("saveDataByKey error: ", error);
+      return undefined;
+    }
   }
 
   async saveFile(filename: string, value: Buffer): Promise<void> {
@@ -107,42 +127,49 @@ export class CloudWorker extends Cloud {
     throw new Error("Method not implemented.");
   }
 
-  public static async addTransaction(data: {
+  public static async addTransactions(data: {
     id: string;
     developer: string;
     repo: string;
-    transaction: string;
-  }): Promise<string | undefined> {
-    const { id, developer, repo, transaction } = data;
-    const timeReceived = Date.now();
-    const repoId = id + ":" + developer + ":" + repo;
-    const txId = timeReceived.toString() + "." + makeString(32);
+    transactions: string[];
+  }): Promise<string[]> {
+    const { id, developer, repo, transactions } = data;
     const transactionsTable = new Transactions(TRANSACTIONS_TABLE);
-    try {
-      await transactionsTable.create({
-        txId,
-        repoId,
-        transaction,
-        timeReceived,
-      });
-      return txId;
-    } catch (error) {
-      console.error("addTransaction: ", error);
-      return undefined;
+    const repoId = id + ":" + developer + ":" + repo;
+    const txId: string[] = [];
+
+    for (let i = 0; i < transactions.length; i++) {
+      const timeReceived = Date.now();
+      const transactionId = timeReceived.toString() + "." + makeString(32);
+
+      try {
+        await transactionsTable.create({
+          txId: transactionId,
+          repoId,
+          transaction: transactions[i],
+          timeReceived,
+        });
+        txId.push(transactionId);
+      } catch (error) {
+        console.error("addTransaction: error", error);
+        txId.push("error");
+      }
     }
+
+    return txId;
   }
 
   public async deleteTransaction(txId: string): Promise<void> {
     const transactionsTable = new Transactions(TRANSACTIONS_TABLE);
     await transactionsTable.remove({
-      repoId: this.id + ":" + this.developer + ":" + this.repo,
+      repoId: this.repoId(),
       txId,
     });
   }
 
   public async getTransactions(): Promise<CloudTransaction[]> {
     const transactionsTable = new Transactions(TRANSACTIONS_TABLE);
-    const repoId = this.id + ":" + this.developer + ":" + this.repo;
+    const repoId = this.repoId();
     console.log("getTransactions: repoId", repoId);
     let results = await transactionsTable.queryData("repoId = :id", {
       ":id": repoId,
@@ -163,6 +190,9 @@ export class CloudWorker extends Cloud {
       console.log("getTransactions: no results");
       return [];
     }
+    // sort by timeReceived, old txs first
+    results.sort((a, b) => a.timeReceived - b.timeReceived);
+
     return results.map((result) => {
       return {
         txId: result.txId,
@@ -239,9 +269,10 @@ export class CloudWorker extends Cloud {
     userId?: string;
     args?: string;
     metadata?: string;
+    maxAttempts?: number;
   }): Promise<string> {
     console.log("addTask", data);
-    const { task, userId, args, metadata } = data;
+    const { task, userId, args, metadata, maxAttempts } = data;
     const timeCreated = Date.now();
     const tasksTable = new Tasks(TASKS_TABLE);
     const taskData: TaskData = {
@@ -254,6 +285,8 @@ export class CloudWorker extends Cloud {
       userId,
       args,
       metadata,
+      maxAttempts: maxAttempts ?? 5,
+      attempts: 0,
       chain: this.chain,
     };
     console.log("addTask: taskData", taskData);
@@ -263,6 +296,7 @@ export class CloudWorker extends Cloud {
 
   public async deleteTask(taskId: string): Promise<void> {
     const tasksTable = new Tasks(TASKS_TABLE);
+    console.log("deleteTask", { id: this.id, taskId });
     await tasksTable.remove({ id: this.id, taskId });
   }
 
@@ -278,6 +312,7 @@ export class JobCloudWorker extends CloudWorker {
       jobId: job.jobId,
       developer: job.developer,
       repo: job.repo,
+      taskId: job.taskId,
       task: job.task,
       userId: job.userId,
       args: job.args,
@@ -307,7 +342,8 @@ export class StepCloudWorker extends CloudWorker {
 
 export class ExecuteCloudWorker extends CloudWorker {
   constructor(job: JobData) {
-    const { jobId, developer, repo, task, userId, args, metadata, id } = job;
+    const { jobId, developer, repo, task, userId, args, metadata, id, taskId } =
+      job;
     const cache: Cache = Cache.FileSystem(cacheDir);
     super({
       id,
@@ -315,6 +351,7 @@ export class ExecuteCloudWorker extends CloudWorker {
       developer,
       repo,
       task,
+      taskId,
       userId,
       args,
       metadata,

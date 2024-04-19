@@ -12,22 +12,35 @@ export const check: Handler = async () => {
 
     if (count > 0) {
       console.log("count", count);
-
       let i: number;
       const time = Date.now();
       for (i = 0; i < count; i++) {
         const startTime = data[i].startTime;
         if (startTime !== undefined && startTime < time) continue;
         console.log("item", i, ":", data[i]);
+
         if (data[i].timeCreated + 2 * 60 * 60 * 1000 < time) {
           console.error("Removing stuck task", data[i]);
           await table.remove({ id: data[i].id, taskId: data[i].taskId });
+        } else if (data[i].attempts > (data[i].maxAttempts ?? 5)) {
+          console.error("Removing task exceeding max attempts", data[i]);
+          await table.remove({ id: data[i].id, taskId: data[i].taskId });
+        } else {
+          await table.increaseAttempts(data[i]);
+          console.log(
+            "Executing task",
+            data[i].task,
+            data[i].taskId,
+            "for",
+            data[i].id,
+            "at",
+            time
+          );
+          await createExecuteJob({
+            command: "task",
+            data: { ...data[i], transactions: [] },
+          });
         }
-        console.log("Executing");
-        await createExecuteJob({
-          command: "task",
-          data: { ...data[i], transactions: [] },
-        });
       }
     }
 

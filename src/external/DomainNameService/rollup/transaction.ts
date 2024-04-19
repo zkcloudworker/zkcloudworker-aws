@@ -1,4 +1,3 @@
-export { MapUpdate, MapTransition, MapUpdateProof, MapUpdateData };
 import {
   Field,
   SelfProof,
@@ -10,12 +9,19 @@ import {
   Bool,
   UInt8,
   Signature,
+  UInt32,
 } from "o1js";
 import { Metadata } from "../contract/metadata";
 import { Storage } from "../contract/storage";
 import { serializeFields, deserializeFields } from "../lib/fields";
 import { MerkleMapWitness } from "../lib/merkle-map";
 
+export type DomainTransactionType = "add" | "extend" | "update" | "remove"; // removeExpired
+export type DomainTransactionStatus =
+  | "sent"
+  | "invalid"
+  | "accepted"
+  | "rejected";
 export class DomainNameValue extends Struct({
   address: PublicKey,
   metadata: Metadata,
@@ -62,8 +68,6 @@ export class DomainName extends Struct({
     return Poseidon.hashPacked(DomainName, this);
   }
 }
-
-export type DomainTransactionType = "add" | "extend" | "update" | "remove"; // removeExpired
 
 export const DomainTransactionEnum: { [k in DomainTransactionType]: UInt8 } = {
   add: UInt8.from(1),
@@ -141,7 +145,35 @@ export class DomainTransactionData {
   }
 }
 
-class MapUpdateData extends Struct({
+export interface DomainSerializedTransaction {
+  operation: DomainTransactionType;
+  name: string;
+  address: string;
+  expiry: number;
+  metadata?: string;
+  oldDomain?: {
+    name: string;
+    address: string;
+    expiry: number;
+    metadata?: string;
+  };
+  signature?: string;
+}
+export interface DomainCloudTransaction {
+  txId: string;
+  transaction: string;
+  timeReceived: number;
+  fields?: string;
+  status: string;
+  reason?: string;
+}
+
+export interface DomainCloudTransactionData {
+  serializedTx: DomainCloudTransaction;
+  domainData: DomainTransactionData | undefined;
+}
+
+export class MapUpdateData extends Struct({
   oldRoot: Field,
   newRoot: Field,
   time: UInt64, // unix time when the map was updated
@@ -149,12 +181,12 @@ class MapUpdateData extends Struct({
   witness: MerkleMapWitness,
 }) {}
 
-class MapTransition extends Struct({
+export class MapTransition extends Struct({
   oldRoot: Field,
   newRoot: Field,
   time: UInt64, // unix time when the map was updated
   hash: Field, // sum of hashes of all the new keys and values of the Map
-  count: Field, // number of new keys in the Map
+  count: UInt32, // number of new keys in the Map
 }) {
   // TODO: addNew, replaceExpired, extend, change
   static add(update: MapUpdateData) {
@@ -178,7 +210,7 @@ class MapTransition extends Struct({
       oldRoot: update.oldRoot,
       newRoot: update.newRoot,
       hash,
-      count: Field(1),
+      count: UInt32.from(1),
       time: update.time,
     });
   }
@@ -213,7 +245,7 @@ class MapTransition extends Struct({
       oldRoot: update.oldRoot,
       newRoot: update.newRoot,
       hash,
-      count: Field(1),
+      count: UInt32.from(1),
       time: update.time,
     });
   }
@@ -247,7 +279,7 @@ class MapTransition extends Struct({
       oldRoot: update.oldRoot,
       newRoot: update.newRoot,
       hash,
-      count: Field(1),
+      count: UInt32.from(1),
       time: update.time,
     });
   }
@@ -272,7 +304,7 @@ class MapTransition extends Struct({
       oldRoot: update.oldRoot,
       newRoot: update.newRoot,
       hash,
-      count: Field(1),
+      count: UInt32.from(1),
       time: update.time,
     });
   }
@@ -284,7 +316,7 @@ class MapTransition extends Struct({
       oldRoot: root,
       newRoot: root,
       hash,
-      count: Field(1),
+      count: UInt32.from(1),
       time,
     });
   }
@@ -310,7 +342,7 @@ class MapTransition extends Struct({
   }
 }
 
-const MapUpdate = ZkProgram({
+export const MapUpdate = ZkProgram({
   name: "MapUpdate",
   publicInput: MapTransition,
   overrideWrapDomain: 2,
@@ -400,4 +432,4 @@ const MapUpdate = ZkProgram({
   },
 });
 
-class MapUpdateProof extends ZkProgram.Proof(MapUpdate) {}
+export class MapUpdateProof extends ZkProgram.Proof(MapUpdate) {}

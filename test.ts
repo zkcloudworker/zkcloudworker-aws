@@ -86,17 +86,18 @@ const cloud: Handler = async (
 
     const cacheDir = "/mnt/efs/cache";
     await listFiles(cacheDir);
-    setNumberOfWorkers(6);
 
+    /*
     await deploy({
       developer: "dfst",
       repo: "simple-example-2",
       id: "test",
       jobId: "test",
     });
+    */
 
-    //await fs.rm(cacheDir, { recursive: true });
-    //await listFiles(cacheDir);
+    await fs.rm(cacheDir, { recursive: true });
+    await listFiles(cacheDir);
     /*
     try {
       const result = await runZip({

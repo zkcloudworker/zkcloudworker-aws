@@ -19,6 +19,7 @@ provider:
     DEPLOYERS_TABLE: ${file(./env.json):DEPLOYERS_TABLE, env:DEPLOYERS_TABLE}
     FILES_TABLE: ${file(./env.json):FILES_TABLE, env:FILES_TABLE}
     TRANSACTIONS_TABLE: ${file(./env.json):TRANSACTIONS_TABLE, env:TRANSACTIONS_TABLE}
+    KV_TABLE: ${file(./env.json):KV_TABLE, env:KV_TABLE}
     JOBS_TABLE: ${file(./env.json):JOBS_TABLE, env:JOBS_TABLE}
     STEPS_TABLE: ${file(./env.json):STEPS_TABLE, env:STEPS_TABLE}
     PROOFS_TABLE: ${file(./env.json):PROOFS_TABLE, env:PROOFS_TABLE}
@@ -72,6 +73,15 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TRANSACTIONS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.KV_TABLE}"
     - Effect: Allow
       Action:
         - dynamodb:Query
@@ -155,7 +165,7 @@ functions:
           cors: true
   worker:
     handler: zkcloudworker.worker
-    timeout: 300
+    timeout: 900
     memorySize: 10240
     reservedConcurrency: 20
     deadLetter:
@@ -203,7 +213,7 @@ functions:
         queueName: tasks-dl-queue
     events:
       - schedule:
-          rate: rate(5 minutes)
+          rate: rate(10 minutes)
           enabled: true
           name: ts
   sequencer:
@@ -287,6 +297,22 @@ resources:
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.TRANSACTIONS_TABLE}
+    KeyValueDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: repoId
+            AttributeType: S
+          - AttributeName: keyId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: repoId
+            KeyType: HASH
+          - AttributeName: keyId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.KV_TABLE}
     JobsDynamoDbTable:
       Type: "AWS::DynamoDB::Table"
       DeletionPolicy: Delete
