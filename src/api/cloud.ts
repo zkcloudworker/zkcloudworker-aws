@@ -1,6 +1,5 @@
 import { Cache, PrivateKey } from "o1js";
 import { getDeployer } from "../mina/deployers";
-import { minaInit } from "../mina/init";
 import {
   Cloud,
   JobData,
@@ -100,17 +99,29 @@ export class CloudWorker extends Cloud {
     return this.id + ":" + this.developer + ":" + this.repo;
   }
 
-  async saveDataByKey(key: string, data: string): Promise<void> {
+  async saveDataByKey(key: string, data: string | undefined): Promise<void> {
     const kvTable = new KeyValue(KV_TABLE);
-    try {
-      await kvTable.create({
-        repoId: this.repoId(),
-        keyId: key,
-        valueJSON: data,
-      });
-    } catch (error) {
-      console.error("saveDataByKey error: ", error);
-      return undefined;
+    if (data !== undefined) {
+      try {
+        await kvTable.create({
+          repoId: this.repoId(),
+          keyId: key,
+          valueJSON: data,
+        });
+      } catch (error) {
+        console.error("saveDataByKey error: ", { error, key, data });
+        return undefined;
+      }
+    } else {
+      try {
+        await kvTable.remove({
+          repoId: this.repoId(),
+          keyId: key,
+        });
+      } catch (error) {
+        console.error("saveDataByKey error: ", { error, key, data });
+        return undefined;
+      }
     }
   }
 

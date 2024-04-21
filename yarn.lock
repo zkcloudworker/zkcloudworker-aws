@@ -9494,17 +9494,17 @@ __metadata:
     serverless-plugin-typescript: "npm:^2.1.5"
     serverless-prune-plugin: "npm:^2.0.2"
     typescript: "npm:^5.4.5"
-    zkcloudworker: "npm:^0.3.16"
+    zkcloudworker: "npm:^0.3.17"
   languageName: unknown
   linkType: soft
 
-"zkcloudworker@npm:^0.3.16":
-  version: 0.3.16
-  resolution: "zkcloudworker@npm:0.3.16"
+"zkcloudworker@npm:^0.3.17":
+  version: 0.3.17
+  resolution: "zkcloudworker@npm:0.3.17"
   dependencies:
     axios: "npm:^1.6.8"
   peerDependencies:
     o1js: ^0.18.0
-  checksum: 10c0/feaabd877dd89a794a80365a179afc6767233445caae5f722ab6027d57b9ec27a5b763ebda01ba0bb8e7d91d56d431c1c399e99076a33691219a457f15abd866
+  checksum: 10c0/1610b8cc1e4f8ee8c577c5454aab1a9d9c592c5f6149d16ee72072a7cbf6e0af3c1cc56b7f37bc702d25980b396acf22172e7f25a93e634ec1926279be5cf54b
   languageName: node
   linkType: hard
