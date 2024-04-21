@@ -213,7 +213,7 @@ functions:
         queueName: tasks-dl-queue
     events:
       - schedule:
-          rate: rate(10 minutes)
+          rate: rate(5 minutes)
           enabled: true
           name: ts
   sequencer:
@@ -228,7 +228,7 @@ functions:
     handler: step.run
     timeout: 300
     memorySize: 10240
-    reservedConcurrency: 20
+    reservedConcurrency: 64
     deadLetter:
       sqs:
         queueName: step-dl-queue

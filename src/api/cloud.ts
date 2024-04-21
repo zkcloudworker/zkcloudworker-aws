@@ -181,11 +181,11 @@ export class CloudWorker extends Cloud {
   public async getTransactions(): Promise<CloudTransaction[]> {
     const transactionsTable = new Transactions(TRANSACTIONS_TABLE);
     const repoId = this.repoId();
-    console.log("getTransactions: repoId", repoId);
+    //console.log("getTransactions: repoId", repoId);
     let results = await transactionsTable.queryData("repoId = :id", {
       ":id": repoId,
     });
-    console.log("getTransactions: results", results);
+    //console.log("getTransactions: results", results);
 
     if (results === undefined) {
       console.error("getTransactions: results is undefined");
