@@ -8,6 +8,7 @@ import {
   getNetworkIdHash,
   CloudTransaction,
   makeString,
+  accountBalanceMina,
 } from "zkcloudworker";
 import os from "os";
 import assert from "node:assert/strict";
@@ -67,6 +68,9 @@ import { blockProducer } from "./config";
 import { stringToFields } from "./lib/hash";
 import { Metadata } from "./contract/metadata";
 import { start } from "repl";
+import { time } from "console";
+import { get } from "http";
+import { stat } from "fs";
 
 const fullValidation = true;
 const waitTx = false;
@@ -216,7 +220,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         return await this.restart();
       default:
         console.error("Unknown task in execute:", this.cloud.task);
-        return undefined;
+        return "Unknown task in execute";
     }
   }
 
@@ -236,11 +240,11 @@ export class DomainNameServiceWorker extends zkCloudWorker {
 
         default:
           console.error("Unknown task in task:", this.cloud.task);
-          return undefined;
+          return "error: Unknown task in task";
       }
     } catch (error) {
       console.error("Error in task", error);
-      return undefined;
+      return "error in task";
     }
   }
 
@@ -290,10 +294,40 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         return result;
       } catch (error) {
         console.error("Error in txTask", error);
-        return undefined;
+        return "Error in txTask";
       }
     }
     return "no transactions to process";
+  }
+
+  private async run(): Promise<boolean> {
+    const taskId = this.cloud.taskId;
+    if (taskId === undefined) {
+      console.error("taskId is undefined", this.cloud);
+      return false;
+    }
+    const statusId = "task.status." + taskId;
+    const status = await this.cloud.getDataByKey(statusId);
+    if (status === undefined) {
+      await this.cloud.saveDataByKey(statusId, Date.now().toString());
+      return true;
+    } else if (Date.now() - Number(status) > 1000 * 60 * 15) {
+      console.error(
+        "Task is running for more than 15 minutes, restarting",
+        this.cloud
+      );
+      await this.cloud.saveDataByKey(statusId, Date.now().toString());
+      return true;
+    } else {
+      console.log("Task is already running", taskId);
+      return false;
+    }
+  }
+
+  private async stop() {
+    const taskId = this.cloud.taskId;
+    const statusId = "task.status." + taskId;
+    await this.cloud.saveDataByKey(statusId, undefined);
   }
 
   private async getBlocksInfo(): Promise<string | undefined> {
@@ -456,6 +490,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
           task: "validateBlock",
           metadata: `block ${blocks[i].blockNumber} validation (restart)`,
           userId: this.cloud.userId,
+          maxAttempts: 20,
         });
       }
 
@@ -486,7 +521,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         2
       ),
       task: "txTask",
-      maxAttempts: 24,
+      maxAttempts: 120,
       metadata: `tx processing`,
       userId: this.cloud.userId,
     });
@@ -494,7 +529,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
   }
 
   private async proveRollupBlock(): Promise<string | undefined> {
-    // TODO: add fetchMinaAccount and check that block validation tx is confirmed
+    if (!(await this.run())) return "proveRollupBlock is already running";
     if (this.cloud.args === undefined)
       throw new Error("this.cloud.args is undefined");
     console.time("proveBlock");
@@ -505,12 +540,12 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       throw new Error("args.contractAddress is undefined");
     if (args.blockAddress === undefined)
       throw new Error("args.blockAddress is undefined");
-    if (args.txHash === undefined) throw new Error("args.txHash is undefined");
     if (args.jobId === undefined) throw new Error("args.jobId is undefined");
     const result = await this.cloud.jobResult(args.jobId);
     if (result === undefined) throw new Error("job is undefined");
     if (result.result === undefined) {
       console.timeEnd("proveBlock");
+      await this.stop();
       return "proof job is not finished yet";
     }
     const proof: MapUpdateProof = MapUpdateProof.fromJSON(
@@ -526,6 +561,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     if (!Mina.hasAccount(blockAddress, tokenId)) {
       console.log(`Block ${blockAddress.toBase58()} not found`);
       console.timeEnd("proveBlock");
+      await this.stop();
       return "block is not found";
     }
     const block = new BlockContract(blockAddress, tokenId);
@@ -533,12 +569,14 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     if (flags.isValidated.toBoolean() === false) {
       console.log(`Block ${blockNumber} is not yet validated`);
       console.timeEnd("proveBlock");
+      await this.stop();
       return "block is not validated";
     }
     if (flags.isInvalid.toBoolean() === true) {
       console.error(`Block ${blockNumber} is invalid`);
       await this.cloud.deleteTask(this.cloud.taskId);
       console.timeEnd("proveBlock");
+      await this.stop();
       return "block is invalid";
     }
 
@@ -546,6 +584,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       console.error(`Block ${blockNumber} is already proved`);
       await this.cloud.deleteTask(this.cloud.taskId);
       console.timeEnd("proveBlock");
+      await this.stop();
       return "block is already proved";
     }
 
@@ -560,6 +599,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         `Previous block ${previousBlockAddress.toBase58()} not found`
       );
       console.timeEnd("proveBlock");
+      await this.stop();
       return "previous block is not found";
     }
 
@@ -568,6 +608,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     if (oldRoot.toJSON() !== proof.publicInput.oldRoot.toJSON()) {
       console.error(`Invalid previous block root`);
       console.timeEnd("proveBlock");
+      await this.stop();
       return "Invalid previous block root";
     }
 
@@ -575,6 +616,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     if (flagsPrevious.isFinal.toBoolean() === false) {
       console.log(`Previous block is not final`);
       console.timeEnd("proveBlock");
+      await this.stop();
       return "Previous block is not final";
     } else {
       const previousBlockNumber = Number(
@@ -634,11 +676,12 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       );
       await sleep(20000);
     }
+    await this.stop();
     return txSent.hash;
   }
 
   private async validateRollupBlock(): Promise<string | undefined> {
-    // TODO: add fetchMinaAccount and check that block creation tx is confirmed
+    if (!(await this.run())) return "validateRollupBlock is already running";
 
     if (this.cloud.args === undefined)
       throw new Error("this.cloud.args is undefined");
@@ -650,6 +693,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     if (args.blockAddress === undefined)
       throw new Error("args.blockAddress is undefined");
     let validated = true;
+    let onlyRestartProving = false;
     let decision: ValidatorsDecision | undefined = undefined;
     let proofData: string[] = [];
     const contractAddress = PublicKey.fromBase58(args.contractAddress);
@@ -671,20 +715,26 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       if (!Mina.hasAccount(blockAddress, tokenId)) {
         console.log(`Block ${blockAddress.toBase58()} not found`);
         console.timeEnd(`block ${args.blockNumber} validated`);
+        await this.stop();
         return "block is not found";
       }
 
       const block = new BlockContract(blockAddress, tokenId);
+      blockNumber = Number(block.blockNumber.get().toBigInt());
+      console.log(`Validating block ${blockNumber}...`);
+      if (blockNumber === 0)
+        throw new Error("validateRollupBlock: Block number is 0");
       const flags = BlockParams.unpack(block.blockParams.get());
       if (flags.isInvalid.toBoolean() === true) {
         console.log(`Block ${blockNumber} is marked as invalid`);
         await this.cloud.deleteTask(this.cloud.taskId);
         console.timeEnd(`block ${args.blockNumber} validated`);
+        await this.stop();
         return `Block ${blockNumber} is marked as invalid`;
       }
 
       if (
-        flags.isValidated.toBoolean() === true ||
+        flags.isValidated.toBoolean() === true &&
         flags.isProved.toBoolean() === false
       ) {
         console.log(
@@ -694,37 +744,29 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         const jobId = await this.cloud.getDataByKey(
           `proofMap.${blockNumber}.jobId`
         );
-        if (jobId === undefined) {
-          const jobId = await this.cloud.recursiveProof({
-            transactions: proofData,
-            task: "proofMap",
-            metadata: `block ${args.blockNumber} proof creation (restart)`,
+        if (jobId === undefined) onlyRestartProving = true;
+        else {
+          await this.cloud.addTask({
+            args: JSON.stringify(
+              {
+                contractAddress: args.contractAddress,
+                blockAddress: args.blockAddress,
+                blockNumber: blockNumber,
+                jobId,
+              },
+              null,
+              2
+            ),
+            task: "proveBlock",
+            metadata: `prove block ${args.blockNumber} (restart)`,
             userId: this.cloud.userId,
-            args: JSON.stringify({ timeCreated: timeCreated.toJSON() }),
+            maxAttempts: 20,
           });
-          await this.cloud.saveDataByKey(
-            `proofMap.${args.blockNumber}.jobId`,
-            jobId
-          );
+          await this.cloud.deleteTask(this.cloud.taskId);
+          console.timeEnd(`block ${args.blockNumber} validated`);
+          await this.stop();
+          return `Block ${blockNumber} is already validated`;
         }
-        await this.cloud.addTask({
-          args: JSON.stringify(
-            {
-              contractAddress: args.contractAddress,
-              blockAddress: args.blockAddress,
-              blockNumber: args.blockNumber,
-              jobId,
-            },
-            null,
-            2
-          ),
-          task: "proveBlock",
-          metadata: `prove block ${args.blockNumber} (restart)`,
-          userId: this.cloud.userId,
-        });
-        await this.cloud.deleteTask(this.cloud.taskId);
-        console.timeEnd(`block ${args.blockNumber} validated`);
-        return `Block ${blockNumber} is already validated`;
       }
 
       const previousBlockAddress = block.previousBlock.get();
@@ -757,7 +799,13 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         }
       }
 
-      blockNumber = Number(block.blockNumber.get().toBigInt());
+      if (previousBlockParams.isValidated.toBoolean() === false) {
+        console.log(`Previous block is not validated yet, waiting`);
+        console.timeEnd(`block ${args.blockNumber} validated`);
+        await this.stop();
+        return `Previous block is not validated yet, waiting`;
+      }
+
       const blockParams = BlockParams.unpack(block.blockParams.get());
       timeCreated = blockParams.timeCreated;
 
@@ -766,14 +814,55 @@ export class DomainNameServiceWorker extends zkCloudWorker {
 
       const blockStorage = block.storage.get();
       const hash = blockStorage.toIpfsHash();
-      //const data = await loadFromIPFS(hash);
-      //const json = JSON.parse(data);
       const json = await loadFromIPFS(hash);
       if (json.map === undefined) throw new Error("json.map is undefined");
       if (json.map.startsWith("i:") === false)
         throw new Error("json.map does not start with 'i:'");
       const mapJson = await loadFromIPFS(json.map.substring(2));
-      //const mapJson = JSON.parse(mapData);
+
+      /* validate json contents 
+      blockNumber,
+      timeCreated: time.toBigInt().toString(),
+      contractAddress: contractAddress.toBase58(),
+      blockAddress: blockPublicKey.toBase58(),
+      root: root.toJSON(),
+      blockProducer: blockProducer.publicKey.toBase58(),
+      chainId: getNetworkIdHash().toJSON(),
+      txsCount: txsCount.toBigint().toString(),
+      txsHash: txsHash.toJSON(),
+      previousBlockAddress: previousBlockAddress.toBase58(),
+      previousValidBlockAddress: previousValidBlockAddress.toBase58(),
+      oldRoot: oldRoot.toJSON(),
+      transactions: elements.map((element) => {
+        return {
+          tx: element.serializedTx,
+          fields: element.domainData?.toJSON(),
+        };
+      }),
+      database: database.data,
+      map: "i:" + mapHash,
+      */
+      if (timeCreated.toBigInt() !== BigInt(json.timeCreated))
+        throw new Error(
+          `Invalid timeCreated, ${timeCreated.toBigInt()} != ${
+            json.timeCreated
+          }`
+        );
+      if (contractAddress.toBase58() !== json.contractAddress)
+        throw new Error("Invalid contractAddress");
+      if (blockAddress.toBase58() !== json.blockAddress)
+        throw new Error("Invalid blockAddress");
+      if (block.root.get().toJSON() !== json.root)
+        throw new Error("Invalid block root");
+      if (getNetworkIdHash().toJSON() !== json.chainId)
+        throw new Error("Invalid chainId");
+      if (blockParams.txsCount.toBigint().toString() !== json.txsCount)
+        throw new Error("Invalid txsCount");
+      if (block.txsHash.get().toJSON() !== json.txsHash)
+        throw new Error("Invalid txsHash");
+      if (previousBlockAddress.toBase58() !== json.previousBlockAddress)
+        throw new Error("Invalid previousBlockAddress");
+
       let database = new DomainDatabase();
 
       //console.log("blockNumber", blockNumber);
@@ -851,6 +940,38 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         throw new Error("Invalid block root");
       //console.log(`Block ${blockNumber} is valid`);
 
+      if (onlyRestartProving === true) {
+        const jobId = await this.cloud.recursiveProof({
+          transactions: proofData,
+          task: "proofMap",
+          metadata: `block ${blockNumber} proof creation (restart)`,
+          userId: this.cloud.userId,
+          args: JSON.stringify({ timeCreated: timeCreated.toJSON() }),
+        });
+        await this.cloud.saveDataByKey(`proofMap.${blockNumber}.jobId`, jobId);
+
+        await this.cloud.addTask({
+          args: JSON.stringify(
+            {
+              contractAddress: args.contractAddress,
+              blockAddress: args.blockAddress,
+              blockNumber: blockNumber,
+              jobId,
+            },
+            null,
+            2
+          ),
+          task: "proveBlock",
+          metadata: `prove block ${blockNumber} (restart)`,
+          userId: this.cloud.userId,
+          maxAttempts: 20,
+        });
+        await this.cloud.deleteTask(this.cloud.taskId);
+        console.timeEnd(`block ${blockNumber} validated`);
+        await this.stop();
+        return `Block ${blockNumber} is already validated`;
+      }
+
       await this.compile();
       if (
         DomainNameServiceWorker.mapUpdateVerificationKey === undefined ||
@@ -879,10 +1000,11 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       console.error("Error in validateBlock", error);
       if (isPreviousBlockFinal === false) {
         console.error(
-          `Block ${blockNumber} is bad and previous block is not final`
+          `Block ${args.blockNumber} is bad and previous block is not final`
         );
         console.timeEnd(`block ${args.blockNumber} validated`);
-        return `Block ${blockNumber} is bad and previous block is not final`;
+        await this.stop();
+        return `Block ${args.blockNumber} is bad and previous block is not final`;
       }
       validated = false;
       decision = new ValidatorsDecision({
@@ -896,17 +1018,17 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         }),
         expiry: UInt64.from(Date.now() + 1000 * 60 * 60),
       });
+      await this.compile();
+      if (
+        DomainNameServiceWorker.mapUpdateVerificationKey === undefined ||
+        DomainNameServiceWorker.blockContractVerificationKey === undefined ||
+        DomainNameServiceWorker.validatorsVerificationKey === undefined ||
+        DomainNameServiceWorker.contractVerificationKey === undefined
+      )
+        throw new Error("verificationKey is undefined");
     }
 
     if (decision === undefined) throw new Error("decision is undefined");
-    await this.compile();
-    if (
-      DomainNameServiceWorker.mapUpdateVerificationKey === undefined ||
-      DomainNameServiceWorker.blockContractVerificationKey === undefined ||
-      DomainNameServiceWorker.validatorsVerificationKey === undefined ||
-      DomainNameServiceWorker.contractVerificationKey === undefined
-    )
-      throw new Error("verificationKey is undefined");
 
     const proof: ValidatorsVotingProof = await calculateValidatorsProof(
       decision,
@@ -982,6 +1104,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         task: "proveBlock",
         metadata: `prove block ${args.blockNumber}`,
         userId: this.cloud.userId,
+        maxAttempts: 20,
       });
     }
     console.timeEnd(`block ${args.blockNumber} validated`);
@@ -992,6 +1115,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       );
       await sleep(20000);
     }
+    await this.stop();
     return txSent.hash;
   }
 
@@ -1094,12 +1218,14 @@ export class DomainNameServiceWorker extends zkCloudWorker {
   private async createRollupBlock(
     txs: CloudTransaction[]
   ): Promise<string | undefined> {
+    if (!(await this.run())) return "createRollupBlock is already running";
     const MIN_TRANSACTIONS = 2;
     const MAX_TRANSACTIONS = 4;
-    const MIN_TIME_BETWEEN_BLOCKS = 1000 * 60 * 17; // 20 minutes, including block creation time
+    const MIN_TIME_BETWEEN_BLOCKS = 1000 * 60 * 19; // 20 minutes, including block creation time
 
     if (txs.length < MIN_TRANSACTIONS) {
       console.log("Not enough transactions to create a block:", txs.length);
+      await this.stop();
       return "Not enough transactions to create a block";
     }
     if (this.cloud.args === undefined)
@@ -1133,6 +1259,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
           console.log(
             "lastBlockAddress is not equal to previousBlockAddress, waiting.."
           );
+          await this.stop();
           return "lastBlockAddress is not equal to previousBlockAddress";
         }
         if (timeStarted > Date.now() - MIN_TIME_BETWEEN_BLOCKS) {
@@ -1140,6 +1267,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
             lastBlockTme: new Date(timeStarted).toLocaleString(),
             now: new Date().toLocaleString(),
           });
+          await this.stop();
           return "Not enough time between blocks";
         }
         await this.cloud.saveDataByKey(
@@ -1158,6 +1286,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     );
 
     console.time(`block created`);
+    console.time("block calculated");
     const elements: DomainCloudTransactionData[] = [];
     let count = 0;
     for (let i = 0; i < txs.length; i++) {
@@ -1169,6 +1298,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     const length = elements.length;
     if (count < MIN_TRANSACTIONS) {
       console.log("Not enough transactions to create a block:", count);
+      await this.stop();
       return "Not enough transactions to create a block";
     }
     console.log(
@@ -1178,22 +1308,38 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     //console.log("this.cloud", this.cloud);
 
     let previousBlock = new BlockContract(previousValidBlockAddress, tokenId);
+    await fetchMinaAccount({
+      publicKey: previousValidBlockAddress,
+      tokenId,
+      force: true,
+    });
+    const blockNumber = Number(previousBlock.blockNumber.get().toBigInt()) + 1;
+    let previousValidBlockParams = BlockParams.unpack(
+      previousBlock.blockParams.get()
+    );
     let found = false;
     while (found === false) {
-      await fetchMinaAccount({
-        publicKey: previousValidBlockAddress,
-        tokenId,
-        force: true,
-      });
-      const blockParams = BlockParams.unpack(previousBlock.blockParams.get());
-      if (blockParams.isInvalid.toBoolean() === false) found = true;
+      if (previousValidBlockParams.isInvalid.toBoolean() === false)
+        found = true;
       else {
         previousValidBlockAddress = previousBlock.previousBlock.get();
         previousBlock = new BlockContract(previousValidBlockAddress, tokenId);
+        await fetchMinaAccount({
+          publicKey: previousValidBlockAddress,
+          tokenId,
+          force: true,
+        });
+        previousValidBlockParams = BlockParams.unpack(
+          previousBlock.blockParams.get()
+        );
       }
     }
-    const blockNumber = Number(previousBlock.blockNumber.get().toBigInt()) + 1;
-    console.log(`Creating block ${blockNumber}...`);
+    const previousValidBlockNumber = Number(
+      previousBlock.blockNumber.get().toBigInt()
+    );
+    console.log(
+      `Creating block ${blockNumber}, last valid block: ${previousValidBlockNumber}`
+    );
 
     let database: DomainDatabase = new DomainDatabase();
     let map = new MerkleMap();
@@ -1211,11 +1357,15 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     }
 
     if (fullValidation) {
+      console.time("full validation");
       if (
         database.getRoot().toJSON() !== previousBlockRoot.toJSON() ||
         map.getRoot().toJSON() !== previousBlockRoot.toJSON()
-      )
+      ) {
+        console.timeEnd("full validation");
         throw new Error("Invalid previous block");
+      }
+      console.timeEnd("full validation");
     }
     const time = UInt64.from(Date.now());
     const { root, oldRoot, txsHash, txsCount } = createBlock({
@@ -1229,12 +1379,18 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       map: map.tree.toJSON(),
     };
     if (fullValidation) {
+      console.time("full validation");
       const restoredMap = new MerkleMap();
       restoredMap.tree = MerkleTree.fromJSON(mapJson.map);
-      if (restoredMap.getRoot().toJSON() !== root.toJSON())
+
+      if (restoredMap.getRoot().toJSON() !== root.toJSON()) {
+        console.timeEnd("full validation");
         throw new Error("Invalid root");
+      }
+      console.timeEnd("full validation");
     }
 
+    console.time("map saved to IPFS");
     const mapHash = await saveToIPFS({
       data: mapJson,
       pinataJWT: process.env.PINATA_JWT!,
@@ -1243,8 +1399,15 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         blockNumber: blockNumber.toString(),
         type: "Merkle Map",
         contractAddress: contractAddress.toBase58(),
+        repo: this.cloud.repo,
+        developer: this.cloud.developer,
+        id: this.cloud.id,
+        userId: this.cloud.userId,
+        chain: this.cloud.chain,
+        networkId: getNetworkIdHash().toJSON(),
       },
     });
+    console.timeEnd("map saved to IPFS");
     if (mapHash === undefined) throw new Error("mapHash is undefined");
     const json = {
       blockNumber,
@@ -1276,6 +1439,12 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         blockNumber: blockNumber.toString(),
         type: "block data",
         contractAddress: contractAddress.toBase58(),
+        repo: this.cloud.repo,
+        developer: this.cloud.developer,
+        id: this.cloud.id,
+        userId: this.cloud.userId,
+        chain: this.cloud.chain,
+        networkId: getNetworkIdHash().toJSON(),
       },
     });
     if (hash === undefined) throw new Error("hash is undefined");
@@ -1291,6 +1460,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     )
       throw new Error("blockProducer keys mismatch");
 
+    console.timeEnd("block calculated");
     await this.compile();
 
     if (
@@ -1304,6 +1474,8 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       DomainNameServiceWorker.blockContractVerificationKey;
     const validatorsVerificationKey: VerificationKey =
       DomainNameServiceWorker.validatorsVerificationKey;
+
+    console.time("validators proof");
 
     const decision = new ValidatorsDecision({
       contractAddress,
@@ -1330,7 +1502,9 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     const ok = await verify(proof, validatorsVerificationKey);
     if (!ok) throw new Error("proof verification failed");
     console.log("validators proof verified:", ok);
+    console.timeEnd("validators proof");
 
+    console.time("prepared tx");
     const blockData: BlockData = new BlockData({
       blockAddress: blockPublicKey,
       root,
@@ -1339,7 +1513,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       blockNumber: UInt64.from(blockNumber),
       blockParams: new BlockParams({
         txsCount,
-        timeCreated: UInt64.from(Date.now()),
+        timeCreated: time,
         isFinal: Bool(false),
         isProved: Bool(false),
         isInvalid: Bool(false),
@@ -1349,6 +1523,38 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     });
 
     await fetchMinaAccount({ publicKey: blockProducer.publicKey, force: true });
+    const blockProducerBalance = await accountBalanceMina(
+      blockProducer.publicKey
+    );
+    console.log("Block producer balance:", blockProducerBalance);
+    if (blockProducerBalance < 20) {
+      console.error("Block producer balance is less than 20 MINA");
+    }
+
+    if (blockProducerBalance < 10) {
+      console.log(
+        "Block producer balance is less than 10 MINA, replenishing..."
+      );
+      const deployer = await this.cloud.getDeployer();
+      if (deployer !== undefined) {
+        const deployerPublicKey = deployer.toPublicKey();
+        const transaction = await Mina.transaction(
+          { sender: deployerPublicKey, fee: "100000000", memo: "payment" },
+          async () => {
+            const senderUpdate = AccountUpdate.createSigned(deployerPublicKey);
+            senderUpdate.send({
+              to: blockProducer.publicKey,
+              amount: 25_000_000_000,
+            });
+          }
+        );
+        const txSent = await transaction.sign([deployer]).send();
+        console.log("Replenishing block producer balance tx sent:", {
+          status: txSent.status,
+          hash: txSent.hash,
+        });
+      }
+    }
 
     console.log(`Sending tx for block ${blockNumber}...`);
     const memo = `block ${blockNumber} created: ${count} txs`.substring(0, 30);
@@ -1363,6 +1569,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     tx.sign([blockProducer.privateKey, blockPrivateKey]);
     try {
       await tx.prove();
+      console.timeEnd("prepared tx");
       const txSent = await tx.send();
       console.log(
         `Block ${blockNumber} sent with hash ${txSent.hash} and status ${txSent.status}`
@@ -1370,7 +1577,8 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       if (txSent.status !== "pending") {
         console.error("Error sending block creation transaction");
         console.timeEnd(`block created`);
-        return undefined;
+        await this.stop();
+        return "Error sending block creation transaction";
       }
       if (waitTx) {
         const txIncluded = await txSent.wait();
@@ -1394,16 +1602,19 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         task: "validateBlock",
         metadata: `block ${blockNumber} validation`,
         userId: this.cloud.userId,
+        maxAttempts: 20,
       });
       for (let i = 0; i < length; i++) {
         await this.cloud.deleteTransaction(txs[i].txId);
       }
       console.timeEnd(`block created`);
+      await this.stop();
       return txSent.hash;
     } catch (error) {
       console.error("Error sending block creation transaction", error);
       console.timeEnd(`block created`);
-      return undefined;
+      await this.stop();
+      return "Error sending block creation transaction";
     }
   }
 }
