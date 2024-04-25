@@ -7550,9 +7550,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"o1js@npm:^0.18.0":
-  version: 0.18.0
-  resolution: "o1js@npm:0.18.0"
+"o1js@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "o1js@npm:1.0.1"
   dependencies:
     blakejs: "npm:1.2.1"
     cachedir: "npm:^2.4.0"
@@ -7562,7 +7562,7 @@ __metadata:
     tslib: "npm:^2.3.0"
   bin:
     snarky-run: src/build/run.js
-  checksum: 10c0/94e96feac3a560544b4c798abf8c0015a05b0cf36dd6c1f272f50768def9c2fcdd54ac0d1c4de0eb284dc27de49abc00fad5ef09e8a25f945a32381c3cd6d861
+  checksum: 10c0/1a541c2567065472f05675f02a5f2dc09cf4860f7e083a2789ea8959afc4ffae37fe78802dccb8349875b720c08282c001f9de4a207352d0ec848b121172b0d1
   languageName: node
   linkType: hard
 
@@ -9489,22 +9489,22 @@ __metadata:
     axios: "npm:^1.6.8"
     jest: "npm:^29.7.0"
     jsonwebtoken: "npm:^9.0.2"
-    o1js: "npm:^0.18.0"
+    o1js: "npm:^1.0.1"
     serverless: "npm:^3.38.0"
     serverless-plugin-typescript: "npm:^2.1.5"
     serverless-prune-plugin: "npm:^2.0.2"
     typescript: "npm:^5.4.5"
-    zkcloudworker: "npm:^0.3.17"
+    zkcloudworker: "npm:^0.4.3"
   languageName: unknown
   linkType: soft
 
-"zkcloudworker@npm:^0.3.17":
-  version: 0.3.17
-  resolution: "zkcloudworker@npm:0.3.17"
+"zkcloudworker@npm:^0.4.3":
+  version: 0.4.3
+  resolution: "zkcloudworker@npm:0.4.3"
   dependencies:
     axios: "npm:^1.6.8"
   peerDependencies:
-    o1js: ^0.18.0
-  checksum: 10c0/1610b8cc1e4f8ee8c577c5454aab1a9d9c592c5f6149d16ee72072a7cbf6e0af3c1cc56b7f37bc702d25980b396acf22172e7f25a93e634ec1926279be5cf54b
+    o1js: ^1.0.1
+  checksum: 10c0/bdc2200d72162964455dc1ca79cdaa7161f3d161d02ba0d50a0da0c8eabf3c37f5c77977bbfe94404105afc42f6d6a0c2dba6be7b7d687a5609fafca81d9491e
   languageName: node
   linkType: hard

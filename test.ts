@@ -169,9 +169,9 @@ async function arm() {
     }
   }
 
-  const Local = Mina.LocalBlockchain({ proofsEnabled: true });
+  const Local = await Mina.LocalBlockchain({ proofsEnabled: true });
   Mina.setActiveInstance(Local);
-  const deployer = Local.testAccounts[0].privateKey;
+  const deployer = Local.testAccounts[0].key;
   const zkAppTokenPrivateKey = PrivateKey.random();
   const zkAppTokenPublicKey = zkAppTokenPrivateKey.toPublicKey();
   const zkToken = new TokenAccount(zkAppTokenPublicKey);

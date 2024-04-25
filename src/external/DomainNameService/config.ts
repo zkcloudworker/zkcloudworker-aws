@@ -9,9 +9,16 @@ interface ContractConfig {
 
 export const nameContract: ContractConfig = {
   contractPrivateKey: PrivateKey.fromBase58(
-    "EKDv9j1xgaEeRgaoZUGyxiRvGAjo3eLcPtoasLCKrmopdKXodAAA"
+    "EKDoUN9nf8mQdpBuWY7Vveuiw3sxW6dCiq3HYKLdJGGgHk6Vb1Nx"
+    //"EKE7VYjsrdekFzcZ2BLpeweZewnG6GRjfjU4WT4bw68k8pCy6HBq"
+    //"EKDtgZwKqCHCXYCqaeZhfxiL5HXC9zQFAnXzEtcJGcjMtJFSCngZ"
+    //"EKDv9j1xgaEeRgaoZUGyxiRvGAjo3eLcPtoasLCKrmopdKXodAAA"
   ),
-  contractAddress: "B62qqNQ9kMtc4L9p19eK8SfLRy8EamtMRWAVqcCaJSM1Q5AD3DjNAME",
+  contractAddress: "B62qrjWrAaXV65CZgpfhLdFynbFdyj851cWZPCPvF92mF3ohGDbNAME",
+  // "B62qrR3kE3S9xsQy2Jq8tp3TceWDeAmiXhU4KCXh19HzAVPj7BiNAME",
+  // "B62qmyBYvHL5g7os2HFcGJC1QASTkFC8ydUBZRKGrxDqhV853YoNAME",
+  //"B62qqNQ9kMtc4L9p19eK8SfLRy8EamtMRWAVqcCaJSM1Q5AD3DjNAME",
+
   firstBlockPrivateKey: PrivateKey.fromBase58(
     "EKDjCdQMYuc6F3XRRSmCaWYH1WiMUXHHQkvzgKBp9NnhA9PHGXwf"
   ),

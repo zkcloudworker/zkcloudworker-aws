@@ -152,18 +152,21 @@ export class CloudWorker extends Cloud {
     for (let i = 0; i < transactions.length; i++) {
       const timeReceived = Date.now();
       const transactionId = timeReceived.toString() + "." + makeString(32);
-
-      try {
-        await transactionsTable.create({
-          txId: transactionId,
-          repoId,
-          transaction: transactions[i],
-          timeReceived,
-        });
-        txId.push(transactionId);
-      } catch (error) {
-        console.error("addTransaction: error", error);
-        txId.push("error");
+      if (typeof transactions[i] !== "string") {
+        txId.push("error: transaction is not a string");
+      } else {
+        try {
+          await transactionsTable.create({
+            txId: transactionId,
+            repoId,
+            transaction: transactions[i],
+            timeReceived,
+          });
+          txId.push(transactionId);
+        } catch (error) {
+          console.error("addTransaction: error", error);
+          txId.push("error");
+        }
       }
     }
 
@@ -172,10 +175,14 @@ export class CloudWorker extends Cloud {
 
   public async deleteTransaction(txId: string): Promise<void> {
     const transactionsTable = new Transactions(TRANSACTIONS_TABLE);
-    await transactionsTable.remove({
-      repoId: this.repoId(),
-      txId,
-    });
+    try {
+      await transactionsTable.remove({
+        repoId: this.repoId(),
+        txId,
+      });
+    } catch (error) {
+      console.log("Transaction does not exist", txId);
+    }
   }
 
   public async getTransactions(): Promise<CloudTransaction[]> {
