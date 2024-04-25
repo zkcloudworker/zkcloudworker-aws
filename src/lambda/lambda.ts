@@ -31,7 +31,7 @@ export async function callLambda(
     )
       console.error("Lambda call error:", result);
     if (attempt > 0) console.log("Lambda call result:", result);
-    await sleep(1000);
+    await sleep(500);
   } catch (error: any) {
     console.error("Error: Lambda call", error);
   }

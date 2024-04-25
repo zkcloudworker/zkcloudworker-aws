@@ -104,6 +104,30 @@ const api: Handler = async (
         }
 
         case "execute": {
+          if (
+            data.developer === "@staketab" &&
+            data.args &&
+            JSON.parse(data.args).contractAddress !==
+              "B62qrjWrAaXV65CZgpfhLdFynbFdyj851cWZPCPvF92mF3ohGDbNAME"
+          ) {
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+              },
+              body: JSON.stringify(
+                {
+                  success: false,
+                  error:
+                    "Invalid contract address, should be B62qrjWrAaXV65CZgpfhLdFynbFdyj851cWZPCPvF92mF3ohGDbNAME",
+                },
+                null,
+                2
+              ),
+            });
+            return;
+          }
           const result = await createExecuteJob({
             command: "execute",
             data: { ...data, chain, webhook, id },
@@ -198,7 +222,7 @@ const api: Handler = async (
       body: "ok",
     });
   } catch (error: any) {
-    console.error("bot api catch", error.toString());
+    console.error("api catch", error.toString());
     callback(null, {
       statusCode: 200,
       headers: {

@@ -22,8 +22,10 @@ export class Sequencer {
   jobId?: string;
   startTime: number;
   readonly MAX_RUN_TIME: number = 1000 * 60 * 10; // 10 minutes
-  readonly MAX_START_TIME: number = 1000 * 60 * 5; // 5 minutes
-  readonly MAX_JOB_TIME: number = 1000 * 60 * 60 * 2; // 2 hours
+  readonly MAX_STEP_START_TIME: number = 1000 * 60 * 5; // 5 minutes
+  readonly MAX_STEP_RUN_TIME: number = 1000 * 60 * 10; // 10 minutes
+  readonly MAX_JOB_TIME: number = 1000 * 60 * 30; // 30 minutes
+  readonly MIN_ITERATION_INTERVAL: number = 1000 * 10; // 10 seconds
 
   constructor(params: {
     jobsTable: string;
@@ -193,10 +195,15 @@ export class Sequencer {
     const JobsTable = new Jobs(this.jobsTable);
     let shouldRun: boolean = true;
     let counter = 0;
+    let iterationStartTime = Date.now();
     while (shouldRun && Date.now() - this.startTime < this.MAX_RUN_TIME) {
-      await sleep(30000);
+      const iterationDuration = Date.now() - iterationStartTime;
+      if (iterationDuration < this.MIN_ITERATION_INTERVAL) {
+        await sleep(this.MIN_ITERATION_INTERVAL - iterationDuration);
+      }
       try {
         //shouldRun = (await this.runIteration()) && (await this.checkHealth());
+        iterationStartTime = Date.now();
         shouldRun = await this.runIteration();
         if (counter % 4 === 0) await this.checkHealth();
       } catch (error: any) {
@@ -277,16 +284,21 @@ export class Sequencer {
     const timeNow = Date.now();
     const unhealthy = results.filter((result) => {
       const delay = timeNow - result.timeCreated;
-      const allowedDelay = this.MAX_START_TIME;
+      const allowedStartDelay = this.MAX_STEP_START_TIME;
+      const allowedRunDelay = this.MAX_STEP_RUN_TIME;
       const isUnhealthy =
-        result.stepStatus === "created" && delay > allowedDelay;
+        (result.stepStatus === "created" && delay > allowedStartDelay) ||
+        (result.stepStatus === "started" &&
+          result.timeStarted !== undefined &&
+          timeNow - result.timeStarted > allowedRunDelay);
       if (isUnhealthy)
         console.error("Sequencer: checkHealth: unhealthy step detected", {
           jobId: this.jobId,
           stepId: result.stepId,
           stepStatus: result.stepStatus,
           timeStuck: formatTime(delay), // in milliseconds
-          allowedDelay: formatTime(allowedDelay),
+          allowedStartDelay: formatTime(allowedStartDelay),
+          allowedRunDelay: formatTime(allowedRunDelay),
           attempts: result.attempts,
           task: result.task,
           jobTask: result.jobTask,
