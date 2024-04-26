@@ -42,7 +42,6 @@ export async function createExecuteJob(params: {
     id,
     developer,
     repo,
-    transactions,
     task,
     args,
     metadata,
@@ -52,18 +51,24 @@ export async function createExecuteJob(params: {
     taskId,
     mode,
   } = data;
+  const transactions = data.transactions ?? [];
 
   if (
     id === undefined ||
+    typeof id !== "string" ||
     transactions === undefined ||
     developer === undefined ||
+    typeof developer !== "string" ||
     repo === undefined ||
+    typeof repo !== "string" ||
     chain === undefined ||
+    typeof chain !== "string" ||
     (taskId === undefined && command === "task") ||
-    (await isWorkerExist({
-      developer,
-      repo,
-    })) === false
+    (command !== "deploy" &&
+      (await isWorkerExist({
+        developer,
+        repo,
+      })) === false)
   ) {
     console.error("Wrong execute command", {
       command,

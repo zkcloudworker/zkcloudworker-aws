@@ -70,9 +70,19 @@ const api: Handler = async (
           break;
 
         case "deploy": {
+          const { developer, repo, args } = data;
           const result = await createExecuteJob({
             command: "deploy",
-            data: { ...data, chain, webhook, id },
+            data: {
+              developer,
+              repo,
+              args,
+              task: "deploy",
+              chain,
+              webhook,
+              id,
+              transactions: [],
+            },
           });
           callback(null, {
             statusCode: 200,
