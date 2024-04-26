@@ -74,14 +74,14 @@ import { nameContract } from "./config";
 
 const fullValidation = true;
 const waitTx = false as boolean;
-const proofsOff = false as boolean;
+const proofsOff = true as boolean;
 
 export class DomainNameServiceWorker extends zkCloudWorker {
   static mapUpdateVerificationKey: VerificationKey | undefined = undefined;
   static contractVerificationKey: VerificationKey | undefined = undefined;
   static blockContractVerificationKey: VerificationKey | undefined = undefined;
   static validatorsVerificationKey: VerificationKey | undefined = undefined;
-  readonly MIN_TIME_BETWEEN_BLOCKS = 1000 * 60 * 5; // 20 minutes
+  readonly MIN_TIME_BETWEEN_BLOCKS = 1000 * 60 * 19; // 20 minutes
   readonly MAX_TIME_BETWEEN_BLOCKS = 1000 * 60 * 60; // 60 minutes
   readonly MIN_TRANSACTIONS = 2;
   readonly MAX_TRANSACTIONS = 4;

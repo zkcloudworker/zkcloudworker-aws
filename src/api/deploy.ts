@@ -71,15 +71,6 @@ export async function deploy(params: {
     await fs.rm(developerDir + "/" + fileName);
     await listFiles(developerDir, true);
 
-    if (jobId !== "test")
-      await JobsTable.updateStatus({
-        id,
-        jobId: jobId,
-        status: "finished",
-        result: "deployed",
-        billedDuration: Date.now() - timeStarted,
-      });
-
     Memory.info("deployed");
     console.timeEnd("deployed");
 
@@ -118,6 +109,15 @@ export async function deploy(params: {
     console.log("Executing job...");
     const result = await worker.execute();
     console.log("Job result:", result);
+    if (jobId !== "test")
+      await JobsTable.updateStatus({
+        id,
+        jobId: jobId,
+        status: "finished",
+        result: result ?? "deployed",
+        billedDuration: Date.now() - timeStarted,
+        maxAttempts: 1,
+      });
     await sleep(1000);
 
     return true;
