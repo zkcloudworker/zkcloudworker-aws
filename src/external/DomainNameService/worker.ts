@@ -1487,6 +1487,9 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       tx.storage = serializeFields(
         Storage.toFields(deserializedTransaction.tx.domain.data.storage)
       );
+      tx.newDomain = serializeFields(
+        DomainName.toFields(deserializedTransaction.tx.domain)
+      );
       console.log("prepareSignTransactionData result", tx);
       return JSON.stringify(tx);
     } catch (error: any) {

@@ -152,6 +152,7 @@ export interface DomainSerializedTransaction {
   expiry: number;
   metadata?: string;
   storage?: string;
+  newDomain?: string;
   oldDomain?: string;
   signature?: string;
 }
