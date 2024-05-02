@@ -227,7 +227,7 @@ functions:
   step:
     handler: step.run
     timeout: 300
-    memorySize: 256
+    memorySize: 10240
     reservedConcurrency: 64
     deadLetter:
       sqs:
