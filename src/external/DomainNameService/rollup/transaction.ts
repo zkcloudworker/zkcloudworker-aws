@@ -167,6 +167,7 @@ export interface DomainCloudTransaction {
   txId: string;
   transaction: string;
   timeReceived: number;
+  newDomain?: string;
   fields?: string;
   status: DomainCloudTransactionStatus;
   reason?: string;
