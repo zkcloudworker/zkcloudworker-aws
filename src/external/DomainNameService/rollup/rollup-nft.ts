@@ -40,19 +40,21 @@ export async function createRollupNFT(
     }
   }
 
-  if (metadata.description !== undefined)
+  if (metadata.description !== undefined) {
     console.log("metadata.description:", metadata.description);
-  nft.updateText({
-    key: `description`,
-    text: metadata.description,
-  });
+    nft.updateText({
+      key: `description`,
+      text: metadata.description,
+    });
+  }
 
-  if (metadata.contractAddress !== undefined)
+  if (metadata.contractAddress !== undefined) {
     console.log("metadata.contractAddress:", metadata.contractAddress);
-  nft.updateText({
-    key: `contractAddress`,
-    text: metadata.contractAddress,
-  });
+    nft.updateText({
+      key: `contractAddress`,
+      text: metadata.contractAddress,
+    });
+  }
 
   if (metadata.image !== undefined) {
     console.log("metadata.image:", metadata.image);
