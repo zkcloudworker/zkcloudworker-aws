@@ -186,13 +186,6 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         throw new Error("updateType is invalid");
 
       if (
-        updateType === "update" &&
-        (oldDomain === undefined || signature === undefined)
-      )
-        throw new Error("oldDomain or signature is undefined");
-      if (updateType === "extend" && oldDomain === undefined)
-        throw new Error("oldDomain is undefined");
-      if (
         isAccepted === false &&
         (time === undefined || tx === undefined || oldRoot === undefined)
       )
@@ -204,6 +197,14 @@ export class DomainNameServiceWorker extends zkCloudWorker {
 
       let proof: MapUpdateProof;
       if (isAccepted === true) {
+        if (
+          updateType === "update" &&
+          (oldDomain === undefined || signature === undefined)
+        )
+          throw new Error("oldDomain or signature is undefined");
+        if (updateType === "extend" && oldDomain === undefined)
+          throw new Error("oldDomain is undefined");
+
         const update: MapUpdateData = MapUpdateData.fromFields(
           deserializeFields(args.update)
         ) as MapUpdateData;
@@ -989,7 +990,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         );
         if (jobId === undefined) onlyRestartProving = true;
         else {
-          const job = await this.cloud.jobResult(args.jobId);
+          const job = await this.cloud.jobResult(jobId);
           if (job == undefined) onlyRestartProving = true;
           else if (job.jobStatus === "failed") onlyRestartProving = true;
           else {
@@ -1061,10 +1062,16 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       const blockStorage = block.storage.get();
       const hash = blockStorage.toIpfsHash();
       const json = await loadFromIPFS(hash);
-      if (json.map === undefined) throw new Error("json.map is undefined");
-      if (json.map.startsWith("i:") === false)
-        throw new Error("json.map does not start with 'i:'");
-      const mapJson = await loadFromIPFS(json.map.substring(2));
+      if (json.databaseIPFS === undefined)
+        throw new Error("json.databaseIPFS is undefined");
+      if (json.databaseIPFS.startsWith("i:") === false)
+        throw new Error("json.databaseIPFS does not start with 'i:'");
+      if (json.mapIPFS === undefined)
+        throw new Error("json.mapIPFS is undefined");
+      if (json.mapIPFS.startsWith("i:") === false)
+        throw new Error("json.mapIPFS does not start with 'i:'");
+      const databaseJson = await loadFromIPFS(json.databaseIPFS.substring(2));
+      const mapJson = await loadFromIPFS(json.mapIPFS.substring(2));
 
       /* validate json contents 
       blockNumber,
@@ -1125,14 +1132,23 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         const previousBlockHash = previousBlockStorage.toIpfsHash();
         const previousBlockJson = await loadFromIPFS(previousBlockHash);
         //console.log("previousBlockJson map:", previousBlockJson.map);
-        if (previousBlockJson.map === undefined)
-          throw new Error("previousBlockJson.map is undefined");
-        if (previousBlockJson.map.startsWith("i:") === false)
-          throw new Error("previousBlockJson.map does not start with 'i:'");
-        const previousBlockMapJson = await loadFromIPFS(
-          previousBlockJson.map.substring(2)
+        if (previousBlockJson.databaseIPFS === undefined)
+          throw new Error("previousBlockJson.databaseIPFS is undefined");
+        if (previousBlockJson.databaseIPFS.startsWith("i:") === false)
+          throw new Error(
+            "previousBlockJson.databaseIPFS does not start with 'i:'"
+          );
+        if (previousBlockJson.mapIPFS === undefined)
+          throw new Error("previousBlockJson.mapIPFS is undefined");
+        if (previousBlockJson.mapIPFS.startsWith("i:") === false)
+          throw new Error("previousBlockJson.mapIPFS does not start with 'i:'");
+        const previousBlockDatabaseJson = await loadFromIPFS(
+          previousBlockJson.databaseIPFS.substring(2)
         );
-        database = new DomainDatabase(previousBlockJson.database);
+        const previousBlockMapJson = await loadFromIPFS(
+          previousBlockJson.mapIPFS.substring(2)
+        );
+        database = new DomainDatabase(previousBlockDatabaseJson.database);
         //console.log("Previous Block Database", database.data);
         oldMap.tree = treeFromJSON(previousBlockMapJson.map);
         const oldRoot = oldMap.getRoot();
@@ -1156,18 +1172,23 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       if (root.toJSON() !== map.getRoot().toJSON())
         throw new Error("Invalid block root");
 
-      const {
-        root: calculatedRoot,
-        txsHash: calculatedTxsHash,
-        txsCount: calculatedTxsCount,
-        proofData: calculatedProofData,
-      } = createBlock({
+      const createdBlock = createBlock({
         elements,
         map: oldMap,
         time: timeCreated,
         database,
         calculateTransactions: true,
       });
+      if (createdBlock === undefined)
+        throw new Error("validateRollupBlock: createdBlock is undefined");
+
+      const {
+        root: calculatedRoot,
+        txsHash: calculatedTxsHash,
+        txsCount: calculatedTxsCount,
+        proofData: calculatedProofData,
+      } = createdBlock;
+
       proofData = calculatedProofData;
       const storage = block.storage.get();
       const txsHash = block.txsHash.get();
@@ -1178,7 +1199,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         throw new Error("Invalid block transactions");
       if (calculatedTxsCount.toBigint() !== blockParams.txsCount.toBigint())
         throw new Error("Invalid block transactions count");
-      const loadedDatabase = new DomainDatabase(json.database);
+      const loadedDatabase = new DomainDatabase(databaseJson.database);
       assert.deepStrictEqual(database.data, loadedDatabase.data);
       if (root.toJSON() !== database.getRoot().toJSON())
         throw new Error("Invalid block root");
@@ -1311,6 +1332,13 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       tokenId,
       force: true,
     });
+
+    console.log(
+      `Sending validation tx for block ${blockNumber}, validation result: ${
+        validated ? "validated" : "bad block"
+      }`
+    );
+    if (validated === false) console.error(`Block ${blockNumber} is invalid`);
 
     const tx = await Mina.transaction(
       {
@@ -1732,12 +1760,18 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       const storage = previousBlock.storage.get();
       const hash = storage.toIpfsHash();
       const json = await loadFromIPFS(hash);
-      if (json.map === undefined) throw new Error("json.map is undefined");
-      if (json.map.startsWith("i:") === false)
-        throw new Error("json.map does not start with 'i:'");
-      const mapJson = await loadFromIPFS(json.map.substring(2));
+      if (json.databaseIPFS === undefined)
+        throw new Error("json.databaseIPFS is undefined");
+      if (json.databaseIPFS.startsWith("i:") === false)
+        throw new Error("json.databaseIPFS does not start with 'i:'");
+      if (json.mapIPFS === undefined)
+        throw new Error("json.mapIPFS is undefined");
+      if (json.mapIPFS.startsWith("i:") === false)
+        throw new Error("json.mapIPFS does not start with 'i:'");
+      const databaseJson = await loadFromIPFS(json.databaseIPFS.substring(2));
+      const mapJson = await loadFromIPFS(json.mapIPFS.substring(2));
       map.tree = treeFromJSON(mapJson.map);
-      database = new DomainDatabase(json.database);
+      database = new DomainDatabase(databaseJson.database);
       let deletedCount = 0;
       let deletedNames: string[] = [];
       let notFoundNames: string[] = [];
@@ -1841,12 +1875,17 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       console.timeEnd("full validation");
     }
     const time = UInt64.from(Date.now());
-    const { root, oldRoot, txsHash, txsCount, invalidTxsCount } = createBlock({
+    const createdBlock = createBlock({
       elements,
       map,
       time,
       database,
+      calculateTransactions: true,
     });
+    if (createdBlock === undefined)
+      throw new Error("createRollupBlock: createdBlock is undefined");
+
+    const { root, oldRoot, txsHash, txsCount, invalidTxsCount } = createdBlock;
 
     if (count !== Number(txsCount.toBigint())) {
       console.error("Invalid txsCount", {
@@ -1889,6 +1928,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     });
     console.timeEnd("map saved to IPFS");
     if (mapHash === undefined) throw new Error("mapHash is undefined");
+    console.time("database saved to IPFS");
     const databaseJson = {
       database: database.data,
       mapIPFS: "i:" + mapHash,
@@ -1909,6 +1949,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         networkId: getNetworkIdHash().toJSON(),
       },
     });
+    console.timeEnd("database saved to IPFS");
     if (databaseHash === undefined)
       throw new Error("Database hash is undefined");
     const json = {
@@ -1927,17 +1968,20 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       oldRoot: oldRoot.toJSON(),
       transactions: elements.map((element) => {
         return {
-          tx: element.serializedTx,
-          fields: element.domainData?.toJSON(),
+          name: element.domainData?.tx?.domain?.name
+            ? stringFromFields([element.domainData.tx.domain.name])
+            : undefined,
           newDomain: element.domainData?.tx?.domain
             ? serializeFields(DomainName.toFields(element.domainData.tx.domain))
             : undefined,
+          tx: element.serializedTx,
+          fields: element.domainData?.toJSON(),
         };
       }),
       mapIPFS: "i:" + mapHash,
       databaseIPFS: "i:" + databaseHash,
-      database: database.data, // TODO: remove
-      map: "i:" + mapHash, // TODO: remove
+      //database: database.data, // TODO: remove
+      //map: "i:" + mapHash, // TODO: remove
     };
     const hash = await saveToIPFS({
       data: json,
@@ -1957,9 +2001,11 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     });
     if (hash === undefined) throw new Error("hash is undefined");
 
-    console.log(
-      `Block ${blockNumber} created with hash ${hash} and map hash ${mapHash}`
-    );
+    console.log(`Block ${blockNumber} created:`, {
+      hash: "https://gateway.pinata.cloud/ipfs/" + hash,
+      databaseHash: "https://gateway.pinata.cloud/ipfs/" + databaseHash,
+      mapHash: "https://gateway.pinata.cloud/ipfs/" + mapHash,
+    });
 
     const blockStorage = Storage.fromIpfsHash(hash);
     if (

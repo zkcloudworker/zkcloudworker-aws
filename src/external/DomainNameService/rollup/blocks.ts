@@ -32,6 +32,11 @@ function isAccepted(
         .toBoolean() === false
     )
       return { accepted: false, reason: "invalid signature" };
+
+    const value = map.get(element.tx.domain.key());
+    const oldValue = element.oldDomain.value();
+    if (value.equals(oldValue).toBoolean() === false)
+      return { accepted: false, reason: "the old domain does not match" };
   }
 
   if (element.txType() === "extend") {
@@ -70,15 +75,17 @@ export function createBlock(params: {
   database: DomainDatabase;
   time: UInt64;
   calculateTransactions?: boolean;
-}): {
-  oldRoot: Field;
-  root: Field;
-  txsHash: Field;
-  txsCount: UInt32;
-  invalidTxsCount: number;
-  state: Field[];
-  proofData: string[];
-} {
+}):
+  | {
+      oldRoot: Field;
+      root: Field;
+      txsHash: Field;
+      txsCount: UInt32;
+      invalidTxsCount: number;
+      state: Field[];
+      proofData: string[];
+    }
+  | undefined {
   const { elements, map, database, time } = params;
   const calculateTransactions = params.calculateTransactions ?? false;
   console.log(`Calculating block for ${elements.length} elements...`);
@@ -160,48 +167,70 @@ export function createBlock(params: {
   if (calculateTransactions) {
     let states: MapTransition[] = [];
     for (const update of updates) {
-      const state = update.isElementAccepted
-        ? update.type === "add"
-          ? MapTransition.add(update.update!)
-          : update.type === "remove"
-          ? MapTransition.remove(update.update!)
-          : update.type === "update"
-          ? MapTransition.update(
-              update.update!,
-              update.element.oldDomain!,
-              update.element.signature!
-            )
-          : MapTransition.extend(update.update!, update.element.oldDomain!)
-        : MapTransition.reject(update.oldRoot, time, update.element.tx);
-      states.push(state);
-      const tx = update.isElementAccepted
-        ? {
-            time,
-            oldRoot: update.oldRoot.toJSON(),
-            type: update.type,
-            isAccepted: update.isElementAccepted,
-            state: serializeFields(MapTransition.toFields(state)),
-            update: serializeFields(MapUpdateData.toFields(update.update!)),
-            oldDomain: update.element.oldDomain
-              ? serializeFields(DomainName.toFields(update.element.oldDomain))
-              : undefined,
-            signature: update.element.signature?.toBase58(),
-          }
-        : {
-            time: time.toBigInt().toString(),
-            oldRoot: update.oldRoot.toJSON(),
-            type: update.type,
-            isAccepted: update.isElementAccepted,
-            state: serializeFields(MapTransition.toFields(state)),
-            tx: serializeFields(DomainTransaction.toFields(update.element.tx)),
-          };
-      proofData.push(JSON.stringify(tx, null, 2));
+      try {
+        const state = update.isElementAccepted
+          ? update.type === "add"
+            ? MapTransition.add(update.update!)
+            : update.type === "remove"
+            ? MapTransition.remove(update.update!)
+            : update.type === "update"
+            ? MapTransition.update(
+                update.update!,
+                update.element.oldDomain!,
+                update.element.signature!
+              )
+            : MapTransition.extend(update.update!, update.element.oldDomain!)
+          : MapTransition.reject(update.oldRoot, time, update.element.tx);
+        states.push(state);
+        const tx = update.isElementAccepted
+          ? {
+              time,
+              oldRoot: update.oldRoot.toJSON(),
+              type: update.type,
+              isAccepted: update.isElementAccepted,
+              state: serializeFields(MapTransition.toFields(state)),
+              update: serializeFields(MapUpdateData.toFields(update.update!)),
+              oldDomain: update.element.oldDomain
+                ? serializeFields(DomainName.toFields(update.element.oldDomain))
+                : undefined,
+              signature: update.element.signature?.toBase58(),
+            }
+          : {
+              time: time.toBigInt().toString(),
+              oldRoot: update.oldRoot.toJSON(),
+              type: update.type,
+              isAccepted: update.isElementAccepted,
+              state: serializeFields(MapTransition.toFields(state)),
+              tx: serializeFields(
+                DomainTransaction.toFields(update.element.tx)
+              ),
+            };
+        proofData.push(JSON.stringify(tx, null, 2));
+      } catch (e) {
+        console.error(
+          "createBlock: Error processing transaction for name",
+          stringFromFields([update.element.tx.domain.name]),
+          update,
+          e
+        );
+        return undefined;
+      }
     }
 
     let finalState: MapTransition = states[0];
     for (let i = 1; i < states.length; i++) {
-      const newState = MapTransition.merge(finalState, states[i]);
-      finalState = newState;
+      try {
+        const newState = MapTransition.merge(finalState, states[i]);
+        finalState = newState;
+      } catch (e) {
+        console.error(
+          "createBlock: Error merging states",
+          finalState,
+          states[i],
+          e
+        );
+        return undefined;
+      }
     }
     state = MapTransition.toFields(finalState);
   }

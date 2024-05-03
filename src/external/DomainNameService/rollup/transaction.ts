@@ -109,9 +109,7 @@ export class DomainTransactionData {
       oldDomain: this.oldDomain
         ? serializeFields(DomainName.toFields(this.oldDomain))
         : undefined,
-      signature: this.signature
-        ? serializeFields(Signature.toFields(this.signature))
-        : undefined,
+      signature: this.signature?.toBase58(),
     };
   }
 
@@ -123,7 +121,7 @@ export class DomainTransactionData {
       ? new DomainName(DomainName.fromFields(deserializeFields(data.oldDomain)))
       : undefined;
     const signature = data.signature
-      ? Signature.fromFields(deserializeFields(data.signature))
+      ? Signature.fromBase58(data.signature)
       : undefined;
     const domain = new DomainTransactionData(tx, oldDomain, signature);
     domain.validate();
