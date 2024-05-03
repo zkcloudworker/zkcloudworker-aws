@@ -313,6 +313,8 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         return await this.createTxTask();
       case "getBlocksInfo":
         return await this.getBlocksInfo();
+      case "getMetadata":
+        return await this.getMetadata();
       case "restart":
         return await this.restart();
       case "prepareSignTransactionData":
@@ -428,6 +430,39 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     const taskId = this.cloud.taskId;
     const statusId = "task.status." + taskId;
     await this.cloud.saveDataByKey(statusId, undefined);
+  }
+
+  private async getMetadata(): Promise<string | undefined> {
+    try {
+      if (this.cloud.args === undefined) {
+        console.error("getMetadata: args are undefined");
+        return "error";
+      }
+      const args = JSON.parse(this.cloud.args);
+      const contractAddress = PublicKey.fromBase58(args.contractAddress);
+      if (contractAddress === undefined) {
+        console.error("getMetadata: contractAddress is undefined");
+        return "error: getMetadata: contractAddress is undefined";
+      }
+      if (contractAddress.toBase58() !== nameContract.contractAddress) {
+        console.error("getMetadata: contractAddress is invalid");
+        return "error: getMetadata: contractAddress is invalid";
+      }
+      const serializedDomain = args.domain;
+      const domain = DomainName.fromFields(deserializeFields(serializedDomain));
+      const name = stringFromFields([domain.name]);
+      const ipfs = domain.data.storage.toIpfsHash();
+      const uri = "https://gateway.pinata.cloud/ipfs/" + ipfs;
+      const url = "https://minanft.io/nft/i" + ipfs;
+      const nft = await loadFromIPFS(ipfs);
+      const address = domain.data.address.toBase58();
+      const expiry = domain.data.expiry.toBigInt().toString();
+      const data = { name, address, ipfs, expiry, uri, url, nft };
+      return JSON.stringify(data, null, 2);
+    } catch (error) {
+      console.error("Error in getMetadata", error);
+      return "Error in getMetadata";
+    }
   }
 
   private async getBlocksInfo(): Promise<string | undefined> {
@@ -1854,6 +1889,28 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     });
     console.timeEnd("map saved to IPFS");
     if (mapHash === undefined) throw new Error("mapHash is undefined");
+    const databaseJson = {
+      database: database.data,
+      mapIPFS: "i:" + mapHash,
+    };
+    const databaseHash = await saveToIPFS({
+      data: databaseJson,
+      pinataJWT: process.env.PINATA_JWT!,
+      name: `block.${blockNumber}.database.${contractAddress.toBase58()}.json`,
+      keyvalues: {
+        blockNumber: blockNumber.toString(),
+        type: "block database",
+        contractAddress: contractAddress.toBase58(),
+        repo: this.cloud.repo,
+        developer: this.cloud.developer,
+        id: this.cloud.id,
+        userId: this.cloud.userId,
+        chain: this.cloud.chain,
+        networkId: getNetworkIdHash().toJSON(),
+      },
+    });
+    if (databaseHash === undefined)
+      throw new Error("Database hash is undefined");
     const json = {
       blockNumber,
       timeCreated: time.toBigInt().toString(),
@@ -1872,10 +1929,15 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         return {
           tx: element.serializedTx,
           fields: element.domainData?.toJSON(),
+          newDomain: element.domainData?.tx?.domain
+            ? serializeFields(DomainName.toFields(element.domainData.tx.domain))
+            : undefined,
         };
       }),
-      database: database.data,
-      map: "i:" + mapHash,
+      mapIPFS: "i:" + mapHash,
+      databaseIPFS: "i:" + databaseHash,
+      database: database.data, // TODO: remove
+      map: "i:" + mapHash, // TODO: remove
     };
     const hash = await saveToIPFS({
       data: json,

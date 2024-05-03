@@ -31,7 +31,7 @@ export async function createRollupNFT(
   const metadata = JSON.parse(tx.metadata || "{}");
   console.log("metadata:", metadata);
 
-  if (metadata.keys) {
+  if (metadata.keys !== undefined) {
     for (const item of metadata.keys) {
       Object.keys(item).forEach((key) => {
         console.log(`Key: ${key}, Value: ${item[key]}`);
@@ -40,26 +40,28 @@ export async function createRollupNFT(
     }
   }
 
-  if (metadata.description)
+  if (metadata.description !== undefined)
     console.log("metadata.description:", metadata.description);
   nft.updateText({
     key: `description`,
     text: metadata.description,
   });
 
-  if (metadata.contractAddress)
+  if (metadata.contractAddress !== undefined)
     console.log("metadata.contractAddress:", metadata.contractAddress);
   nft.updateText({
     key: `contractAddress`,
     text: metadata.contractAddress,
   });
 
-  if (metadata.image) console.log("metadata.image:", metadata.image);
-  nft.updateFileData({
-    key: `image`,
-    type: "image",
-    data: getFileData(metadata.image),
-  });
+  if (metadata.image !== undefined) {
+    console.log("metadata.image:", metadata.image);
+    nft.updateFileData({
+      key: `image`,
+      type: "image",
+      data: getFileData(metadata.image),
+    });
+  }
 
   if (pinataJWT === undefined) throw new Error("Pinata JWT is undefined");
   console.log("Preparing commit data...");
