@@ -1510,12 +1510,14 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     try {
       if (this.cloud.args === undefined) return "error";
       const args = JSON.parse(this.cloud.args);
+      if (args.contractAddress === undefined)
+        return "error: contractAddress is undefined";
       const contractAddress = PublicKey.fromBase58(args.contractAddress);
       if (contractAddress === undefined) {
         console.error(
           "prepareSignTransactionData: contractAddress is undefined"
         );
-        return "contractAddress is undefined";
+        return "error: contractAddress is undefined";
       }
       if (contractAddress.toBase58() !== nameContract.contractAddress) {
         console.error("prepareSignTransactionData: contractAddress is invalid");
@@ -1978,10 +1980,10 @@ export class DomainNameServiceWorker extends zkCloudWorker {
           fields: element.domainData?.toJSON(),
         };
       }),
-      mapIPFS: "i:" + mapHash,
-      databaseIPFS: "i:" + databaseHash,
-      //database: database.data, // TODO: remove
-      //map: "i:" + mapHash, // TODO: remove
+      database: "i:" + databaseHash,
+      map: "i:" + mapHash,
+      databaseIPFS: "i:" + databaseHash, // TODO: remove
+      mapIPFS: "i:" + mapHash, // TODO: remove
     };
     const hash = await saveToIPFS({
       data: json,

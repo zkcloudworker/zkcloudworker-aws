@@ -5,8 +5,6 @@ import { RollupNFT, FileData } from "minanft";
 import { Field } from "o1js";
 import { sleep } from "zkcloudworker";
 
-const pinataJWT = process.env.PINATA_JWT;
-
 export interface RollupNFTData {
   storage: Storage;
   metadataRoot: Metadata;
@@ -65,10 +63,11 @@ export async function createRollupNFT(
     });
   }
 
-  if (pinataJWT === undefined) throw new Error("Pinata JWT is undefined");
+  if (process.env.PINATA_JWT === undefined)
+    throw new Error("Pinata JWT is undefined");
   console.log("Preparing commit data...");
   await sleep(1000);
-  await nft.prepareCommitData({ pinataJWT });
+  await nft.prepareCommitData({ pinataJWT: process.env.PINATA_JWT });
 
   if (nft.storage === undefined) throw new Error("Storage is undefined");
   if (nft.metadata === undefined) throw new Error("Metadata is undefined");
