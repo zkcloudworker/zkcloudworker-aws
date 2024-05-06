@@ -6,6 +6,7 @@ import { deploy } from "./src/api/deploy";
 import { execute, createExecuteJob } from "./src/api/execute";
 import { createRecursiveProofJob } from "./src/api/recursive";
 import { CloudWorker } from "./src/api/cloud";
+import { getPresignedUrl } from "./src/storage/presigned";
 import { nameContract } from "./src/external/DomainNameService/config"; // TODO: remove
 
 const ZKCLOUDWORKER_AUTH = process.env.ZKCLOUDWORKER_AUTH!;
@@ -206,6 +207,32 @@ const api: Handler = async (
               "Access-Control-Allow-Credentials": true,
             },
             body: JSON.stringify(jobResult, null, 2) ?? "error",
+          });
+          return;
+        }
+
+        case "presignedUrl": {
+          const { developer, repo } = data;
+          if (developer === undefined || repo === undefined) {
+            console.error("No developer or repo");
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+              },
+              body: "error: No developer or repo",
+            });
+            return;
+          }
+          const url = await getPresignedUrl({ developer, repo });
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify({ url }, null, 2) ?? "error",
           });
           return;
         }
