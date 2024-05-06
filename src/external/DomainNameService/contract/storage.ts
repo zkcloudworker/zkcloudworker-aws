@@ -1,4 +1,4 @@
-import { Struct, Field, Encoding, Provable } from "o1js";
+import { Struct, Field, Encoding, Provable, Bool } from "o1js";
 import axios from "axios";
 import { makeString } from "zkcloudworker";
 
@@ -22,6 +22,12 @@ export class Storage extends Struct({
   static assertEquals(a: Storage, b: Storage) {
     a.hashString[0].assertEquals(b.hashString[0]);
     a.hashString[1].assertEquals(b.hashString[1]);
+  }
+
+  static equals(a: Storage, b: Storage): Bool {
+    return a.hashString[0]
+      .equals(b.hashString[0])
+      .and(a.hashString[1].equals(b.hashString[1]));
   }
 
   static fromIpfsHash(hash: string): Storage {
@@ -48,7 +54,7 @@ export async function saveToIPFS(params: {
   keyvalues?: object;
 }): Promise<string | undefined> {
   const { data, pinataJWT, name, keyvalues } = params;
-  console.log("saveToIPFS:", { name });
+  //console.log("saveToIPFS:", { name });
   if (pinataJWT === "local") {
     const hash = makeString(
       `QmTosaezLecDB7bAoUoXcrJzeBavHNZyPbPff1QHWw8xus`.length
@@ -89,10 +95,10 @@ export async function saveToIPFS(params: {
       config
     );
 
-    console.log("saveToIPFS result:", res.data);
+    console.log("saveToIPFS result:", { result: res.data, name, keyvalues });
     return res.data.IpfsHash;
   } catch (error: any) {
-    console.error("saveToIPFS error:", error?.message);
+    console.error("saveToIPFS error:", error?.message, { name, keyvalues });
     return undefined;
   }
 }

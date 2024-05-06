@@ -6,6 +6,7 @@ import { deploy } from "./src/api/deploy";
 import { execute, createExecuteJob } from "./src/api/execute";
 import { createRecursiveProofJob } from "./src/api/recursive";
 import { CloudWorker } from "./src/api/cloud";
+import { nameContract } from "./src/external/DomainNameService/config"; // TODO: remove
 
 const ZKCLOUDWORKER_AUTH = process.env.ZKCLOUDWORKER_AUTH!;
 
@@ -118,7 +119,7 @@ const api: Handler = async (
             data.developer === "@staketab" &&
             data.args &&
             JSON.parse(data.args).contractAddress !==
-              "B62qrjWrAaXV65CZgpfhLdFynbFdyj851cWZPCPvF92mF3ohGDbNAME"
+              nameContract.contractAddress
           ) {
             callback(null, {
               statusCode: 200,
@@ -130,7 +131,8 @@ const api: Handler = async (
                 {
                   success: false,
                   error:
-                    "Invalid contract address, should be B62qrjWrAaXV65CZgpfhLdFynbFdyj851cWZPCPvF92mF3ohGDbNAME",
+                    "Invalid contract address, should be " +
+                    nameContract.contractAddress,
                 },
                 null,
                 2
