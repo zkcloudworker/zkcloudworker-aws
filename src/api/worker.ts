@@ -1,17 +1,15 @@
 import { zkCloudWorker, Cloud } from "zkcloudworker";
 import { zkcloudworker as DomainNameServiceWorker } from "../external/DomainNameService/worker";
+import { Workers } from "../table/workers";
+
+const WORKERS_TABLE = process.env.WORKERS_TABLE!;
 
 export async function isWorkerExist(params: {
   developer: string;
   repo: string;
 }): Promise<boolean> {
   const { developer, repo } = params;
-  if (developer === "@dfst") {
-    switch (repo) {
-      default:
-        return false;
-    }
-  } else if (developer === "@staketab") {
+  if (developer === "@staketab") {
     switch (repo) {
       case "nameservice":
         return true;
@@ -19,7 +17,12 @@ export async function isWorkerExist(params: {
         return false;
     }
   }
-  return false;
+  const workersTable = new Workers(WORKERS_TABLE);
+  const result = await workersTable.get({
+    developer,
+    repo,
+  });
+  return result === undefined ? false : true;
 }
 
 export async function getWorker(params: {
@@ -28,17 +31,34 @@ export async function getWorker(params: {
   cloud: Cloud;
 }): Promise<zkCloudWorker> {
   const { developer, repo, cloud } = params;
-  if (developer === "@dfst") {
-    switch (repo) {
-      default:
-        throw new Error("unknown repo");
-    }
-  } else if (developer === "@staketab") {
+  if (developer === "@staketab") {
     switch (repo) {
       case "nameservice":
         return await DomainNameServiceWorker(cloud);
       default:
         throw new Error("unknown repo");
     }
-  } else throw new Error("unknown developer");
+  }
+  const workersTable = new Workers(WORKERS_TABLE);
+  const result = await workersTable.get({
+    developer,
+    repo,
+  });
+  if (result === undefined)
+    throw new Error(`worker not found: ${developer}/${repo}`);
+
+  const contractsDirRoot = "/mnt/efs/worker";
+  const contractsDir = contractsDirRoot + "/" + developer + "/" + repo;
+  const distDir = contractsDir + "/dist";
+
+  console.log("Importing worker from:", distDir);
+  const zkcloudworker = await import(distDir);
+  const functionName = "zkcloudworker";
+  const worker = await zkcloudworker[functionName](cloud);
+  await workersTable.timeUsed({
+    developer,
+    repo,
+    count: result.countUsed ?? 0,
+  });
+  return worker;
 }

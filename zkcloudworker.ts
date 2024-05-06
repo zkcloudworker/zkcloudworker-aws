@@ -249,7 +249,7 @@ const api: Handler = async (
 const worker: Handler = async (event: any, context: Context) => {
   let success = false;
   const JobsTable = new Jobs(process.env.JOBS_TABLE!);
-  const { command, id, jobId, developer, repo } = event;
+  const { command, id, jobId, developer, repo, args } = event;
   try {
     console.log("worker", event);
     if (command && id && jobId && developer && repo) {
@@ -261,6 +261,7 @@ const worker: Handler = async (event: any, context: Context) => {
               repo,
               id,
               jobId,
+              packageManager: args && typeof args === "string" ? args : "npm",
             });
             success = true;
           }

@@ -2,19 +2,22 @@ import { listFiles, copyFiles } from "../storage/files";
 import { unzip } from "../storage/install";
 import fs from "fs/promises";
 import { Jobs } from "../table/jobs";
+import { Workers } from "../table/workers";
 import { Memory, sleep, LocalCloud, JobData } from "zkcloudworker";
 import { Cache } from "o1js";
 
 const { BUCKET } = process.env;
+const WORKERS_TABLE = process.env.WORKERS_TABLE!;
 
 export async function deploy(params: {
   developer: string;
   repo: string;
   id: string;
   jobId: string;
+  packageManager: string;
 }): Promise<boolean> {
   console.log("deploy", params);
-  const { developer, repo, id, jobId } = params;
+  const { developer, repo, id, jobId, packageManager } = params;
   const timeStarted = Date.now();
   console.time("deployed");
   Memory.info("start");
@@ -38,7 +41,7 @@ export async function deploy(params: {
     // Copy compiled from TypeScript to JavaScript source code of the contracts
     // from S3 bucket to AWS lambda /tmp/contracts folder
 
-    await fs.rm(contractsDirRoot, { recursive: true });
+    await fs.rm(contractsDir, { recursive: true });
     await listFiles(contractsDirRoot, true);
     await listFiles(developerDir, true);
     await listFiles(contractsDir, true);
@@ -64,6 +67,7 @@ export async function deploy(params: {
     await unzip({
       folder: developerDir,
       repo,
+      packageManager,
     });
     console.timeEnd("unzipped");
     await listFiles(developerDir, true);
@@ -76,6 +80,7 @@ export async function deploy(params: {
 
     const distDir = contractsDir + "/dist";
     await listFiles(distDir, true);
+    /*
     console.log("Importing worker from:", distDir);
     const zkcloudworker = await import(distDir);
     console.log("Getting zkCloudWorker object...");
@@ -109,27 +114,41 @@ export async function deploy(params: {
     console.log("Executing job...");
     const result = await worker.execute();
     console.log("Job result:", result);
+    */
     if (jobId !== "test")
       await JobsTable.updateStatus({
         id,
         jobId: jobId,
         status: "finished",
-        result: result ?? "deployed",
+        result: "deployed",
         billedDuration: Date.now() - timeStarted,
         maxAttempts: 1,
       });
+    const workersTable = new Workers(WORKERS_TABLE);
+    await workersTable.create({
+      developer,
+      repo,
+      timeDeployed: Date.now(),
+      timeUsed: 0,
+      countUsed: 0,
+    });
     await sleep(1000);
 
     return true;
   } catch (err: any) {
     console.error(err);
     console.error("Error deploying package");
+    const msg = err?.message ?? err?.toString();
     if (jobId !== "test")
       await JobsTable.updateStatus({
         id,
         jobId: jobId,
         status: "failed",
-        result: "deploy error: " + err.toString(),
+        result:
+          "deploy error: " +
+          (msg && typeof msg === "string"
+            ? msg
+            : "exception while installing dependencies and compiling"),
         billedDuration: Date.now() - timeStarted,
       });
     Memory.info("deploy error");
