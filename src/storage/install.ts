@@ -9,9 +9,10 @@ import fs from "fs/promises";
 export async function unzip(params: {
   folder: string;
   repo: string;
+  packageManager: string;
 }): Promise<string> {
   console.log("unzip", params);
-  const { folder, repo } = params;
+  const { folder, repo, packageManager } = params;
   const extractPath = `${folder}/${repo}`;
   await listFiles(extractPath, true);
 
@@ -43,13 +44,13 @@ export async function unzip(params: {
   //execSync("corepack enable", { stdio: "inherit" });
   console.log("corepack", process.env.COREPACK_HOME);
   console.log("home", process.env.HOME);
-  console.log("Installing yarn...");
+  console.log(`Installing package manager ${packageManager}...`);
   execSync("corepack install", {
     stdio: "inherit",
   });
   await listFiles(extractPath, true);
   console.log("Installing dependencies...");
-  execSync("corepack yarn", {
+  execSync("corepack " + packageManager + " install", {
     stdio: "inherit",
   });
 
@@ -60,7 +61,7 @@ export async function unzip(params: {
   await listFiles(extractPath, true);
 
   console.log("Compiling...");
-  execSync("corepack yarn tsc", {
+  execSync("corepack " + packageManager + " tsc", {
     stdio: "inherit",
   });
   console.log("Compiled");

@@ -151,7 +151,7 @@ export async function createExecuteJob(params: {
     if (jobId !== undefined) {
       await callLambda(
         "worker",
-        JSON.stringify({ command, id, jobId, developer, repo })
+        JSON.stringify({ command, id, jobId, developer, repo, args })
       );
       return { success: true, jobId, error: undefined };
     } else {

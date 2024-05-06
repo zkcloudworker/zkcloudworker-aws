@@ -23,6 +23,7 @@ provider:
     JOBS_TABLE: ${file(./env.json):JOBS_TABLE, env:JOBS_TABLE}
     STEPS_TABLE: ${file(./env.json):STEPS_TABLE, env:STEPS_TABLE}
     PROOFS_TABLE: ${file(./env.json):PROOFS_TABLE, env:PROOFS_TABLE}
+    WORKERS_TABLE: ${file(./env.json):WORKERS_TABLE, env:WORKERS_TABLE}
     BUCKET: ${file(./env.json):BUCKET_NAME, env:BUCKET_NAME}
     AWS_KMS_ENCRYPTION_KEY_ID: ${file(./env.json):AWS_KMS_ENCRYPTION_KEY_ID, env:AWS_KMS_ENCRYPTION_KEY_ID}
     JWT_PRIVATEKEY: ${file(./env.json):JWT_PRIVATEKEY, env:JWT_PRIVATEKEY}
@@ -100,6 +101,15 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.PROOFS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.WORKERS_TABLE}"
     - Effect: Allow
       Action:
         - dynamodb:Query
@@ -361,6 +371,22 @@ resources:
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.PROOFS_TABLE}
+    WorkersDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: developer
+            AttributeType: S
+          - AttributeName: repo
+            AttributeType: S
+        KeySchema:
+          - AttributeName: developer
+            KeyType: HASH
+          - AttributeName: repo
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.WORKERS_TABLE}
     DeployersDynamoDbTable:
       Type: "AWS::DynamoDB::Table"
       DeletionPolicy: Delete
