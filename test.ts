@@ -19,9 +19,10 @@ import {
   setNumberOfWorkers,
   ZkProgram,
 } from "o1js";
-import { makeString } from "zkcloudworker";
+import { makeString, LogStream } from "zkcloudworker";
 import { checkInternet } from "./src/api/internet";
 import { deploy } from "./src/api/deploy";
+import { getLogs } from "./src/api/logs";
 
 /*
 class Storage extends Struct({
@@ -83,6 +84,25 @@ const cloud: Handler = async (
     console.log("CPU cores:", numberOfCPUCores);
     */
     console.log("test started");
+    console.log("Context", {
+      awsRequestId: context.awsRequestId,
+      logGroupName: context.logGroupName,
+      logStreamName: context.logStreamName,
+    });
+    console.log("env", process);
+    //console.log("Remained time", context.getRemainingTimeInMillis());
+    //console.warn("test warning");
+    //console.error("test error");
+    const log: LogStream = {
+      //name: "/aws/lambda/zkcloudworker-dev-test",
+      //stream: "2024/05/08/[$LATEST]94e9fd07e01e4699901ca8ef0f9ab414",
+      logGroupName: "/aws/lambda/zkcloudworker-dev-test",
+      logStreamName: "2024/05/09/[$LATEST]cfa8a04db8ec46dc84ea761ea9bda052",
+      awsRequestId: "10b8af2c-1c8e-4965-a42e-3a46637b52e3",
+    };
+
+    const logs = await getLogs([log]);
+    console.log("logs", logs);
 
     const cacheDir = "/mnt/efs/cache";
     await listFiles(cacheDir);
@@ -96,7 +116,7 @@ const cloud: Handler = async (
     });
     */
 
-    await fs.rm(cacheDir, { recursive: true });
+    //await fs.rm(cacheDir, { recursive: true });
     await listFiles(cacheDir);
     /*
     try {

@@ -1,5 +1,11 @@
 import { Table } from "./table";
-import { JobData, JobStatus, blockchain, makeString } from "zkcloudworker";
+import {
+  JobData,
+  JobStatus,
+  blockchain,
+  makeString,
+  LogStream,
+} from "zkcloudworker";
 
 export class Jobs extends Table<JobData> {
   public async createJob(params: {
@@ -16,6 +22,7 @@ export class Jobs extends Table<JobData> {
     filename?: string;
     timeCreated?: number;
     txNumber: number;
+    logStreams: LogStream[];
   }): Promise<string | undefined> {
     const {
       id,
@@ -29,6 +36,7 @@ export class Jobs extends Table<JobData> {
       metadata,
       chain,
       webhook,
+      logStreams,
     } = params;
     const timeCreated: number = params.timeCreated ?? Date.now();
     const jobId: string =
@@ -51,6 +59,7 @@ export class Jobs extends Table<JobData> {
       timeCreatedString: new Date(timeCreated).toISOString(),
       jobStatus: "created" as JobStatus,
       maxAttempts: 0,
+      logStreams,
     };
     try {
       await this.create(item);
@@ -66,10 +75,19 @@ export class Jobs extends Table<JobData> {
     jobId: string;
     status: JobStatus;
     result?: string;
+    logStreams?: LogStream[];
     maxAttempts?: number;
     billedDuration?: number;
   }): Promise<void> {
-    const { id, jobId, status, result, billedDuration, maxAttempts } = params;
+    const {
+      id,
+      jobId,
+      status,
+      result,
+      logStreams,
+      billedDuration,
+      maxAttempts,
+    } = params;
     if (
       status === "finished" &&
       (result === undefined ||
@@ -79,6 +97,9 @@ export class Jobs extends Table<JobData> {
       throw new Error(
         "result, maxAttempts and billingDuration is required for finished jobs"
       );
+    if (status === "started" && logStreams === undefined)
+      throw new Error("logStreams is required for started jobs");
+
     const time: number = Date.now();
     await this.updateData(
       {
@@ -94,7 +115,7 @@ export class Jobs extends Table<JobData> {
             "#M": "maxAttempts",
           }
         : status === "started"
-        ? { "#S": "jobStatus", "#T": "timeStarted" }
+        ? { "#S": "jobStatus", "#T": "timeStarted", "#L": "logStreams" }
         : status === "used"
         ? { "#S": "jobStatus", "#T": "timeUsed" }
         : { "#S": "jobStatus", "#T": "timeFailed" },
@@ -106,9 +127,17 @@ export class Jobs extends Table<JobData> {
             ":billedDuration": billedDuration,
             ":maxAttempts": maxAttempts,
           }
+        : status === "started"
+        ? {
+            ":status": status,
+            ":time": time,
+            ":logStreams": logStreams,
+          }
         : { ":status": status, ":time": time },
       status === "finished"
         ? "set #S = :status, #T = :time, #R = :result, #B = :billedDuration, #M = :maxAttempts"
+        : status === "started"
+        ? "set #S = :status, #T = :time, #L = :logStreams"
         : "set #S = :status, #T = :time"
     );
   }

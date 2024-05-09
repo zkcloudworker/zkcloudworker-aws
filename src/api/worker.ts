@@ -47,6 +47,11 @@ export async function getWorker(params: {
   if (result === undefined)
     throw new Error(`worker not found: ${developer}/${repo}`);
 
+  // TODO: add balance check
+  if (result.countUsed !== undefined && result.countUsed >= 50) {
+    throw new Error(`worker used up: ${developer}/${repo}`);
+  }
+
   const contractsDirRoot = "/mnt/efs/worker";
   const contractsDir = contractsDirRoot + "/" + developer + "/" + repo;
   const distDir = contractsDir + "/dist";

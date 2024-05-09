@@ -1,6 +1,7 @@
 import { Table } from "./table";
 import { StepsData } from "../model/stepsData";
-import { JobStatus } from "zkcloudworker";
+import { JobStatus, LogStream } from "zkcloudworker";
+import { log } from "console";
 
 export class Steps extends Table<StepsData> {
   public async updateStatus(params: {
@@ -8,10 +9,19 @@ export class Steps extends Table<StepsData> {
     stepId: string;
     status: JobStatus;
     result?: string;
+    logStreams?: LogStream[];
     requiredStatus?: JobStatus;
     attempts?: number;
   }): Promise<StepsData | undefined> {
-    const { jobId, stepId, status, result, requiredStatus, attempts } = params;
+    const {
+      jobId,
+      stepId,
+      status,
+      result,
+      requiredStatus,
+      attempts,
+      logStreams,
+    } = params;
     const time: number = Date.now();
     try {
       let key = {
@@ -41,13 +51,23 @@ export class Steps extends Table<StepsData> {
         case "started":
           if (attempts === undefined)
             throw new Error("attempts is required for started jobs");
-          names = { "#S": "stepStatus", "#T": "timeStarted", "#A": "attempts" };
+          if (logStreams === undefined)
+            throw new Error("logStreams are required for started jobs");
+
+          names = {
+            "#S": "stepStatus",
+            "#T": "timeStarted",
+            "#A": "attempts",
+            "#L": "logStreams",
+          };
           values = {
             ":status": status,
             ":time": time,
             ":attempts": attempts,
+            ":logStreams": logStreams,
           };
-          updateExpression = "set #S = :status, #T = :time, #A = :attempts";
+          updateExpression =
+            "set #S = :status, #T = :time, #A = :attempts, #L = :logStreams";
           break;
 
         case "used":

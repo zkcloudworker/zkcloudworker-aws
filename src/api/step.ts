@@ -46,6 +46,7 @@ export async function runStep(
       stepId: step.stepId,
       status: "started",
       attempts: step.attempts + 1,
+      logStreams: step.logStreams,
     });
 
     let result: string | undefined = undefined;

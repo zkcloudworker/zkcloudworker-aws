@@ -158,6 +158,10 @@ provider:
         - sqs:DeleteMessage
         - sqs:GetQueueAttributes
       Resource: "*"
+    - Effect: Allow
+      Action:
+        - logs:GetLogEvents
+      Resource: "*"
 
 functions:
   zkcloudworker:

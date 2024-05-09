@@ -13,8 +13,6 @@ import { callLambda } from "../lambda/lambda";
 import { S3File } from "../storage/s3";
 import { minaInit } from "../mina/init";
 
-const MAX_JOB_AGE: number = 1000 * 60 * 60; // 60 minutes
-
 export async function createExecuteJob(params: {
   command: string;
   data: {
@@ -147,6 +145,7 @@ export async function createExecuteJob(params: {
       metadata,
       chain,
       webhook,
+      logStreams: [],
     });
     if (jobId !== undefined) {
       await callLambda(
@@ -199,37 +198,14 @@ export async function execute(params: {
   repo: string;
   id: string;
   jobId: string;
+  job: JobData;
 }): Promise<boolean> {
-  const { developer, repo, id, jobId, command } = params;
+  const { developer, repo, id, jobId, command, job } = params;
   const timeStarted = Date.now();
   console.time("zkCloudWorker Execute");
   console.log(`zkCloudWorker Execute start:`, params);
   const JobsTable = new Jobs(process.env.JOBS_TABLE!);
   try {
-    const job = await JobsTable.get({
-      id,
-      jobId,
-    });
-    if (job === undefined) throw new Error("job not found");
-
-    if (job.jobStatus === "failed") {
-      console.log("zkCloudWorker Execute: job is failed, exiting");
-      return false;
-    }
-    if (job.jobStatus === "finished" || job.jobStatus === "used") {
-      console.log("zkCloudWorker Execute: job is finished or used, exiting");
-      return false;
-    }
-    if (Date.now() - job.timeCreated > MAX_JOB_AGE) {
-      console.error("zkCloudWorker Execute: job is too old, exiting");
-      return false;
-    }
-
-    await JobsTable.updateStatus({
-      id,
-      jobId,
-      status: "started",
-    });
     let transactions: string[] = [];
     if (job.filename !== undefined) {
       const file = new S3File(process.env.BUCKET!, job.filename);

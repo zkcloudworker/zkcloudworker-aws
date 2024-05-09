@@ -21,66 +21,62 @@ export async function deploy(params: {
   const timeStarted = Date.now();
   console.time("deployed");
   Memory.info("start");
-  const JobsTable = new Jobs(process.env.JOBS_TABLE!);
-
   try {
-    if (jobId !== "test")
-      await JobsTable.updateStatus({
-        id,
-        jobId: jobId,
-        status: "started",
+    const JobsTable = new Jobs(process.env.JOBS_TABLE!);
+
+    try {
+      const contractsDirRoot = "/mnt/efs/worker";
+      const developerDir = contractsDirRoot + "/" + developer;
+      const contractsDir = contractsDirRoot + "/" + developer + "/" + repo;
+      const cacheDir = "/mnt/efs/cache";
+      const fileName = repo + ".zip";
+      const fullFileName = developer + "/" + fileName;
+      if (BUCKET === undefined) throw new Error("BUCKET is undefined");
+
+      // Copy compiled from TypeScript to JavaScript source code of the contracts
+      // from S3 bucket to AWS lambda /tmp/contracts folder
+
+      await listFiles(contractsDirRoot, true);
+      await listFiles(developerDir, true);
+      await listFiles(contractsDir, true);
+      await fs.rm(contractsDir, { recursive: true });
+      await listFiles(contractsDir, true);
+      //await fs.rm(contractsDir, { recursive: true });
+
+      //await listFiles(contractsDirRoot, true);
+      //await listFiles(contractsDir, true);
+      await listFiles(cacheDir, false);
+
+      await copyFiles({
+        bucket: BUCKET,
+        developer: developer,
+        folder: contractsDirRoot,
+        files: [fileName],
+        overwrite: true,
+        //move: true,
       });
-    const contractsDirRoot = "/mnt/efs/worker";
-    const developerDir = contractsDirRoot + "/" + developer;
-    const contractsDir = contractsDirRoot + "/" + developer + "/" + repo;
-    const cacheDir = "/mnt/efs/cache";
-    const fileName = repo + ".zip";
-    const fullFileName = developer + "/" + fileName;
-    if (BUCKET === undefined) throw new Error("BUCKET is undefined");
+      await listFiles(developerDir, true);
+      await listFiles(contractsDir, true);
+      console.log("loaded repo");
 
-    // Copy compiled from TypeScript to JavaScript source code of the contracts
-    // from S3 bucket to AWS lambda /tmp/contracts folder
+      console.time("unzipped");
+      await unzip({
+        folder: developerDir,
+        repo,
+        packageManager,
+      });
+      console.timeEnd("unzipped");
+      await listFiles(developerDir, true);
+      await listFiles(contractsDir, true);
+      await fs.rm(developerDir + "/" + fileName);
+      await listFiles(developerDir, true);
 
-    await fs.rm(contractsDir, { recursive: true });
-    await listFiles(contractsDirRoot, true);
-    await listFiles(developerDir, true);
-    await listFiles(contractsDir, true);
-    //await fs.rm(contractsDir, { recursive: true });
+      Memory.info("deployed");
+      console.timeEnd("deployed");
 
-    //await listFiles(contractsDirRoot, true);
-    //await listFiles(contractsDir, true);
-    await listFiles(cacheDir, false);
-
-    await copyFiles({
-      bucket: BUCKET,
-      developer: developer,
-      folder: contractsDirRoot,
-      files: [fileName],
-      overwrite: true,
-      //move: true,
-    });
-    await listFiles(developerDir, true);
-    await listFiles(contractsDir, true);
-    console.log("loaded repo");
-
-    console.time("unzipped");
-    await unzip({
-      folder: developerDir,
-      repo,
-      packageManager,
-    });
-    console.timeEnd("unzipped");
-    await listFiles(developerDir, true);
-    await listFiles(contractsDir, true);
-    await fs.rm(developerDir + "/" + fileName);
-    await listFiles(developerDir, true);
-
-    Memory.info("deployed");
-    console.timeEnd("deployed");
-
-    const distDir = contractsDir + "/dist";
-    await listFiles(distDir, true);
-    /*
+      const distDir = contractsDir + "/dist";
+      await listFiles(distDir, true);
+      /*
     console.log("Importing worker from:", distDir);
     const zkcloudworker = await import(distDir);
     console.log("Getting zkCloudWorker object...");
@@ -115,7 +111,6 @@ export async function deploy(params: {
     const result = await worker.execute();
     console.log("Job result:", result);
     */
-    if (jobId !== "test")
       await JobsTable.updateStatus({
         id,
         jobId: jobId,
@@ -124,36 +119,40 @@ export async function deploy(params: {
         billedDuration: Date.now() - timeStarted,
         maxAttempts: 1,
       });
-    const workersTable = new Workers(WORKERS_TABLE);
-    await workersTable.create({
-      developer,
-      repo,
-      timeDeployed: Date.now(),
-      timeUsed: 0,
-      countUsed: 0,
-    });
-    await sleep(1000);
-
-    return true;
-  } catch (err: any) {
-    console.error(err);
-    console.error("Error deploying package");
-    const msg = err?.message ?? err?.toString();
-    if (jobId !== "test")
-      await JobsTable.updateStatus({
-        id,
-        jobId: jobId,
-        status: "failed",
-        result:
-          "deploy error: " +
-          (msg && typeof msg === "string"
-            ? msg
-            : "exception while installing dependencies and compiling"),
-        billedDuration: Date.now() - timeStarted,
+      const workersTable = new Workers(WORKERS_TABLE);
+      await workersTable.create({
+        developer,
+        repo,
+        timeDeployed: Date.now(),
+        timeUsed: 0,
+        countUsed: 0,
       });
-    Memory.info("deploy error");
-    console.timeEnd("deployed");
-    await sleep(1000);
+      await sleep(1000);
+
+      return true;
+    } catch (err: any) {
+      console.error(err);
+      console.error("Error deploying package");
+      const msg = err?.message ?? err?.toString();
+      if (jobId !== "test")
+        await JobsTable.updateStatus({
+          id,
+          jobId: jobId,
+          status: "failed",
+          result:
+            "deploy error: " +
+            (msg && typeof msg === "string"
+              ? msg
+              : "exception while installing dependencies and compiling"),
+          billedDuration: Date.now() - timeStarted,
+        });
+      Memory.info("deploy error");
+      console.timeEnd("deployed");
+      await sleep(1000);
+      return false;
+    }
+  } catch (err: any) {
+    console.error("Error deploying package", err);
     return false;
   }
 }

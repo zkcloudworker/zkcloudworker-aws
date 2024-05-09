@@ -33,6 +33,7 @@ export async function copyFiles(params: {
   move?: boolean;
 }): Promise<void> {
   const { bucket, developer, folder, files, overwrite, move } = params;
+  console.log(`copying files`, params);
   const existingFiles = await listFiles(`${folder}/${developer}`, true);
   for (const file of files) {
     if (overwrite === true || !existingFiles.includes(file)) {

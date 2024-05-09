@@ -1,5 +1,5 @@
 import { JobStatus } from "zkcloudworker";
-import { blockchain } from "zkcloudworker";
+import { blockchain, LogStream } from "zkcloudworker";
 
 export type StepTask = "create" | "merge";
 export const MAX_STEP_ATTEMPTS = 5;
@@ -28,6 +28,7 @@ export interface StepsData {
   stepStatus: JobStatus;
   maxAttempts: number;
   result?: string;
+  logStreams: LogStream[];
 }
 
 export interface ProofsData {
