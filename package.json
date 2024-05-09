@@ -28,7 +28,7 @@
     "@types/adm-zip": "^0.5.5",
     "@types/aws-lambda": "^8.10.137",
     "@types/jsonwebtoken": "^9.0.6",
-    "@types/node": "^20.12.10",
+    "@types/node": "^20.12.11",
     "@types/serverless": "^3.12.22",
     "serverless": "^3.38.0",
     "serverless-plugin-typescript": "^2.1.5",
@@ -36,19 +36,20 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.569.0",
-    "@aws-sdk/client-kms": "^3.569.0",
-    "@aws-sdk/client-lambda": "^3.569.0",
-    "@aws-sdk/client-s3": "^3.569.0",
-    "@aws-sdk/s3-request-presigner": "^3.569.0",
-    "@aws-sdk/util-dynamodb": "^3.569.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.572.0",
+    "@aws-sdk/client-dynamodb": "^3.572.0",
+    "@aws-sdk/client-kms": "^3.572.0",
+    "@aws-sdk/client-lambda": "^3.572.0",
+    "@aws-sdk/client-s3": "^3.572.0",
+    "@aws-sdk/s3-request-presigner": "^3.572.0",
+    "@aws-sdk/util-dynamodb": "^3.572.0",
     "adm-zip": "^0.5.12",
     "axios": "^1.6.8",
     "jest": "^29.7.0",
     "jsonwebtoken": "^9.0.2",
     "minanft": "^1.10.5",
     "o1js": "^1.1.0",
-    "zkcloudworker": "^0.4.7"
+    "zkcloudworker": "^0.5.2"
   },
   "packageManager": "yarn@4.2.1"
 }

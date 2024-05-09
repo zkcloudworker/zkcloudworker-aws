@@ -3,7 +3,7 @@ import { StepsData } from "./src/model/stepsData";
 import { Jobs } from "./src/table/jobs";
 import { Steps } from "./src/table/steps";
 import { runStep } from "./src/api/step";
-import { zkCloudWorker } from "zkcloudworker";
+import { zkCloudWorker, LogStream } from "zkcloudworker";
 import { getWorker } from "./src/api/worker";
 import { StepCloudWorker } from "./src/api/cloud";
 
@@ -15,7 +15,16 @@ const run: Handler = async (event: any, context: Context) => {
       body: "sequencer step error",
     };
   }
+  const logStream: LogStream = {
+    logGroupName: context.logGroupName,
+    logStreamName: context.logStreamName,
+    awsRequestId: context.awsRequestId,
+  };
+
   const step = event.stepData as StepsData;
+  step.logStreams = step.logStreams
+    ? [...step.logStreams, logStream]
+    : [logStream];
   console.log("step", {
     jobId: step.jobId,
     stepId: step.stepId,
@@ -23,6 +32,7 @@ const run: Handler = async (event: any, context: Context) => {
     repo: step.repo,
     task: step.task,
     metadata: step.metadata,
+    logStream: step.logStreams,
   });
   try {
     const cloud = new StepCloudWorker(step);
@@ -43,6 +53,7 @@ const run: Handler = async (event: any, context: Context) => {
       jobId: step.jobId,
       stepId: step.stepId,
       status: "failed",
+      logStreams: step.logStreams,
     });
 
     const JobsTable = new Jobs(process.env.JOBS_TABLE!);

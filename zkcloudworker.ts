@@ -7,7 +7,9 @@ import { execute, createExecuteJob } from "./src/api/execute";
 import { createRecursiveProofJob } from "./src/api/recursive";
 import { CloudWorker } from "./src/api/cloud";
 import { getPresignedUrl } from "./src/storage/presigned";
+import { LogStream } from "zkcloudworker";
 import { nameContract } from "./src/external/DomainNameService/config"; // TODO: remove
+const MAX_JOB_AGE: number = 1000 * 60 * 60; // 60 minutes
 
 const ZKCLOUDWORKER_AUTH = process.env.ZKCLOUDWORKER_AUTH!;
 
@@ -180,7 +182,8 @@ const api: Handler = async (
         }
 
         case "jobResult": {
-          if (body.data.jobId === undefined) {
+          const { jobId, includeLogs } = data;
+          if (jobId === undefined) {
             console.error("No jobId");
             callback(null, {
               statusCode: 200,
@@ -199,7 +202,7 @@ const api: Handler = async (
             id,
             jobId: body.data.jobId,
           });
-          const jobResult = await sequencer.getJobStatus();
+          const jobResult = await sequencer.getJobStatus(includeLogs ?? false);
           callback(null, {
             statusCode: 200,
             headers: {
@@ -276,10 +279,44 @@ const api: Handler = async (
 const worker: Handler = async (event: any, context: Context) => {
   let success = false;
   const JobsTable = new Jobs(process.env.JOBS_TABLE!);
+  const logStream: LogStream = {
+    logGroupName: context.logGroupName,
+    logStreamName: context.logStreamName,
+    awsRequestId: context.awsRequestId,
+  };
   const { command, id, jobId, developer, repo, args } = event;
   try {
     console.log("worker", event);
     if (command && id && jobId && developer && repo) {
+      const job = await JobsTable.get({
+        id,
+        jobId,
+      });
+      if (job === undefined) throw new Error("job not found");
+
+      if (job.jobStatus === "failed") {
+        console.log("worker: job is failed, exiting");
+        return false;
+      }
+      if (job.jobStatus === "finished" || job.jobStatus === "used") {
+        console.log("worker: job is finished or used, exiting");
+        return false;
+      }
+      if (Date.now() - job.timeCreated > MAX_JOB_AGE) {
+        console.error("worker: job is too old, exiting");
+        return false;
+      }
+      if (job.jobStatus !== "created") {
+        console.error("worker: job status is not created");
+      }
+
+      await JobsTable.updateStatus({
+        id: event.id,
+        jobId: event.jobId,
+        status: "started",
+        logStreams: [logStream],
+      });
+
       switch (event.command) {
         case "deploy":
           {
@@ -302,6 +339,7 @@ const worker: Handler = async (event: any, context: Context) => {
               repo,
               id,
               jobId,
+              job,
             });
           }
           break;
@@ -314,6 +352,7 @@ const worker: Handler = async (event: any, context: Context) => {
               repo,
               id,
               jobId,
+              job,
             });
           }
           break;

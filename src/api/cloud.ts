@@ -278,7 +278,7 @@ export class CloudWorker extends Cloud {
       id: this.id,
       jobId,
     });
-    const jobResult = await sequencer.getJobStatus();
+    const jobResult = await sequencer.getJobStatus(false);
     return jobResult;
   }
 

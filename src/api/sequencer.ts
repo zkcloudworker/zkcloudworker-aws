@@ -8,11 +8,12 @@ import {
   makeString,
   sleep,
   formatTime,
+  LogStream,
 } from "zkcloudworker";
 import { StepsData, StepTask } from "../model/stepsData";
-
 import { callLambda } from "../lambda/lambda";
 import { S3File } from "../storage/s3";
+import { getLogs } from "./logs";
 
 export class Sequencer {
   jobsTable: string;
@@ -21,6 +22,7 @@ export class Sequencer {
   id: string;
   jobId?: string;
   startTime: number;
+  logStream?: LogStream;
   readonly MAX_RUN_TIME: number = 1000 * 60 * 10; // 10 minutes
   readonly MAX_STEP_START_TIME: number = 1000 * 60 * 5; // 5 minutes
   readonly MAX_STEP_RUN_TIME: number = 1000 * 60 * 10; // 10 minutes
@@ -33,6 +35,7 @@ export class Sequencer {
     proofsTable: string;
     id: string;
     jobId?: string;
+    logStream?: LogStream;
   }) {
     this.startTime = Date.now();
     this.jobsTable = params.jobsTable;
@@ -40,6 +43,7 @@ export class Sequencer {
     this.proofsTable = params.proofsTable;
     this.id = params.id;
     this.jobId = params.jobId;
+    this.logStream = params.logStream;
   }
 
   public async createJob(params: {
@@ -85,6 +89,7 @@ export class Sequencer {
       userId,
       webhook,
       chain,
+      logStreams: this.logStream ? [this.logStream] : [],
     });
     if (jobId !== undefined)
       await callLambda(
@@ -97,13 +102,23 @@ export class Sequencer {
   public async updateJobStatus(params: {
     status: JobStatus;
     result?: string;
+    logStreams: LogStream[];
   }): Promise<void> {
     if (this.jobId === undefined) throw new Error("jobId is undefined");
+    const { status, result, logStreams } = params;
     const JobsTable = new Jobs(this.jobsTable);
-    await JobsTable.updateStatus({
-      ...params,
+    const job = await JobsTable.get({
       id: this.id,
       jobId: this.jobId,
+    });
+    await JobsTable.updateStatus({
+      status,
+      result,
+      id: this.id,
+      jobId: this.jobId,
+      logStreams: job?.logStreams
+        ? [...job.logStreams, ...logStreams]
+        : logStreams,
     });
   }
 
@@ -172,6 +187,7 @@ export class Sequencer {
         attempts: 0,
         stepStatus: "created" as JobStatus,
         maxAttempts: 0,
+        logStreams: [],
       };
       try {
         await StepsTable.create(stepData);
@@ -185,6 +201,13 @@ export class Sequencer {
       id: this.id,
       jobId: this.jobId,
       status: "started",
+      logStreams: job?.logStreams
+        ? this.logStream
+          ? [...job.logStreams, this.logStream]
+          : job.logStreams
+        : this.logStream
+        ? [this.logStream]
+        : [],
     });
     await this.run();
   }
@@ -603,6 +626,7 @@ export class Sequencer {
             (result.timeFinished ?? 0) -
             (result.timeStarted ?? 0),
           maxAttempts: Math.max(result.attempts, result.maxAttempts),
+          logStreams: [...(job.logStreams ?? []), ...(result.logStreams ?? [])],
         });
         await StepsTable.remove({
           jobId: this.jobId,
@@ -811,6 +835,10 @@ export class Sequencer {
               stepStatus: "created" as JobStatus,
               maxAttempts,
               billedDuration,
+              logStreams: [
+                ...(step1.logStreams ?? []),
+                ...(step2.logStreams ?? []),
+              ],
             };
             try {
               await StepsTable.create(stepData);
@@ -863,7 +891,7 @@ export class Sequencer {
     }
   }
 
-  public async getJobStatus(): Promise<JobData> {
+  public async getJobStatus(includeLogs: boolean): Promise<JobData> {
     if (this.jobId === undefined) throw new Error("jobId is undefined");
     const JobsTable = new Jobs(this.jobsTable);
     const job: JobData | undefined = await JobsTable.get({
@@ -877,6 +905,11 @@ export class Sequencer {
         jobId: this.jobId,
         status: "used",
       });
+    if (includeLogs)
+      job.logs = await getLogs([
+        ...(job.logStreams ?? []),
+        ...(this.logStream ? [this.logStream] : []),
+      ]);
     return job;
   }
 }
