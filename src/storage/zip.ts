@@ -9,9 +9,8 @@ export async function unzip(params: {
   const { folder, filename, targetDir } = params;
   console.log("unzip", folder, filename, targetDir);
   const file = await fs.readFile(`${folder}/${filename}`);
-  console.log("unzip: read file");
+  console.log("unzip: reading file...");
   const zipFile = new zip(file);
-  console.log("unzip: unzip file");
+  console.log("unzip: unzipping file...");
   zipFile.extractAllTo(targetDir, true);
-  console.log("unzip: unzipped");
 }

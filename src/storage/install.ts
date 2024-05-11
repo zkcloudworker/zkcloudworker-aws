@@ -1,10 +1,43 @@
-//import fs from "fs";
-//import unzipper from "unzipper";
 import { execSync } from "child_process";
 import { listFiles } from "./files";
 
 import zip from "adm-zip";
 import fs from "fs/promises";
+
+export async function install(params: {
+  folder: string;
+  packageManager: string;
+}) {
+  console.log("install", params);
+  const { folder, packageManager } = params;
+  process.chdir(folder);
+  //const currentDir = process.cwd();
+  //console.log(`Current directory: ${process.cwd()}`);
+  //console.log("corepack", process.env.COREPACK_HOME);
+  //console.log("home", process.env.HOME);
+  console.log(`Installing package manager ${packageManager}...`);
+  execSync("corepack install", {
+    stdio: "inherit",
+  });
+  await listFiles(folder, true);
+  console.log(`Installing dependencies with ${packageManager}...`);
+  execSync("corepack " + packageManager + " install", {
+    stdio: "inherit",
+  });
+
+  await listFiles(folder, true);
+  process.chdir(folder);
+
+  console.log("Compiling...");
+  console.time("compiled");
+  execSync("corepack " + packageManager + " tsc", {
+    stdio: "inherit",
+  });
+  console.timeEnd("compiled");
+  await listFiles(folder, true);
+}
+
+/*
 
 export async function unzip(params: {
   folder: string;
@@ -23,16 +56,6 @@ export async function unzip(params: {
   zipFile.extractAllTo(extractPath, true);
   console.log("unzip: unzipped");
 
-  /*
-  try {
-    await fs
-      .createReadStream(`${folder}/${repo}.zip`)
-      .pipe(unzipper.Extract({ path: extractPath }))
-      .promise();
-  } catch (error) {
-    console.log(error);
-  }
-  */
   console.log(`File unzipped to ${extractPath}`);
   await listFiles(extractPath, true);
 
@@ -69,3 +92,4 @@ export async function unzip(params: {
 
   return extractPath;
 }
+*/

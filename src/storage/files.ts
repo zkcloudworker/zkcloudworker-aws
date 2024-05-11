@@ -60,3 +60,37 @@ export async function copyFiles(params: {
     }
   }
 }
+
+export async function copyZip(params: {
+  bucket: string;
+  key: string;
+  folder: string;
+  file: string;
+}): Promise<void> {
+  const { bucket, key, folder, file } = params;
+  console.log(`copyZip`, params);
+  try {
+    if (await isExist(file)) {
+      console.log(`deleting ${file}`);
+      await fs.unlink(file);
+    }
+    console.log(`downloading ${file}`);
+    const s3File = new S3File(bucket, key);
+    const data = await s3File.get();
+    await fs.writeFile(`${folder}/${file}`, data.Body);
+    console.log(`downloaded ${file}`);
+  } catch (error) {
+    console.log(`error downloading ${file}`, error);
+  }
+}
+
+async function isExist(name: string): Promise<boolean> {
+  // check if file exists
+  try {
+    await fs.access(name);
+    return true;
+  } catch (e) {
+    // if not, return
+    return false;
+  }
+}

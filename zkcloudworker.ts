@@ -215,20 +215,24 @@ const api: Handler = async (
         }
 
         case "presignedUrl": {
-          const { developer, repo } = data;
-          if (developer === undefined || repo === undefined) {
-            console.error("No developer or repo");
+          const { developer, repo, args: version } = data;
+          if (
+            developer === undefined ||
+            repo === undefined ||
+            version === undefined
+          ) {
+            console.error("No developer or repo or version");
             callback(null, {
               statusCode: 200,
               headers: {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Credentials": true,
               },
-              body: "error: No developer or repo",
+              body: "error: No developer or repo or version",
             });
             return;
           }
-          const url = await getPresignedUrl({ developer, repo });
+          const url = await getPresignedUrl({ developer, repo, version });
           callback(null, {
             statusCode: 200,
             headers: {
@@ -325,7 +329,7 @@ const worker: Handler = async (event: any, context: Context) => {
               repo,
               id,
               jobId,
-              packageManager: args && typeof args === "string" ? args : "npm",
+              args,
             });
             success = true;
           }

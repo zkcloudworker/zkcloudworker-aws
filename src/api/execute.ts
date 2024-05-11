@@ -12,6 +12,8 @@ import { getWorker } from "./worker";
 import { callLambda } from "../lambda/lambda";
 import { S3File } from "../storage/s3";
 import { minaInit } from "../mina/init";
+import { getCloudDeployer } from "../mina/deployers";
+import { PrivateKey } from "o1js";
 
 export async function createExecuteJob(params: {
   command: string;
@@ -174,14 +176,29 @@ export async function executeSync(params: {
   const { command, developer, repo, job, transactions } = params;
   Memory.info(`start`);
   console.time("zkCloudWorker Execute Sync");
+
+  if (job.repo == "worker-example") {
+    const deployer = await getCloudDeployer();
+    console.log("executeSync: deployer", deployer);
+    job.metadata = deployer;
+  }
   const cloud = new ExecuteCloudWorker(job);
-  const worker: zkCloudWorker = await getWorker({
+  const worker: zkCloudWorker | undefined = await getWorker({
     developer: developer,
     repo: repo,
     cloud,
   });
 
-  await minaInit(job.chain);
+  if (worker === undefined) {
+    console.error("executeSync: worker not found");
+    return "error: worker not found";
+  }
+
+  if (job.repo !== "worker-example") {
+    console.log("executeSync: minaInit");
+    await minaInit(job.chain);
+  } else console.log("executeSync: skipping minaInit for worker-example");
+
   const result =
     command === "execute"
       ? await worker.execute(transactions)

@@ -36,11 +36,12 @@ const run: Handler = async (event: any, context: Context) => {
   });
   try {
     const cloud = new StepCloudWorker(step);
-    const worker: zkCloudWorker = await getWorker({
+    const worker: zkCloudWorker | undefined = await getWorker({
       developer: step.developer,
       repo: step.repo,
       cloud,
     });
+    if (worker === undefined) throw new Error("worker not found");
     await runStep(step, worker);
     return {
       statusCode: 200,

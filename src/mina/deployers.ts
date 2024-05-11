@@ -10,6 +10,10 @@ import { Deployers } from "../table/deployers";
 const GASTANK_MINLIMIT = 4;
 const DELAY = 60 * 60 * 1000; // 1 hour
 
+export async function getCloudDeployer(): Promise<string> {
+  return GASTANKS[Math.floor(Math.random() * (GASTANKS.length - 1))];
+}
+
 var deployer1: number | undefined;
 var deployer2: number | undefined;
 var deployer3: number | undefined;
@@ -19,7 +23,8 @@ export async function getDeployer(
   minimumBalance: number = GASTANK_MINLIMIT,
   chain: blockchain = "devnet"
 ): Promise<PrivateKey> {
-  if (chain !== "devnet") throw new Error("Only devnet is supported for now");
+  if (chain !== "devnet" && chain !== "zeko")
+    throw new Error("Only devnet and zeko are supported for now");
   let count = 0;
   let i: number = Math.floor(Math.random() * (GASTANKS.length - 1));
   let replenish: boolean = await checkGasTank(GASTANKS[i], minimumBalance);
@@ -36,8 +41,9 @@ export async function getDeployer(
   deployer1 = i;
 
   const gastank = GASTANKS[i];
+  const address = PrivateKey.fromBase58(gastank).toPublicKey().toBase58();
   console.log(
-    `Using gas tank no ${i} with private key ${gastank}, last deployers:`,
+    `Using gas tank no ${i} with public key ${address}, last deployers:`,
     deployer1,
     deployer2,
     deployer3
@@ -54,6 +60,7 @@ async function checkGasTank(
   const gasTankPublicKeyMina = gasTankPrivateKeyMina.toPublicKey();
   const publicKey = gasTankPublicKeyMina.toBase58();
 
+  /*
   let balanceGasTank = 0;
   try {
     balanceGasTank = await accountBalanceMina(gasTankPublicKeyMina);
@@ -72,6 +79,7 @@ async function checkGasTank(
   );
 
   if (replenishGasTank) return true;
+  */
   const deployersTable = new Deployers(process.env.DEPLOYERS_TABLE!);
   const deployer = await deployersTable.get({ publicKey });
   const code = makeString(20);
