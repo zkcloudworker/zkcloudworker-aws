@@ -1,4 +1,4 @@
-import { listFiles, copyZip } from "../storage/files";
+import { listFiles, moveZip, createFolders, isExist } from "../storage/files";
 import { unzip } from "../storage/zip";
 import { install } from "../storage/install";
 import fs from "fs/promises";
@@ -16,11 +16,12 @@ export async function deploy(params: {
   jobId: string;
   args: string;
 }): Promise<boolean> {
-  console.log("deploy", params);
+  console.time("deployed");
+  //console.log("deploy", params);
   const { developer, repo, id, jobId, args } = params;
   const { packageManager, version, size, protect } = JSON.parse(args);
   const timeStarted = Date.now();
-  console.time("deployed");
+
   Memory.info("start");
   const JobsTable = new Jobs(process.env.JOBS_TABLE!);
   const workersTable = new Workers(WORKERS_TABLE);
@@ -50,32 +51,30 @@ export async function deploy(params: {
     }
 
     if (BUCKET === undefined) throw new Error("BUCKET is undefined");
-    const workersDirRoot = "/mnt/efs/worker";
-    await listFiles(workersDirRoot, false);
-    const developerDir = workersDirRoot + "/" + developer;
-    await listFiles(developerDir, true);
-    const repoDir = developerDir + "/" + repo;
-    await listFiles(repoDir, true);
-    console.log("Clearing folder", repoDir);
-    await fs.rm(repoDir, { recursive: true });
-    await listFiles(repoDir, false);
-    const versionDir = repoDir + "/" + version.replaceAll(".", "_");
-    await listFiles(versionDir, false);
 
+    console.time("cleared old deployment");
+    const workersDirRoot = "/mnt/efs/worker";
+    const developerDir = workersDirRoot + "/" + developer;
+    const repoDir = developerDir + "/" + repo;
+    const versionDir = repoDir + "/" + version.replaceAll(".", "_");
+    const distDir = versionDir + "/dist";
+    if (await isExist(repoDir)) await fs.rm(repoDir, { recursive: true });
+    await createFolders([developerDir, repoDir, versionDir]);
     const filename = repo + "." + version + ".zip";
+    console.timeEnd("cleared old deployment");
 
     // Copy compiled from TypeScript to JavaScript source code of the contracts
     // from S3 bucket to AWS lambda /tmp/contracts folder
-
-    await copyZip({
+    console.time(`moved ${filename} to ${developerDir}`);
+    await moveZip({
       bucket: BUCKET,
       key: developer + "/" + filename,
       folder: developerDir,
       file: filename,
     });
-
+    console.timeEnd(`moved ${filename} to ${developerDir}`);
     await listFiles(developerDir, true);
-    console.log(`loaded repo zip file ${filename} to ${developerDir}`);
+
     console.time("unzipped");
     await unzip({
       folder: developerDir,
@@ -83,9 +82,7 @@ export async function deploy(params: {
       targetDir: versionDir,
     });
     console.timeEnd("unzipped");
-    await listFiles(developerDir, true);
     await fs.rm(developerDir + "/" + filename);
-    await listFiles(developerDir, true);
 
     console.time("installed");
     await install({
@@ -94,7 +91,6 @@ export async function deploy(params: {
     });
     console.timeEnd("installed");
 
-    const distDir = versionDir + "/dist";
     await listFiles(distDir, true);
 
     await JobsTable.updateStatus({

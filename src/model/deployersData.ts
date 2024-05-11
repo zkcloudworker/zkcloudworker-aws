@@ -1,6 +1,6 @@
 export interface DeployersData {
   publicKey: string;
   timeUsed: number;
-  code: string;
-  tx?: any;
+  code?: string;
+  txs?: object;
 }

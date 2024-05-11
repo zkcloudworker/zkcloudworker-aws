@@ -7,8 +7,8 @@ export async function listFiles(
 ): Promise<string[]> {
   try {
     const files = await fs.readdir(folder);
-    console.log(`files in ${folder}:`, files.length);
-    if (isVerbose) console.log(files);
+    if (isVerbose) console.log(`${files.length} files in ${folder}`, files);
+    else console.log(`${files.length} files in ${folder}`);
     return files;
   } catch (error) {
     console.log(`"Folder ${folder} not found, creating...`);
@@ -20,6 +20,20 @@ export async function listFiles(
     } catch (error) {
       console.log(`"Error creating folder ${folder}`, error);
       return [];
+    }
+  }
+}
+
+export async function createFolders(
+  folders: string[],
+  isVerbose: boolean = false
+) {
+  if (isVerbose) console.log("createFolders", folders);
+  for (const folder of folders) {
+    try {
+      if ((await isExist(folder)) === false) await fs.mkdir(folder);
+    } catch (error) {
+      console.log(`"Error creating folder ${folder}`, error);
     }
   }
 }
@@ -61,30 +75,30 @@ export async function copyFiles(params: {
   }
 }
 
-export async function copyZip(params: {
+export async function moveZip(params: {
   bucket: string;
   key: string;
   folder: string;
   file: string;
 }): Promise<void> {
   const { bucket, key, folder, file } = params;
-  console.log(`copyZip`, params);
+  //console.log(`moveZip`, params);
   try {
     if (await isExist(file)) {
       console.log(`deleting ${file}`);
       await fs.unlink(file);
     }
-    console.log(`downloading ${file}`);
     const s3File = new S3File(bucket, key);
     const data = await s3File.get();
     await fs.writeFile(`${folder}/${file}`, data.Body);
-    console.log(`downloaded ${file}`);
+    await s3File.remove();
+    //console.log(`moved ${file} to ${folder}`);
   } catch (error) {
-    console.log(`error downloading ${file}`, error);
+    console.log(`error moving ${file}`, error);
   }
 }
 
-async function isExist(name: string): Promise<boolean> {
+export async function isExist(name: string): Promise<boolean> {
   // check if file exists
   try {
     await fs.access(name);

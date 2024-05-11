@@ -36,20 +36,20 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudwatch-logs": "^3.572.0",
-    "@aws-sdk/client-dynamodb": "^3.572.0",
-    "@aws-sdk/client-kms": "^3.572.0",
-    "@aws-sdk/client-lambda": "^3.572.0",
-    "@aws-sdk/client-s3": "^3.572.0",
-    "@aws-sdk/s3-request-presigner": "^3.572.0",
-    "@aws-sdk/util-dynamodb": "^3.572.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.574.0",
+    "@aws-sdk/client-dynamodb": "^3.574.0",
+    "@aws-sdk/client-kms": "^3.574.0",
+    "@aws-sdk/client-lambda": "^3.574.0",
+    "@aws-sdk/client-s3": "^3.574.0",
+    "@aws-sdk/s3-request-presigner": "^3.574.0",
+    "@aws-sdk/util-dynamodb": "^3.574.0",
     "adm-zip": "^0.5.12",
     "axios": "^1.6.8",
     "jest": "^29.7.0",
     "jsonwebtoken": "^9.0.2",
     "minanft": "^1.10.5",
     "o1js": "^1.1.0",
-    "zkcloudworker": "^0.5.8"
+    "zkcloudworker": "^0.6.0"
   },
   "packageManager": "yarn@4.2.1"
 }

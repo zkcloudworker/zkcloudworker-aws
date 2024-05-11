@@ -1,107 +1,136 @@
-import { PrivateKey, PublicKey } from "o1js";
 import {
-  accountBalanceMina,
   makeString,
   sleep,
   blockchain,
+  getBalanceFromGraphQL,
+  DeployerKeyPair,
+  networks,
 } from "zkcloudworker";
 import { GASTANKS } from "./gastanks";
 import { Deployers } from "../table/deployers";
-const GASTANK_MINLIMIT = 4;
-const DELAY = 60 * 60 * 1000; // 1 hour
 
-export async function getCloudDeployer(): Promise<string> {
-  return GASTANKS[Math.floor(Math.random() * (GASTANKS.length - 1))];
-}
+const GAS_TANK_MIN_LIMIT = 5 * 10 ** 9;
+const DELAY = 60 * 60 * 1000; // 1 hour
 
 var deployer1: number | undefined;
 var deployer2: number | undefined;
 var deployer3: number | undefined;
 
-//TODO stop relying on AWS saving state in short term and replace with DynamoDB table logic
 export async function getDeployer(
-  minimumBalance: number = GASTANK_MINLIMIT,
-  chain: blockchain = "devnet"
-): Promise<PrivateKey> {
-  if (chain !== "devnet" && chain !== "zeko")
-    throw new Error("Only devnet and zeko are supported for now");
-  let count = 0;
-  let i: number = Math.floor(Math.random() * (GASTANKS.length - 1));
-  let replenish: boolean = await checkGasTank(GASTANKS[i], minimumBalance);
-  while (i === deployer1 || i === deployer2 || i === deployer3 || replenish) {
-    console.log(`Deployer ${i} was recently used or empty, finding another`);
-    i = Math.floor(Math.random() * (GASTANKS.length - 1));
-    replenish = await checkGasTank(GASTANKS[i], minimumBalance);
-    count++;
-    if (count > GASTANKS.length * 2) throw new Error("Faucet is empty");
+  minimumBalance: number = GAS_TANK_MIN_LIMIT,
+  chain: blockchain
+): Promise<DeployerKeyPair | undefined> {
+  if (chain !== "devnet" && chain !== "zeko") {
+    console.error("Only devnet and zeko are supported for now in getDeployer");
+    return undefined;
   }
-  // shifting last deployers
-  deployer3 = deployer2;
-  deployer2 = deployer1;
-  deployer1 = i;
-
-  const gastank = GASTANKS[i];
-  const address = PrivateKey.fromBase58(gastank).toPublicKey().toBase58();
-  console.log(
-    `Using gas tank no ${i} with public key ${address}, last deployers:`,
-    deployer1,
-    deployer2,
-    deployer3
-  );
-  const deployerPrivateKey = PrivateKey.fromBase58(gastank);
-  return deployerPrivateKey;
+  const mina = networks.find((n) => n.chainId === chain)?.mina;
+  if (mina === undefined) {
+    console.error(`Network ${chain} not found`);
+    return undefined;
+  }
+  let count = 0;
+  let found = false;
+  let i: number = Math.floor(Math.random() * (GASTANKS.length - 1));
+  let gasTank: DeployerKeyPair = GASTANKS[i];
+  while (
+    i === deployer1 ||
+    i === deployer2 ||
+    i === deployer3 ||
+    found === false
+  ) {
+    if (i === deployer1 || i === deployer2 || i === deployer3) {
+      console.log(`Deployer ${i} was recently used or empty, finding another`);
+      i = Math.floor(Math.random() * (GASTANKS.length - 1));
+      gasTank = GASTANKS[i];
+    } else {
+      const { canUse, balance } = await checkGasTank({
+        gasTank,
+        minimumBalance,
+        mina,
+      });
+      if (canUse === true) {
+        console.log(
+          `getDeployer: providing deployer ${gasTank.publicKey} with balance ${
+            balance / 1_000_000_000n
+          }`
+        );
+        deployer3 = deployer2;
+        deployer2 = deployer1;
+        deployer1 = i;
+        return gasTank;
+      } else {
+        console.log(
+          `Deployer ${i} with publicKey ${gasTank.publicKey} was recently used or empty, finding another`
+        );
+        i = Math.floor(Math.random() * (GASTANKS.length - 1));
+        gasTank = GASTANKS[i];
+        count++;
+        if (count > GASTANKS.length * 2) {
+          console.error("Faucet is empty");
+          return undefined;
+        }
+      }
+    }
+  }
+  return undefined;
 }
 
-async function checkGasTank(
-  gastank: string,
-  minimumBalance: number
-): Promise<boolean> {
-  const gasTankPrivateKeyMina = PrivateKey.fromBase58(gastank);
-  const gasTankPublicKeyMina = gasTankPrivateKeyMina.toPublicKey();
-  const publicKey = gasTankPublicKeyMina.toBase58();
+async function checkGasTank(params: {
+  gasTank: DeployerKeyPair;
+  minimumBalance: number;
+  mina: string[];
+}): Promise<{ canUse: boolean; balance: bigint }> {
+  const { gasTank, minimumBalance, mina } = params;
 
-  /*
-  let balanceGasTank = 0;
+  let balanceGasTank = 0n;
   try {
-    balanceGasTank = await accountBalanceMina(gasTankPublicKeyMina);
+    balanceGasTank = await getBalanceFromGraphQL({
+      publicKey: gasTank.publicKey,
+      mina,
+    });
   } catch (error) {
-    console.error("Error: checkGasTank accountBalanceMina", error);
+    console.error("Error: checkGasTank getBalanceFromGraphQ", error);
   }
-  const replenishGasTank: boolean =
-    minimumBalance === 0 ? false : balanceGasTank < minimumBalance;
-  console.log(
-    "Balance of gas tank",
-    PublicKey.toBase58(gasTankPublicKeyMina),
-    "is",
-    balanceGasTank.toLocaleString("en"),
-    ", needs replenishing:",
-    replenishGasTank
-  );
+  const replenishGasTank: boolean = balanceGasTank <= minimumBalance;
 
-  if (replenishGasTank) return true;
-  */
+  if (replenishGasTank) {
+    console.error("gas tank needs replenishing", {
+      publicKey: gasTank.publicKey,
+      balance: balanceGasTank,
+    });
+    return { canUse: false, balance: balanceGasTank };
+  }
+
   const deployersTable = new Deployers(process.env.DEPLOYERS_TABLE!);
-  const deployer = await deployersTable.get({ publicKey });
+  const deployer = await deployersTable.get({ publicKey: gasTank.publicKey });
   const code = makeString(20);
   if (
     deployer === undefined ||
     (deployer.timeUsed !== undefined && deployer.timeUsed + DELAY < Date.now())
   ) {
     await deployersTable.create({
-      publicKey,
+      publicKey: gasTank.publicKey,
       timeUsed: Date.now(),
       code,
     });
     await sleep(1000);
-    const check = await deployersTable.get({ publicKey });
+    const check = await deployersTable.get({ publicKey: gasTank.publicKey });
     if (check && check.code === code) {
-      console.log("Deployer is available");
-      return false;
+      return { canUse: true, balance: balanceGasTank };
     } else {
-      console.log("Deployer is not available", deployer, check);
-      return true;
+      console.error("Deployer is not available", {
+        deployer,
+        check,
+        publicKey: gasTank.publicKey,
+      });
+      return { canUse: false, balance: balanceGasTank };
     }
-  } else console.log("Deployer is not available", deployer);
+  } else
+    console.log("Deployer is not available", {
+      deployer,
+      publicKey: gasTank.publicKey,
+    });
 
-  return true;
+  return { canUse: false, balance: balanceGasTank };
 }
