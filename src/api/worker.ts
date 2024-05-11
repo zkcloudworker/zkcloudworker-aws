@@ -29,7 +29,7 @@ export async function getWorker(params: {
   developer: string;
   repo: string;
   cloud: Cloud;
-}): Promise<zkCloudWorker> {
+}): Promise<zkCloudWorker | undefined> {
   const { developer, repo, cloud } = params;
   if (developer === "@staketab") {
     switch (repo) {
@@ -44,17 +44,30 @@ export async function getWorker(params: {
     developer,
     repo,
   });
-  if (result === undefined)
-    throw new Error(`worker not found: ${developer}/${repo}`);
+  if (result === undefined) {
+    console.error(`worker not found: ${developer}/${repo}`);
+    return undefined;
+  }
+  if (result.version === undefined) {
+    throw new Error(`worker version not found: ${developer}/${repo}`);
+    return undefined;
+  }
 
   // TODO: add balance check
   if (result.countUsed !== undefined && result.countUsed >= 50) {
     throw new Error(`worker used up: ${developer}/${repo}`);
   }
 
-  const contractsDirRoot = "/mnt/efs/worker";
-  const contractsDir = contractsDirRoot + "/" + developer + "/" + repo;
-  const distDir = contractsDir + "/dist";
+  const workersDirRoot = "/mnt/efs/worker";
+  const distDir =
+    workersDirRoot +
+    "/" +
+    developer +
+    "/" +
+    repo +
+    "/" +
+    result.version.replaceAll(".", "_") +
+    "/dist";
 
   console.log("Importing worker from:", distDir);
   const zkcloudworker = await import(distDir);

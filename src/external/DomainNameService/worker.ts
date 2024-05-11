@@ -73,7 +73,6 @@ import { stringToFields, stringFromFields } from "./lib/hash";
 import { nameContract } from "./config";
 import { RollupNFTData, createRollupNFT } from "./rollup/rollup-nft";
 import { Metadata } from "minanft";
-import { sign } from "crypto";
 
 const fullValidation = true;
 const waitTx = false as boolean;

@@ -6,13 +6,14 @@ const { BUCKET } = process.env;
 export async function getPresignedUrl(params: {
   developer: string;
   repo: string;
+  version: string;
 }): Promise<string> {
-  const { developer, repo } = params;
+  const { developer, repo, version } = params;
   const options = { forcePathStyle: true };
   const client = new S3Client(options);
   const s3params = {
     Bucket: BUCKET,
-    Key: developer + "/" + repo + ".zip",
+    Key: developer + "/" + repo + "." + version + ".zip",
     ContentType: "application/zip",
   };
   const command = new PutObjectCommand(s3params);

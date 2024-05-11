@@ -1,10 +1,10 @@
-import { listFiles, copyFiles } from "../storage/files";
-import { unzip } from "../storage/install";
+import { listFiles, copyZip } from "../storage/files";
+import { unzip } from "../storage/zip";
+import { install } from "../storage/install";
 import fs from "fs/promises";
 import { Jobs } from "../table/jobs";
 import { Workers } from "../table/workers";
-import { Memory, sleep, LocalCloud, JobData } from "zkcloudworker";
-import { Cache } from "o1js";
+import { Memory, sleep } from "zkcloudworker";
 
 const { BUCKET } = process.env;
 const WORKERS_TABLE = process.env.WORKERS_TABLE!;
@@ -14,145 +14,132 @@ export async function deploy(params: {
   repo: string;
   id: string;
   jobId: string;
-  packageManager: string;
+  args: string;
 }): Promise<boolean> {
   console.log("deploy", params);
-  const { developer, repo, id, jobId, packageManager } = params;
+  const { developer, repo, id, jobId, args } = params;
+  const { packageManager, version, size, protect } = JSON.parse(args);
   const timeStarted = Date.now();
   console.time("deployed");
   Memory.info("start");
+  const JobsTable = new Jobs(process.env.JOBS_TABLE!);
+  const workersTable = new Workers(WORKERS_TABLE);
   try {
-    const JobsTable = new Jobs(process.env.JOBS_TABLE!);
-
-    try {
-      const contractsDirRoot = "/mnt/efs/worker";
-      const developerDir = contractsDirRoot + "/" + developer;
-      const contractsDir = contractsDirRoot + "/" + developer + "/" + repo;
-      const cacheDir = "/mnt/efs/cache";
-      const fileName = repo + ".zip";
-      const fullFileName = developer + "/" + fileName;
-      if (BUCKET === undefined) throw new Error("BUCKET is undefined");
-
-      // Copy compiled from TypeScript to JavaScript source code of the contracts
-      // from S3 bucket to AWS lambda /tmp/contracts folder
-
-      await listFiles(contractsDirRoot, true);
-      await listFiles(developerDir, true);
-      await listFiles(contractsDir, true);
-      await fs.rm(contractsDir, { recursive: true });
-      await listFiles(contractsDir, true);
-      //await fs.rm(contractsDir, { recursive: true });
-
-      //await listFiles(contractsDirRoot, true);
-      //await listFiles(contractsDir, true);
-      await listFiles(cacheDir, false);
-
-      await copyFiles({
-        bucket: BUCKET,
-        developer: developer,
-        folder: contractsDirRoot,
-        files: [fileName],
-        overwrite: true,
-        //move: true,
-      });
-      await listFiles(developerDir, true);
-      await listFiles(contractsDir, true);
-      console.log("loaded repo");
-
-      console.time("unzipped");
-      await unzip({
-        folder: developerDir,
-        repo,
-        packageManager,
-      });
-      console.timeEnd("unzipped");
-      await listFiles(developerDir, true);
-      await listFiles(contractsDir, true);
-      await fs.rm(developerDir + "/" + fileName);
-      await listFiles(developerDir, true);
-
-      Memory.info("deployed");
-      console.timeEnd("deployed");
-
-      const distDir = contractsDir + "/dist";
-      await listFiles(distDir, true);
-      /*
-    console.log("Importing worker from:", distDir);
-    const zkcloudworker = await import(distDir);
-    console.log("Getting zkCloudWorker object...");
-
-    const functionName = "zkcloudworker";
-    const timeCreated = Date.now();
-    const job: JobData = {
-      id: "local",
-      jobId: "jobId",
-      developer: "@dfst",
-      repo: "simple-example",
-      task: "example",
-      userId: "userId",
-      args: Math.ceil(Math.random() * 100).toString(),
-      metadata: "simple-example",
-      txNumber: 1,
-      timeCreated,
-      timeCreatedString: new Date(timeCreated).toISOString(),
-      timeStarted: timeCreated,
-      jobStatus: "started",
-      maxAttempts: 0,
-    } as JobData;
-    const cache = Cache.FileSystem(cacheDir);
-    const cloud = new LocalCloud({
-      job,
-      cache,
-      chain: "local",
-      localWorker: zkcloudworker,
+    const existingWorker = await workersTable.get({
+      developer,
+      repo,
     });
-    const worker = await zkcloudworker[functionName](cloud);
-    console.log("Executing job...");
-    const result = await worker.execute();
-    console.log("Job result:", result);
-    */
+    if (existingWorker !== undefined && existingWorker.protected === true) {
+      console.log("Existing worker is protected", existingWorker);
+      console.error("Worker already exists and is protected", {
+        developer,
+        repo,
+        version,
+      });
       await JobsTable.updateStatus({
         id,
         jobId: jobId,
-        status: "finished",
-        result: "deployed",
+        status: "failed",
+        result: "Worker already exists and is protected",
         billedDuration: Date.now() - timeStarted,
-        maxAttempts: 1,
       });
-      const workersTable = new Workers(WORKERS_TABLE);
-      await workersTable.create({
-        developer,
-        repo,
-        timeDeployed: Date.now(),
-        timeUsed: 0,
-        countUsed: 0,
-      });
-      await sleep(1000);
-
-      return true;
-    } catch (err: any) {
-      console.error(err);
-      console.error("Error deploying package");
-      const msg = err?.message ?? err?.toString();
-      if (jobId !== "test")
-        await JobsTable.updateStatus({
-          id,
-          jobId: jobId,
-          status: "failed",
-          result:
-            "deploy error: " +
-            (msg && typeof msg === "string"
-              ? msg
-              : "exception while installing dependencies and compiling"),
-          billedDuration: Date.now() - timeStarted,
-        });
       Memory.info("deploy error");
       console.timeEnd("deployed");
       await sleep(1000);
       return false;
     }
+
+    if (BUCKET === undefined) throw new Error("BUCKET is undefined");
+    const workersDirRoot = "/mnt/efs/worker";
+    await listFiles(workersDirRoot, false);
+    const developerDir = workersDirRoot + "/" + developer;
+    await listFiles(developerDir, true);
+    const repoDir = developerDir + "/" + repo;
+    await listFiles(repoDir, true);
+    console.log("Clearing folder", repoDir);
+    await fs.rm(repoDir, { recursive: true });
+    await listFiles(repoDir, false);
+    const versionDir = repoDir + "/" + version.replaceAll(".", "_");
+    await listFiles(versionDir, false);
+
+    const filename = repo + "." + version + ".zip";
+
+    // Copy compiled from TypeScript to JavaScript source code of the contracts
+    // from S3 bucket to AWS lambda /tmp/contracts folder
+
+    await copyZip({
+      bucket: BUCKET,
+      key: developer + "/" + filename,
+      folder: developerDir,
+      file: filename,
+    });
+
+    await listFiles(developerDir, true);
+    console.log(`loaded repo zip file ${filename} to ${developerDir}`);
+    console.time("unzipped");
+    await unzip({
+      folder: developerDir,
+      filename,
+      targetDir: versionDir,
+    });
+    console.timeEnd("unzipped");
+    await listFiles(developerDir, true);
+    await fs.rm(developerDir + "/" + filename);
+    await listFiles(developerDir, true);
+
+    console.time("installed");
+    await install({
+      folder: versionDir,
+      packageManager,
+    });
+    console.timeEnd("installed");
+
+    const distDir = versionDir + "/dist";
+    await listFiles(distDir, true);
+
+    await JobsTable.updateStatus({
+      id,
+      jobId: jobId,
+      status: "finished",
+      result: "deployed",
+      billedDuration: Date.now() - timeStarted,
+      maxAttempts: 1,
+    });
+    await workersTable.create({
+      id,
+      developer,
+      repo,
+      version,
+      size,
+      protected: protect,
+      timeDeployed: Date.now(),
+      timeUsed: 0,
+      countUsed: 0,
+    });
+    Memory.info("deployed");
+    console.timeEnd("deployed");
+    await sleep(1000);
+
+    return true;
   } catch (err: any) {
-    console.error("Error deploying package", err);
+    console.error(err);
+    console.error("Error deploying package");
+    const msg = err?.message ?? err?.toString();
+    if (jobId !== "test")
+      await JobsTable.updateStatus({
+        id,
+        jobId: jobId,
+        status: "failed",
+        result:
+          "deploy error: " +
+          (msg && typeof msg === "string"
+            ? msg
+            : "exception while installing dependencies and compiling"),
+        billedDuration: Date.now() - timeStarted,
+      });
+    Memory.info("deploy error");
+    console.timeEnd("deployed");
+    await sleep(1000);
     return false;
   }
 }
