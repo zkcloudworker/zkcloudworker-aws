@@ -8,7 +8,7 @@ export async function install(params: {
   folder: string;
   packageManager: string;
 }) {
-  console.log("install", params);
+  //console.log("install", params);
   const { folder, packageManager } = params;
   process.chdir(folder);
   //const currentDir = process.cwd();

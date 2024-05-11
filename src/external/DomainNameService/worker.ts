@@ -730,7 +730,7 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     if (args.contractAddress === undefined)
       throw new Error("args.contractAddress is undefined");
     if (args.contractAddress !== nameContract.contractAddress) {
-      console.error("proveRollupBlock: ontractAddress is invalid");
+      console.error("proveRollupBlock: contractAddress is invalid");
       return "contractAddress is invalid";
     }
     if (args.blockAddress === undefined)
@@ -858,8 +858,9 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     )
       throw new Error("verificationKey is undefined");
 
-    const deployer = await this.cloud.getDeployer();
-    if (deployer === undefined) throw new Error("deployer is undefined");
+    const deployerKeyPair = await this.cloud.getDeployer();
+    if (deployerKeyPair === undefined) throw new Error("deployer is undefined");
+    const deployer = PrivateKey.fromBase58(deployerKeyPair.privateKey);
     const sender = deployer.toPublicKey();
     await this.fetchMinaAccount({ publicKey: sender, force: true });
     await this.fetchMinaAccount({ publicKey: contractAddress, force: true });
@@ -894,10 +895,16 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         `prove block tx sent: hash: ${txSent.hash} status: ${txSent.status}`
       );
     if (txSent.status !== "pending") {
-      await this.cloud.releaseDeployer([]);
+      await this.cloud.releaseDeployer({
+        publicKey: deployerKeyPair.publicKey,
+        txsHashes: [],
+      });
       throw new Error("Error sending prove block transaction");
     }
-    await this.cloud.releaseDeployer([txSent.hash]);
+    await this.cloud.releaseDeployer({
+      publicKey: deployerKeyPair.publicKey,
+      txsHashes: [txSent.hash],
+    });
     //console.log("Deleting proveBlock task", this.cloud.taskId);
     console.log(`Block ${blockNumber} is proved`);
     await this.cloud.deleteTask(this.cloud.taskId);
@@ -1308,8 +1315,9 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     if (proof.publicInput.hash.toJSON() !== validators.hash.toJSON())
       throw new Error("Invalid validators hash in proof");
 
-    const deployer = await this.cloud.getDeployer();
-    if (deployer === undefined) throw new Error("deployer is undefined");
+    const deployerKeyPair = await this.cloud.getDeployer();
+    if (deployerKeyPair === undefined) throw new Error("deployer is undefined");
+    const deployer = PrivateKey.fromBase58(deployerKeyPair.privateKey);
     const sender = deployer.toPublicKey();
     if (previousBlockAddress !== undefined)
       await this.fetchMinaAccount({
@@ -1364,10 +1372,16 @@ export class DomainNameServiceWorker extends zkCloudWorker {
         `validate block tx sent: hash: ${txSent.hash} status: ${txSent.status}`
       );
     if (txSent.status !== "pending") {
-      await this.cloud.releaseDeployer([]);
+      await this.cloud.releaseDeployer({
+        publicKey: deployerKeyPair.publicKey,
+        txsHashes: [],
+      });
       throw new Error("Error sending block creation transaction");
     }
-    await this.cloud.releaseDeployer([txSent.hash]);
+    await this.cloud.releaseDeployer({
+      publicKey: deployerKeyPair.publicKey,
+      txsHashes: [txSent.hash],
+    });
     //console.log("Deleting validateBlock task", this.cloud.taskId);
     await this.cloud.deleteTask(this.cloud.taskId);
     if (validated) {
@@ -2100,7 +2114,10 @@ export class DomainNameServiceWorker extends zkCloudWorker {
       console.log(
         "Block producer balance is less than 10 MINA, replenishing..."
       );
-      const deployer = await this.cloud.getDeployer();
+      const deployerKeyPair = await this.cloud.getDeployer();
+      if (deployerKeyPair === undefined)
+        throw new Error("deployer is undefined");
+      const deployer = PrivateKey.fromBase58(deployerKeyPair.privateKey);
       if (deployer !== undefined) {
         const deployerPublicKey = deployer.toPublicKey();
         const transaction = await Mina.transaction(
@@ -2252,99 +2269,3 @@ export class DomainNameServiceWorker extends zkCloudWorker {
     return result;
   }
 }
-
-export async function zkcloudworker(cloud: Cloud): Promise<zkCloudWorker> {
-  return new DomainNameServiceWorker(cloud);
-}
-
-/*
-  public async send(transaction: string): Promise<string | undefined> {
-    
-    minaInit();
-    const deployer = await getDeployer();
-    const sender = deployer.toPublicKey();
-    const contractAddress = PublicKey.fromBase58(this.args[1]);
-    const zkApp = new MapContract(contractAddress);
-    await this.fetchMinaAccount(deployer.toPublicKey());
-    await this.fetchMinaAccount(contractAddress);
-    let tx;
-
-    const args = JSON.parse(transaction);
-    if (this.args[0] === "add") {
-      const name = Field.fromJSON(args.name);
-      const address = PublicKey.fromBase58(args.address);
-      const signature = Signature.fromBase58(args.signature);
-      const storage: Storage = new Storage({
-        hashString: [
-          Field.fromJSON(args.storage[0]),
-          Field.fromJSON(args.storage[1]),
-        ],
-      });
-
-      tx = await Mina.transaction(
-        { sender, fee: await fee(), memo: "add" },
-        () => {
-          zkApp.add(name, address, storage, signature);
-        }
-      );
-    } else if (this.args[0] === "reduce") {
-      try {
-        const startActionState = Field.fromJSON(args.startActionState);
-        const endActionState = Field.fromJSON(args.endActionState);
-        const reducerState = new ReducerState({
-          count: Field.fromJSON(args.reducerState.count),
-          hash: Field.fromJSON(args.reducerState.hash),
-        });
-        const count = Number(reducerState.count.toBigInt());
-        console.log("ReducerState count", reducerState.count.toJSON());
-        await fetchMinaActions(contractAddress, startActionState);
-
-        const proof: MapUpdateProof = MapUpdateProof.fromJSON(
-          JSON.parse(args.proof) as JsonProof
-        );
-        console.log("proof count", proof.publicInput.count.toJSON());
-        const signature = Signature.fromBase58(args.signature);
-
-        tx = await Mina.transaction(
-          { sender, fee: await fee(), memo: "reduce" },
-          () => {
-            zkApp.reduce(
-              startActionState,
-              endActionState,
-              reducerState,
-              proof,
-              signature
-            );
-          }
-        );
-      } catch (error) {
-        console.log("Error in reduce", error);
-      }
-    } else if (this.args[0] === "setRoot") {
-      const root = Field.fromJSON(args.root);
-      const count = Field.fromJSON(args.count);
-      const signature = Signature.fromBase58(args.signature);
-
-      tx = await Mina.transaction(
-        { sender, fee: await fee(), memo: "reset" },
-        () => {
-          zkApp.setRoot(root, count, signature);
-        }
-      );
-    } else throw new Error("unknown action");
-
-    if (tx === undefined) throw new Error("tx is undefined");
-    await tx.prove();
-    const txSent = await tx.sign([deployer]).send();
-    if (txSent === undefined) throw new Error("tx is undefined");
-    const hash: string | undefined = txSent.hash;
-    if (hash === undefined) throw new Error("hash is undefined");
-    return hash;
-    
-    throw new Error("not implemented");
-  }
-
-  public async mint(transaction: string): Promise<string | undefined> {
-    throw new Error("not implemented");
-  }
-  */

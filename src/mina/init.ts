@@ -6,6 +6,7 @@ import {
   Devnet,
 } from "zkcloudworker";
 
+/*
 let networkInstance: MinaNetwork = Devnet;
 
 export async function minaInit(
@@ -15,6 +16,7 @@ export async function minaInit(
   const networkInstance = await initBlockchain(chain);
   return networkInstance;
 }
+*/
 
 /*
 export function explorerAccount(): string {

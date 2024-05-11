@@ -5,7 +5,6 @@ import { StepsData, MAX_STEP_ATTEMPTS } from "../model/stepsData";
 import { zkCloudWorker, Memory } from "zkcloudworker";
 import { cacheDir } from "./cloud";
 import { listFiles } from "../storage/files";
-import { minaInit } from "../mina/init";
 
 export async function runStep(
   step: StepsData,
@@ -19,15 +18,7 @@ export async function runStep(
     attempts: step.attempts,
   });
   Memory.info(`start`);
-  await minaInit(step.chain);
-  /*
-  // TODO remove after testing
-  const emulateError = Math.random() < 0.5;
-  if (emulateError) {
-    console.error("runStep: emulating error");
-    return;
-  }
-  */
+
   const StepsTable = new Steps(process.env.STEPS_TABLE!);
 
   try {

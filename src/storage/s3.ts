@@ -167,10 +167,10 @@ export class S3File {
         Bucket: this.bucket,
         Key: this.key,
       };
-      console.log("S3File: remove", params);
+      //console.log("S3File: remove", params);
       const command = new DeleteObjectCommand(params);
       const data = await this._client.send(command);
-      console.log("Success: S3File: remove", data);
+      //console.log("Success: S3File: remove", data);
     } catch (error: any) {
       console.error("Error: S3File: remove", error);
     }

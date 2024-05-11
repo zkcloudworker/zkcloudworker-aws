@@ -1,5 +1,5 @@
 import { zkCloudWorker, Cloud } from "zkcloudworker";
-import { zkcloudworker as DomainNameServiceWorker } from "../external/DomainNameService/worker";
+import { zkcloudworker as DomainNameServiceWorker } from "../external/DomainNameService/index";
 import { Workers } from "../table/workers";
 
 const WORKERS_TABLE = process.env.WORKERS_TABLE!;
@@ -48,10 +48,13 @@ export async function getWorker(params: {
     console.error(`worker not found: ${developer}/${repo}`);
     return undefined;
   }
-  if (result.version === undefined) {
-    throw new Error(`worker version not found: ${developer}/${repo}`);
+  if (result.version === undefined || typeof result.version !== "string") {
+    console.error(
+      `worker version for ${developer}/${repo} not found or has wrong format: ${result.version}`
+    );
     return undefined;
   }
+  const version: string = result.version;
 
   // TODO: add balance check
   if (result.countUsed !== undefined && result.countUsed >= 50) {
@@ -66,10 +69,10 @@ export async function getWorker(params: {
     "/" +
     repo +
     "/" +
-    result.version.replaceAll(".", "_") +
+    version.replaceAll(".", "_") +
     "/dist";
 
-  console.log("Importing worker from:", distDir);
+  console.log("Running worker", { developer, repo, version });
   const zkcloudworker = await import(distDir);
   const functionName = "zkcloudworker";
   const worker = await zkcloudworker[functionName](cloud);

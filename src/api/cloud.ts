@@ -7,10 +7,12 @@ import {
   makeString,
   CloudTransaction,
   TaskData,
+  DeployerKeyPair,
 } from "zkcloudworker";
 import { StepsData } from "../model/stepsData";
 import { Transactions } from "../table/transactions";
 import { KeyValue } from "../table/kv";
+import { Deployers } from "../table/deployers";
 import { Tasks } from "../table/tasks";
 import { createRecursiveProofJob } from "./recursive";
 import { createExecuteJob } from "./execute";
@@ -20,6 +22,7 @@ export const cacheDir = "/mnt/efs/cache";
 const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
 const TASKS_TABLE = process.env.TASKS_TABLE!;
 const KV_TABLE = process.env.KV_TABLE!;
+const DEPLOYERS_TABLE = process.env.DEPLOYERS_TABLE!;
 
 export class CloudWorker extends Cloud {
   webhook?: string; // TODO: add webhook call to Sequencer
@@ -72,14 +75,27 @@ export class CloudWorker extends Cloud {
     });
     this.webhook = webhook;
   }
-  async getDeployer(): Promise<PrivateKey> {
+  async getDeployer(): Promise<DeployerKeyPair | undefined> {
     const deployer = await getDeployer(4, this.chain);
     return deployer;
   }
 
-  public async releaseDeployer(txsHashes: string[]): Promise<void> {
-    // TODO: add txsHashes to the DynamoDB tables: Jobs, Deployers
-    console.log("Cloud: releaseDeployer", txsHashes);
+  public async releaseDeployer(params: {
+    publicKey: string;
+    txsHashes: string[];
+  }): Promise<void> {
+    console.log("Cloud: releaseDeployer", params);
+    const { publicKey, txsHashes } = params;
+    const deployersTable = new Deployers(DEPLOYERS_TABLE);
+    try {
+      await deployersTable.create({
+        publicKey,
+        timeUsed: Date.now(),
+        txs: txsHashes.map((hash) => ({ hash, chain: this.chain })),
+      });
+    } catch (error) {
+      console.error("releaseDeployer: error", params, error);
+    }
   }
 
   async log(msg: string): Promise<void> {
