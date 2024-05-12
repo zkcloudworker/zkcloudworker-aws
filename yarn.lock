@@ -7013,19 +7013,19 @@ __metadata:
     serverless-plugin-typescript: "npm:^2.1.5"
     serverless-prune-plugin: "npm:^2.0.2"
     typescript: "npm:^5.4.5"
-    zkcloudworker: "npm:^0.7.0"
+    zkcloudworker: "npm:^0.7.2"
   languageName: unknown
   linkType: soft
 
-"zkcloudworker@npm:^0.7.0":
-  version: 0.7.0
-  resolution: "zkcloudworker@npm:0.7.0"
+"zkcloudworker@npm:^0.7.2":
+  version: 0.7.2
+  resolution: "zkcloudworker@npm:0.7.2"
   dependencies:
     axios: "npm:^1.6.8"
     chalk: "npm:^4.1.2"
     nats: "npm:^2.24.0"
   peerDependencies:
     o1js: ^1.1.0
-  checksum: 10c0/d0a9554059840cd60c1d6db0dc6e9dd638c7be50bbbd43864aea8d739a46c759156c852a70664a3f0b683b4aad2d496132694e1a372da220623749e1fee09ea3
+  checksum: 10c0/d44506db8a21b9505c3ef2e80c6cae7ce0842fd133b70aa9fe0453fc5c3c801ea4a9320ba2d25203747a834f7e2ce258709f9ae78a328da3077aaddf40384f82
   languageName: node
   linkType: hard

@@ -174,26 +174,31 @@ export async function executeSync(params: {
   Memory.info(`start`);
   console.time("zkCloudWorker Execute Sync");
 
-  const cloud = new ExecuteCloudWorker(job);
-  const { worker, error } = await getWorker({
-    developer: developer,
-    repo: repo,
-    cloud,
-  });
+  try {
+    const cloud = new ExecuteCloudWorker(job);
+    const { worker, error } = await getWorker({
+      developer: developer,
+      repo: repo,
+      cloud,
+    });
 
-  if (worker === undefined) {
-    console.error("executeSync: worker not found", error);
-    return error ?? "error: worker not found";
+    if (worker === undefined) {
+      console.error("executeSync: worker not found", error);
+      return error ?? "error: worker not found";
+    }
+
+    const result =
+      command === "execute"
+        ? await worker.execute(transactions)
+        : await worker.task();
+
+    Memory.info(`finished`);
+    console.timeEnd("zkCloudWorker Execute Sync");
+    return result;
+  } catch (error: any) {
+    console.error("executeSync: catch:", error);
+    return undefined;
   }
-
-  const result =
-    command === "execute"
-      ? await worker.execute(transactions)
-      : await worker.task();
-
-  Memory.info(`finished`);
-  console.timeEnd("zkCloudWorker Execute Sync");
-  return result;
 }
 
 export async function execute(params: {
