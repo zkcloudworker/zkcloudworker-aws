@@ -90,8 +90,9 @@ export class CloudWorker extends Cloud {
     try {
       await deployersTable.create({
         publicKey,
+        chain: this.chain,
         timeUsed: Date.now(),
-        txs: txsHashes.map((hash) => ({ hash, chain: this.chain })),
+        txs: txsHashes,
       });
     } catch (error) {
       console.error("releaseDeployer: error", params, error);

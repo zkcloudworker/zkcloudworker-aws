@@ -1,5 +1,5 @@
 import { zkCloudWorker, Cloud } from "zkcloudworker";
-import { zkcloudworker as DomainNameServiceWorker } from "../external/DomainNameService/index";
+//import { zkcloudworker as DomainNameServiceWorker } from "../external/DomainNameService/index";
 import { Workers } from "../table/workers";
 
 const WORKERS_TABLE = process.env.WORKERS_TABLE!;
@@ -9,6 +9,7 @@ export async function isWorkerExist(params: {
   repo: string;
 }): Promise<boolean> {
   const { developer, repo } = params;
+  /*
   if (developer === "@staketab") {
     switch (repo) {
       case "nameservice":
@@ -17,6 +18,7 @@ export async function isWorkerExist(params: {
         return false;
     }
   }
+  */
   const workersTable = new Workers(WORKERS_TABLE);
   const result = await workersTable.get({
     developer,
@@ -29,36 +31,52 @@ export async function getWorker(params: {
   developer: string;
   repo: string;
   cloud: Cloud;
-}): Promise<zkCloudWorker | undefined> {
+}): Promise<{ worker?: zkCloudWorker; error?: string }> {
   const { developer, repo, cloud } = params;
+  /*
   if (developer === "@staketab") {
     switch (repo) {
       case "nameservice":
-        return await DomainNameServiceWorker(cloud);
+        return { worker: await DomainNameServiceWorker(cloud) };
       default:
         throw new Error("unknown repo");
     }
   }
+  */
   const workersTable = new Workers(WORKERS_TABLE);
   const result = await workersTable.get({
     developer,
     repo,
   });
+  console.log("getWorker result:", result);
   if (result === undefined) {
     console.error(`worker not found: ${developer}/${repo}`);
-    return undefined;
+    return { error: `error: worker not found: ${developer}/${repo}` };
   }
   if (result.version === undefined || typeof result.version !== "string") {
     console.error(
       `worker version for ${developer}/${repo} not found or has wrong format: ${result.version}`
     );
-    return undefined;
+    return {
+      error: `error: worker version for ${developer}/${repo} not found or has wrong format: ${result.version}`,
+    };
   }
   const version: string = result.version;
 
   // TODO: add balance check
   if (result.countUsed !== undefined && result.countUsed >= 50) {
-    throw new Error(`worker used up: ${developer}/${repo}`);
+    if (
+      developer !== "@staketab" &&
+      developer !== "DFST" &&
+      developer !== "MAZ"
+    ) {
+      console.error(`worker used up: ${developer}/${repo}`);
+      return { error: `error: worker used up: ${developer}/${repo}` };
+    } else {
+      console.log(
+        `worker ${developer}/${repo} used already ${result.countUsed} times`
+      );
+    }
   }
 
   const workersDirRoot = "/mnt/efs/worker";
@@ -81,5 +99,5 @@ export async function getWorker(params: {
     repo,
     count: result.countUsed ?? 0,
   });
-  return worker;
+  return { worker };
 }

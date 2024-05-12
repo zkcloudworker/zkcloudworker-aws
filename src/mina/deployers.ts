@@ -48,6 +48,7 @@ export async function getDeployer(
         gasTank,
         minimumBalance,
         mina,
+        chain,
       });
       if (canUse === true) {
         console.log(
@@ -80,8 +81,9 @@ async function checkGasTank(params: {
   gasTank: DeployerKeyPair;
   minimumBalance: number;
   mina: string[];
+  chain: blockchain;
 }): Promise<{ canUse: boolean; balance: bigint }> {
-  const { gasTank, minimumBalance, mina } = params;
+  const { gasTank, minimumBalance, mina, chain } = params;
 
   let balanceGasTank = 0n;
   try {
@@ -111,6 +113,7 @@ async function checkGasTank(params: {
   ) {
     await deployersTable.create({
       publicKey: gasTank.publicKey,
+      chain,
       timeUsed: Date.now(),
       code,
     });
