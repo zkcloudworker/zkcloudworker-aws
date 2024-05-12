@@ -39,6 +39,8 @@ export async function getDeployer(
     i === deployer3 ||
     found === false
   ) {
+    if (count > GASTANKS.length * 2) return undefined;
+    count++;
     if (i === deployer1 || i === deployer2 || i === deployer3) {
       console.log(`Deployer ${i} was recently used or empty, finding another`);
       i = Math.floor(Math.random() * (GASTANKS.length - 1));
@@ -48,6 +50,7 @@ export async function getDeployer(
         gasTank,
         minimumBalance,
         mina,
+        chain,
       });
       if (canUse === true) {
         console.log(
@@ -80,8 +83,9 @@ async function checkGasTank(params: {
   gasTank: DeployerKeyPair;
   minimumBalance: number;
   mina: string[];
+  chain: blockchain;
 }): Promise<{ canUse: boolean; balance: bigint }> {
-  const { gasTank, minimumBalance, mina } = params;
+  const { gasTank, minimumBalance, mina, chain } = params;
 
   let balanceGasTank = 0n;
   try {
@@ -103,7 +107,10 @@ async function checkGasTank(params: {
   }
 
   const deployersTable = new Deployers(process.env.DEPLOYERS_TABLE!);
-  const deployer = await deployersTable.get({ publicKey: gasTank.publicKey });
+  const deployer = await deployersTable.get({
+    publicKey: gasTank.publicKey,
+    chain,
+  });
   const code = makeString(20);
   if (
     deployer === undefined ||
@@ -111,11 +118,15 @@ async function checkGasTank(params: {
   ) {
     await deployersTable.create({
       publicKey: gasTank.publicKey,
+      chain,
       timeUsed: Date.now(),
       code,
     });
     await sleep(1000);
-    const check = await deployersTable.get({ publicKey: gasTank.publicKey });
+    const check = await deployersTable.get({
+      publicKey: gasTank.publicKey,
+      chain,
+    });
     if (check && check.code === code) {
       return { canUse: true, balance: balanceGasTank };
     } else {

@@ -175,15 +175,15 @@ export async function executeSync(params: {
   console.time("zkCloudWorker Execute Sync");
 
   const cloud = new ExecuteCloudWorker(job);
-  const worker: zkCloudWorker | undefined = await getWorker({
+  const { worker, error } = await getWorker({
     developer: developer,
     repo: repo,
     cloud,
   });
 
   if (worker === undefined) {
-    console.error("executeSync: worker not found");
-    return "error: worker not found";
+    console.error("executeSync: worker not found", error);
+    return error ?? "error: worker not found";
   }
 
   const result =

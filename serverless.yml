@@ -407,9 +407,13 @@ resources:
         AttributeDefinitions:
           - AttributeName: publicKey
             AttributeType: S
+          - AttributeName: chain
+            AttributeType: S
         KeySchema:
           - AttributeName: publicKey
             KeyType: HASH
+          - AttributeName: chain
+            KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.DEPLOYERS_TABLE}
 
