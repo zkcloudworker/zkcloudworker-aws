@@ -8,8 +8,11 @@ import { createRecursiveProofJob } from "./src/api/recursive";
 import { CloudWorker } from "./src/api/cloud";
 import { getPresignedUrl } from "./src/storage/presigned";
 import { LogStream } from "zkcloudworker";
-import { nameContract } from "./src/external/DomainNameService/config"; // TODO: remove
 const MAX_JOB_AGE: number = 1000 * 60 * 60; // 60 minutes
+const nameContract = {
+  // TODO: remove later
+  contractAddress: "B62qnXXnnwnyUKbEBuQM64LEfNcBRzCkeNSCu3H4mhbe7ittQX2mDNS",
+};
 
 const ZKCLOUDWORKER_AUTH = process.env.ZKCLOUDWORKER_AUTH!;
 

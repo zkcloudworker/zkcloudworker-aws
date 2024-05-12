@@ -39,6 +39,8 @@ export async function getDeployer(
     i === deployer3 ||
     found === false
   ) {
+    if (count > GASTANKS.length * 2) return undefined;
+    count++;
     if (i === deployer1 || i === deployer2 || i === deployer3) {
       console.log(`Deployer ${i} was recently used or empty, finding another`);
       i = Math.floor(Math.random() * (GASTANKS.length - 1));
@@ -105,7 +107,10 @@ async function checkGasTank(params: {
   }
 
   const deployersTable = new Deployers(process.env.DEPLOYERS_TABLE!);
-  const deployer = await deployersTable.get({ publicKey: gasTank.publicKey });
+  const deployer = await deployersTable.get({
+    publicKey: gasTank.publicKey,
+    chain,
+  });
   const code = makeString(20);
   if (
     deployer === undefined ||
@@ -118,7 +123,10 @@ async function checkGasTank(params: {
       code,
     });
     await sleep(1000);
-    const check = await deployersTable.get({ publicKey: gasTank.publicKey });
+    const check = await deployersTable.get({
+      publicKey: gasTank.publicKey,
+      chain,
+    });
     if (check && check.code === code) {
       return { canUse: true, balance: balanceGasTank };
     } else {

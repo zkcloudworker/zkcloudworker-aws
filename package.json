@@ -13,8 +13,8 @@
     "web3",
     "zero knowledge"
   ],
-  "version": "0.1.1",
-  "author": "dfst.io",
+  "version": "0.2.0",
+  "author": "DFST",
   "license": "Apache-2.0",
   "scripts": {
     "deploy": "serverless deploy --aws-profile zkcloudworker",
@@ -45,11 +45,9 @@
     "@aws-sdk/util-dynamodb": "^3.574.0",
     "adm-zip": "^0.5.12",
     "axios": "^1.6.8",
-    "jest": "^29.7.0",
     "jsonwebtoken": "^9.0.2",
-    "minanft": "^1.10.5",
     "o1js": "^1.1.0",
-    "zkcloudworker": "^0.6.2"
+    "zkcloudworker": "^0.7.0"
   },
-  "packageManager": "yarn@4.2.1"
+  "packageManager": "yarn@4.2.2"
 }

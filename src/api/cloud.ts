@@ -1,4 +1,3 @@
-import { Cache, PrivateKey } from "o1js";
 import { getDeployer } from "../mina/deployers";
 import {
   Cloud,
@@ -32,7 +31,7 @@ export class CloudWorker extends Cloud {
     jobId: string;
     stepId?: string;
     taskId?: string;
-    cache?: Cache;
+    cache?: string;
     developer: string;
     repo: string;
     task?: string;
@@ -63,7 +62,7 @@ export class CloudWorker extends Cloud {
       jobId,
       stepId: stepId ?? "",
       taskId: taskId ?? "",
-      cache: cache ?? Cache.FileSystem(cacheDir),
+      cache: cache ?? cacheDir,
       developer,
       repo,
       task,
@@ -379,7 +378,6 @@ export class ExecuteCloudWorker extends CloudWorker {
   constructor(job: JobData) {
     const { jobId, developer, repo, task, userId, args, metadata, id, taskId } =
       job;
-    const cache: Cache = Cache.FileSystem(cacheDir);
     super({
       id,
       jobId,
@@ -390,7 +388,7 @@ export class ExecuteCloudWorker extends CloudWorker {
       userId,
       args,
       metadata,
-      cache,
+      cache: cacheDir,
       chain: job.chain,
       webhook: job.webhook,
     });
