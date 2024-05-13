@@ -9,7 +9,7 @@ import {
   sleep,
   formatTime,
   LogStream,
-} from "zkcloudworker";
+} from "../cloud";
 import { StepsData, StepTask } from "../model/stepsData";
 import { callLambda } from "../lambda/lambda";
 import { S3File } from "../storage/s3";
@@ -616,6 +616,7 @@ export class Sequencer {
             undefined
           )
             throw new Error(`origin ${i} not found`);
+        console.log("Sequencer: run: final result", result);
         await JobsTable.updateStatus({
           id: this.id,
           jobId: this.jobId,

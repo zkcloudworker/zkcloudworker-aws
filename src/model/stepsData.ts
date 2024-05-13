@@ -1,5 +1,4 @@
-import { JobStatus } from "zkcloudworker";
-import { blockchain, LogStream } from "zkcloudworker";
+import { blockchain, LogStream, JobStatus } from "../cloud";
 
 export type StepTask = "create" | "merge";
 export const MAX_STEP_ATTEMPTS = 5;

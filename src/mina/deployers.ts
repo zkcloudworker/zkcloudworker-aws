@@ -5,7 +5,7 @@ import {
   getBalanceFromGraphQL,
   DeployerKeyPair,
   networks,
-} from "zkcloudworker";
+} from "../cloud";
 import { GASTANKS } from "./gastanks";
 import { Deployers } from "../table/deployers";
 

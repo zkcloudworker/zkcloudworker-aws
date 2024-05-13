@@ -1,10 +1,4 @@
-import {
-  zkCloudWorker,
-  Memory,
-  blockchain,
-  JobData,
-  JobStatus,
-} from "zkcloudworker";
+import { Memory, blockchain, JobData, JobStatus } from "../cloud";
 import { ExecuteCloudWorker } from "./cloud";
 import { isWorkerExist } from "./worker";
 import { Jobs } from "../table/jobs";

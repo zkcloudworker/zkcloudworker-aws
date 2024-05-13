@@ -1,6 +1,6 @@
 import { Handler, Context } from "aws-lambda";
 import { Sequencer } from "./src/api/sequencer";
-import { LogStream } from "zkcloudworker";
+import { LogStream } from "./src/cloud";
 
 const run: Handler = async (event: any, context: Context) => {
   try {

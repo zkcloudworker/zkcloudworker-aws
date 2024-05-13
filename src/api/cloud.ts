@@ -7,7 +7,7 @@ import {
   CloudTransaction,
   TaskData,
   DeployerKeyPair,
-} from "zkcloudworker";
+} from "../cloud";
 import { StepsData } from "../model/stepsData";
 import { Transactions } from "../table/transactions";
 import { KeyValue } from "../table/kv";

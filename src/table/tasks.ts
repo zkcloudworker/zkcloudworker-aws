@@ -1,5 +1,5 @@
 import { Table } from "./table";
-import { TaskData } from "zkcloudworker";
+import { TaskData } from "../cloud";
 
 export class Tasks extends Table<TaskData> {
   async increaseAttempts(task: TaskData): Promise<void> {

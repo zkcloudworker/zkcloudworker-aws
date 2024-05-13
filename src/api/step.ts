@@ -2,7 +2,7 @@ import { Steps } from "../table/steps";
 import { Proofs } from "../table/proofs";
 import { Jobs } from "../table/jobs";
 import { StepsData, MAX_STEP_ATTEMPTS } from "../model/stepsData";
-import { zkCloudWorker, Memory } from "zkcloudworker";
+import { zkCloudWorker, Memory } from "../cloud";
 import { cacheDir } from "./cloud";
 import { listFiles } from "../storage/files";
 
