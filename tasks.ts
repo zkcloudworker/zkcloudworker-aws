@@ -1,5 +1,5 @@
 import { Handler } from "aws-lambda";
-import { TaskData, makeString } from "zkcloudworker";
+import { TaskData, makeString } from "./src/cloud";
 import { Tasks } from "./src/table/tasks";
 import { getSystemDataByKey, saveSystemDataByKey } from "./src/table/kv";
 import { createExecuteJob } from "./src/api//execute";

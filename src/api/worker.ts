@@ -1,4 +1,4 @@
-import { zkCloudWorker, Cloud } from "zkcloudworker";
+import { zkCloudWorker, Cloud } from "../cloud";
 //import { zkcloudworker as DomainNameServiceWorker } from "../external/DomainNameService/index";
 import { Workers } from "../table/workers";
 

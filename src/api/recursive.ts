@@ -1,7 +1,7 @@
 import { Sequencer } from "./sequencer";
 import { isWorkerExist } from "./worker";
 import { S3File } from "../storage/s3";
-import { blockchain } from "zkcloudworker";
+import { blockchain } from "../cloud";
 
 export async function createRecursiveProofJob(params: {
   id: string;

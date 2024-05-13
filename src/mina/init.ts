@@ -1,3 +1,4 @@
+/*
 import {
   initBlockchain,
   MinaNetwork,
@@ -6,7 +7,7 @@ import {
   Devnet,
 } from "zkcloudworker";
 
-/*
+
 let networkInstance: MinaNetwork = Devnet;
 
 export async function minaInit(

@@ -5,7 +5,8 @@ import {
   blockchain,
   makeString,
   LogStream,
-} from "zkcloudworker";
+} from "../cloud";
+import { log } from "console";
 
 export class Jobs extends Table<JobData> {
   public async createJob(params: {
@@ -95,7 +96,7 @@ export class Jobs extends Table<JobData> {
         maxAttempts === undefined)
     )
       throw new Error(
-        "result, maxAttempts and billingDuration is required for finished jobs"
+        "result, maxAttempts, logStreams and billingDuration are required for finished jobs"
       );
     if (status === "started" && logStreams === undefined)
       throw new Error("logStreams is required for started jobs");
@@ -106,7 +107,16 @@ export class Jobs extends Table<JobData> {
         id: id,
         jobId,
       },
-      status === "finished"
+      status === "finished" && logStreams !== undefined
+        ? {
+            "#S": "jobStatus",
+            "#T": "timeFinished",
+            "#R": "result",
+            "#B": "billedDuration",
+            "#M": "maxAttempts",
+            "#L": "logStreams",
+          }
+        : status === "finished" && logStreams === undefined
         ? {
             "#S": "jobStatus",
             "#T": "timeFinished",
@@ -119,7 +129,16 @@ export class Jobs extends Table<JobData> {
         : status === "used"
         ? { "#S": "jobStatus", "#T": "timeUsed" }
         : { "#S": "jobStatus", "#T": "timeFailed" },
-      status === "finished"
+      status === "finished" && logStreams !== undefined
+        ? {
+            ":status": status,
+            ":time": time,
+            ":result": result,
+            ":billedDuration": billedDuration,
+            ":maxAttempts": maxAttempts,
+            ":logStreams": logStreams,
+          }
+        : status === "finished" && logStreams === undefined
         ? {
             ":status": status,
             ":time": time,
@@ -134,7 +153,9 @@ export class Jobs extends Table<JobData> {
             ":logStreams": logStreams,
           }
         : { ":status": status, ":time": time },
-      status === "finished"
+      status === "finished" && logStreams !== undefined
+        ? "set #S = :status, #T = :time, #R = :result, #B = :billedDuration, #M = :maxAttempts, #L = :logStreams"
+        : status === "finished" && logStreams === undefined
         ? "set #S = :status, #T = :time, #R = :result, #B = :billedDuration, #M = :maxAttempts"
         : status === "started"
         ? "set #S = :status, #T = :time, #L = :logStreams"

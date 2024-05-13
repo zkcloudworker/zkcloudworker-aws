@@ -2,12 +2,12 @@ import {
   CloudWatchLogsClient,
   GetLogEventsCommand,
 } from "@aws-sdk/client-cloudwatch-logs";
-import { LogStream } from "zkcloudworker";
+import { LogStream } from "../cloud";
 
 export async function getLogs(
   logStreams: LogStream[] | undefined
 ): Promise<string[]> {
-  console.log("getLogs logStreams", logStreams);
+  //console.log("getLogs logStreams", logStreams);
   if (logStreams === undefined) return [];
   if (Array.isArray(logStreams) === false) return [];
   if (logStreams.length === 0) return [];
@@ -23,12 +23,14 @@ export async function getLogs(
       });
 
       const data = await client.send(command);
+      /*
       console.log(
         "getLogs",
         data.$metadata,
         data.nextBackwardToken,
         data.nextForwardToken
       );
+      */
       //console.log("getLogs events", data.events);
       if (data.events !== undefined && log.awsRequestId !== undefined) {
         const searchString = log.awsRequestId + "\t";
@@ -38,7 +40,7 @@ export async function getLogs(
         result.push(...events);
       }
     }
-    console.log("getLogs result", result);
+    //console.log("getLogs result", result);
     return result;
   } catch (error: any) {
     console.error("getLogs error:", error);

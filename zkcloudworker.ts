@@ -7,7 +7,7 @@ import { execute, createExecuteJob } from "./src/api/execute";
 import { createRecursiveProofJob } from "./src/api/recursive";
 import { CloudWorker } from "./src/api/cloud";
 import { getPresignedUrl } from "./src/storage/presigned";
-import { LogStream } from "zkcloudworker";
+import { LogStream } from "./src/cloud";
 const MAX_JOB_AGE: number = 1000 * 60 * 60; // 60 minutes
 const nameContract = {
   // TODO: remove later

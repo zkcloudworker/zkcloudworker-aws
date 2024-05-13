@@ -3,7 +3,7 @@ import { StepsData } from "./src/model/stepsData";
 import { Jobs } from "./src/table/jobs";
 import { Steps } from "./src/table/steps";
 import { runStep } from "./src/api/step";
-import { zkCloudWorker, LogStream } from "zkcloudworker";
+import { zkCloudWorker, LogStream } from "./src/cloud";
 import { getWorker } from "./src/api/worker";
 import { StepCloudWorker } from "./src/api/cloud";
 
@@ -32,7 +32,7 @@ const run: Handler = async (event: any, context: Context) => {
     repo: step.repo,
     task: step.task,
     metadata: step.metadata,
-    logStream: step.logStreams,
+    logStreams: step.logStreams,
   });
   try {
     const cloud = new StepCloudWorker(step);

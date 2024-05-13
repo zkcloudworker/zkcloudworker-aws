@@ -4,7 +4,7 @@ import { install } from "../storage/install";
 import fs from "fs/promises";
 import { Jobs } from "../table/jobs";
 import { Workers } from "../table/workers";
-import { Memory, sleep } from "zkcloudworker";
+import { Memory, sleep } from "../cloud";
 
 const { BUCKET } = process.env;
 const WORKERS_TABLE = process.env.WORKERS_TABLE!;
