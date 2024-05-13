@@ -906,11 +906,14 @@ export class Sequencer {
         jobId: this.jobId,
         status: "used",
       });
-    if (includeLogs)
-      job.logs = await getLogs([
+    if (includeLogs) {
+      const { logs, isFullLog } = await getLogs([
         ...(job.logStreams ?? []),
         ...(this.logStream ? [this.logStream] : []),
       ]);
+      job.logs = logs;
+      job.isFullLog = isFullLog;
+    }
     return job;
   }
 }

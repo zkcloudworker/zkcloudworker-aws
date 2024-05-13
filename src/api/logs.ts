@@ -6,13 +6,15 @@ import { LogStream } from "../cloud";
 
 export async function getLogs(
   logStreams: LogStream[] | undefined
-): Promise<string[]> {
+): Promise<{ logs: string[]; isFullLog: boolean }> {
   //console.log("getLogs logStreams", logStreams);
-  if (logStreams === undefined) return [];
-  if (Array.isArray(logStreams) === false) return [];
-  if (logStreams.length === 0) return [];
+  if (logStreams === undefined) return { logs: [], isFullLog: false };
+  if (Array.isArray(logStreams) === false)
+    return { logs: [], isFullLog: false };
+  if (logStreams.length === 0) return { logs: [], isFullLog: false };
   const result: string[] = [];
   const options = {};
+  let isFullLog = true;
 
   try {
     const client = new CloudWatchLogsClient(options);
@@ -37,13 +39,15 @@ export async function getLogs(
         const events = data.events
           .filter((event) => event.message?.includes(searchString))
           .map((event) => event.message?.replace(searchString, "") as string);
+        isFullLog =
+          isFullLog && events.some((log) => log.includes("Billed Duration"));
         result.push(...events);
       }
     }
     //console.log("getLogs result", result);
-    return result;
+    return { logs: result, isFullLog };
   } catch (error: any) {
     console.error("getLogs error:", error);
-    return [];
+    return { logs: [], isFullLog: false };
   }
 }
