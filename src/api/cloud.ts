@@ -189,6 +189,15 @@ export class CloudWorker extends Cloud {
     return txId;
   }
 
+  public async sendTransactions(transactions: string[]): Promise<string[]> {
+    return CloudWorker.addTransactions({
+      id: this.id,
+      developer: this.developer,
+      repo: this.repo,
+      transactions,
+    });
+  }
+
   public async deleteTransaction(txId: string): Promise<void> {
     const transactionsTable = new Transactions(TRANSACTIONS_TABLE);
     try {
