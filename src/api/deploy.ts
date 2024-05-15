@@ -52,11 +52,11 @@ export async function deploy(params: {
 
     if (BUCKET === undefined) throw new Error("BUCKET is undefined");
 
-    console.time("cleared old deployment");
     const workersDirRoot = "/mnt/efs/worker";
     const developerDir = workersDirRoot + "/" + developer;
     const repoDir = developerDir + "/" + repo;
-    const versionDir = repoDir + "/" + version.replaceAll(".", "_");
+    const versionStr = version.replaceAll(".", "_");
+    const versionDir = repoDir + "/" + versionStr;
     const distDir = versionDir + "/dist";
     if (await isExist(repoDir)) await fs.rm(repoDir, { recursive: true });
     await createFolders([developerDir, repoDir, versionDir]);
@@ -112,6 +112,18 @@ export async function deploy(params: {
       timeUsed: 0,
       countUsed: 0,
     });
+
+    console.time("cleared old deployment");
+    const folders = await listFiles(repoDir, false);
+    console.log("deployed versions:", folders);
+    for (const folder of folders) {
+      if (folder !== versionStr) {
+        console.log("deleting old version", folder);
+        await fs.rm(repoDir + "/" + folder, { recursive: true });
+      }
+    }
+    await listFiles(repoDir, true);
+    console.timeEnd("cleared old deployment");
     Memory.info("deployed");
     console.timeEnd("deployed");
     await sleep(1000);
