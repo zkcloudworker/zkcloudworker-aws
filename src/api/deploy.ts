@@ -58,10 +58,8 @@ export async function deploy(params: {
     const versionStr = version.replaceAll(".", "_");
     const versionDir = repoDir + "/" + versionStr;
     const distDir = versionDir + "/dist";
-    if (await isExist(repoDir)) await fs.rm(repoDir, { recursive: true });
     await createFolders([developerDir, repoDir, versionDir]);
     const filename = repo + "." + version + ".zip";
-    console.timeEnd("cleared old deployment");
 
     // Copy compiled from TypeScript to JavaScript source code of the contracts
     // from S3 bucket to AWS lambda /tmp/contracts folder
