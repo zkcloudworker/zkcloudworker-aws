@@ -52,16 +52,14 @@ export async function deploy(params: {
 
     if (BUCKET === undefined) throw new Error("BUCKET is undefined");
 
-    console.time("cleared old deployment");
     const workersDirRoot = "/mnt/efs/worker";
     const developerDir = workersDirRoot + "/" + developer;
     const repoDir = developerDir + "/" + repo;
-    const versionDir = repoDir + "/" + version.replaceAll(".", "_");
+    const versionStr = version.replaceAll(".", "_");
+    const versionDir = repoDir + "/" + versionStr;
     const distDir = versionDir + "/dist";
-    if (await isExist(repoDir)) await fs.rm(repoDir, { recursive: true });
     await createFolders([developerDir, repoDir, versionDir]);
     const filename = repo + "." + version + ".zip";
-    console.timeEnd("cleared old deployment");
 
     // Copy compiled from TypeScript to JavaScript source code of the contracts
     // from S3 bucket to AWS lambda /tmp/contracts folder
@@ -93,14 +91,6 @@ export async function deploy(params: {
 
     await listFiles(distDir, true);
 
-    await JobsTable.updateStatus({
-      id,
-      jobId: jobId,
-      status: "finished",
-      result: "deployed",
-      billedDuration: Date.now() - timeStarted,
-      maxAttempts: 1,
-    });
     await workersTable.create({
       id,
       developer,
@@ -112,10 +102,29 @@ export async function deploy(params: {
       timeUsed: 0,
       countUsed: 0,
     });
+    await JobsTable.updateStatus({
+      id,
+      jobId: jobId,
+      status: "finished",
+      result: "deployed",
+      billedDuration: Date.now() - timeStarted, //TODO: bill for clearing old deployment
+      maxAttempts: 1,
+    });
+
+    console.time("cleared old deployment");
+    const folders = await listFiles(repoDir, false);
+    console.log("deployed versions:", folders);
+    for (const folder of folders) {
+      if (folder !== versionStr) {
+        console.log("deleting old version", folder);
+        await fs.rm(repoDir + "/" + folder, { recursive: true });
+      }
+    }
+    await listFiles(repoDir, true);
+    console.timeEnd("cleared old deployment");
     Memory.info("deployed");
     console.timeEnd("deployed");
     await sleep(1000);
-
     return true;
   } catch (err: any) {
     console.error(err);
