@@ -91,14 +91,6 @@ export async function deploy(params: {
 
     await listFiles(distDir, true);
 
-    await JobsTable.updateStatus({
-      id,
-      jobId: jobId,
-      status: "finished",
-      result: "deployed",
-      billedDuration: Date.now() - timeStarted,
-      maxAttempts: 1,
-    });
     await workersTable.create({
       id,
       developer,
@@ -109,6 +101,14 @@ export async function deploy(params: {
       timeDeployed: Date.now(),
       timeUsed: 0,
       countUsed: 0,
+    });
+    await JobsTable.updateStatus({
+      id,
+      jobId: jobId,
+      status: "finished",
+      result: "deployed",
+      billedDuration: Date.now() - timeStarted, //TODO: bill for clearing old deployment
+      maxAttempts: 1,
     });
 
     console.time("cleared old deployment");
@@ -125,7 +125,6 @@ export async function deploy(params: {
     Memory.info("deployed");
     console.timeEnd("deployed");
     await sleep(1000);
-
     return true;
   } catch (err: any) {
     console.error(err);
