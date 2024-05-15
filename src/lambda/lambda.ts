@@ -2,6 +2,8 @@ import {
   LambdaClient,
   InvokeCommand,
   InvokeCommandInput,
+  UpdateFunctionConfigurationCommand,
+  UpdateFunctionConfigurationCommandInput,
 } from "@aws-sdk/client-lambda";
 
 export async function callLambda(
@@ -31,6 +33,25 @@ export async function callLambda(
     )
       console.error("Lambda call error:", result);
     if (attempt > 0) console.log("Lambda call result:", result);
+    await sleep(500);
+  } catch (error: any) {
+    console.error("Error: Lambda call", error);
+  }
+}
+
+export async function forceRestartLambda() {
+  try {
+    const functionName = process.env.AWS_LAMBDA_FUNCTION_NAME;
+    console.error("Lambda force restart:", functionName);
+    const client = new LambdaClient();
+
+    const params: InvokeCommandInput = {
+      FunctionName: functionName,
+      Description: `forced restart ${new Date().toLocaleString()}`,
+    } as UpdateFunctionConfigurationCommandInput;
+    const command = new UpdateFunctionConfigurationCommand(params);
+    const result = await client.send(command);
+    console.log("Lambda force restart call result", result.$metadata);
     await sleep(500);
   } catch (error: any) {
     console.error("Error: Lambda call", error);

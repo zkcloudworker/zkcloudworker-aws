@@ -16,6 +16,7 @@ import { Tasks } from "../table/tasks";
 import { createRecursiveProofJob } from "./recursive";
 import { createExecuteJob } from "./execute";
 import { Sequencer } from "./sequencer";
+import { forceRestartLambda } from "../lambda/lambda";
 
 export const cacheDir = "/mnt/efs/cache";
 const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
@@ -96,10 +97,6 @@ export class CloudWorker extends Cloud {
     } catch (error) {
       console.error("releaseDeployer: error", params, error);
     }
-  }
-
-  async log(msg: string): Promise<void> {
-    console.log("CloudWorker:", msg);
   }
 
   async getDataByKey(key: string): Promise<string | undefined> {
@@ -345,6 +342,16 @@ export class CloudWorker extends Cloud {
 
   public async processTasks(): Promise<void> {
     throw new Error("Method not implemented.");
+  }
+
+  async forceWorkerRestart(): Promise<void> {
+    console.error("forceWorkerRestart", {
+      developer: this.developer,
+      repo: this.repo,
+      jobId: this.jobId,
+      task: this.task,
+    });
+    await forceRestartLambda();
   }
 }
 
