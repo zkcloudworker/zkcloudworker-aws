@@ -42,6 +42,7 @@ export interface CloudTransaction {
   txId: string;
   transaction: string;
   timeReceived: number;
+  status: string;
 }
 
 /*
@@ -261,7 +262,9 @@ export abstract class Cloud {
    * Abstract method to send the transactions
    * @param transactions
    */
-  abstract sendTransactions(transactions: string[]): Promise<string[]>;
+  abstract sendTransactions(
+    transactions: string[] | CloudTransaction[]
+  ): Promise<CloudTransaction[]>;
 
   /**
    * Abstract method to delete the transaction
@@ -296,6 +299,12 @@ export abstract class Cloud {
    * @returns the job result
    */
   abstract jobResult(jobId: string): Promise<JobData | undefined>;
+
+  /**
+   * forces the worker to restart the AWS lambda container
+   * See https://github.com/o1-labs/o1js/issues/1651
+   */
+  abstract forceWorkerRestart(): Promise<void>;
 }
 
 /**

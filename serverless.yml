@@ -36,6 +36,7 @@ provider:
       Action:
         - "ses:*"
         - lambda:InvokeFunction
+        - lambda:UpdateFunctionConfiguration
       Resource:
         - "*"
     - Effect: Allow

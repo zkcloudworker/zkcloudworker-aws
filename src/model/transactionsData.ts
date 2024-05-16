@@ -3,4 +3,5 @@ export interface TransactionsData {
   txId: string;
   transaction: string;
   timeReceived: number;
+  status: string;
 }

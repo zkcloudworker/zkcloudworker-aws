@@ -3,6 +3,7 @@
     "target": "es2021",
     "module": "commonjs",
     "lib": ["es2021", "dom"],
+    "outDir": "./dist",
     "sourceMap": true,
     "allowJs": true,
     "removeComments": true,
