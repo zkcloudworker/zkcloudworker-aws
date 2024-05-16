@@ -17,6 +17,7 @@ import { createRecursiveProofJob } from "./recursive";
 import { createExecuteJob } from "./execute";
 import { Sequencer } from "./sequencer";
 import { forceRestartLambda } from "../lambda/lambda";
+import { stringHash } from "../cloud/utils/hash";
 
 export const cacheDir = "/mnt/efs/cache";
 const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
@@ -155,38 +156,51 @@ export class CloudWorker extends Cloud {
     id: string;
     developer: string;
     repo: string;
-    transactions: string[];
-  }): Promise<string[]> {
+    transactions: string[] | CloudTransaction[];
+  }): Promise<CloudTransaction[]> {
     const { id, developer, repo, transactions } = data;
     const transactionsTable = new Transactions(TRANSACTIONS_TABLE);
     const repoId = id + ":" + developer + ":" + repo;
-    const txId: string[] = [];
+    const txs: CloudTransaction[] = [];
 
     for (let i = 0; i < transactions.length; i++) {
       const timeReceived = Date.now();
-      const transactionId = timeReceived.toString() + "." + makeString(32);
-      if (typeof transactions[i] !== "string") {
-        txId.push("error: transaction is not a string");
-      } else {
+      const tx = transactions[i];
+      if (typeof tx === "string") {
+        const txId = stringHash(JSON.stringify({ tx, time: timeReceived }));
+        const ct: CloudTransaction = {
+          txId,
+          transaction: tx,
+          timeReceived,
+          status: "received",
+        };
+        txs.push(ct);
         try {
-          await transactionsTable.create({
-            txId: transactionId,
-            repoId,
-            transaction: transactions[i],
-            timeReceived,
-          });
-          txId.push(transactionId);
+          await transactionsTable.create({ ...ct, repoId });
         } catch (error) {
           console.error("addTransaction: error", error);
-          txId.push("error");
+        }
+      } else {
+        try {
+          txs.push(tx);
+          await transactionsTable.create({
+            txId: tx.txId,
+            repoId,
+            transaction: tx.transaction,
+            timeReceived: tx.timeReceived,
+            status: tx.status,
+          });
+        } catch (error) {
+          console.error("addTransaction: error", error);
         }
       }
     }
-
-    return txId;
+    return txs;
   }
 
-  public async sendTransactions(transactions: string[]): Promise<string[]> {
+  public async sendTransactions(
+    transactions: string[] | CloudTransaction[]
+  ): Promise<CloudTransaction[]> {
     return CloudWorker.addTransactions({
       id: this.id,
       developer: this.developer,
@@ -238,6 +252,7 @@ export class CloudWorker extends Cloud {
         txId: result.txId,
         transaction: result.transaction,
         timeReceived: result.timeReceived,
+        status: result.status,
       };
     });
   }

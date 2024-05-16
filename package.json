@@ -36,12 +36,12 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudwatch-logs": "^3.576.0",
-    "@aws-sdk/client-dynamodb": "^3.576.0",
-    "@aws-sdk/client-lambda": "^3.576.0",
-    "@aws-sdk/client-s3": "^3.576.0",
-    "@aws-sdk/s3-request-presigner": "^3.576.0",
-    "@aws-sdk/util-dynamodb": "^3.576.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.577.0",
+    "@aws-sdk/client-dynamodb": "^3.577.0",
+    "@aws-sdk/client-lambda": "^3.577.0",
+    "@aws-sdk/client-s3": "^3.577.0",
+    "@aws-sdk/s3-request-presigner": "^3.577.0",
+    "@aws-sdk/util-dynamodb": "^3.577.0",
     "adm-zip": "^0.5.12",
     "axios": "^1.6.8",
     "jsonwebtoken": "^9.0.2"
