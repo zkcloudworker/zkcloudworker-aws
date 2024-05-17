@@ -42,7 +42,7 @@ export async function runStep(
 
     let result: string | undefined = undefined;
 
-    await listFiles(cacheDir);
+    //await listFiles(cacheDir);
 
     if (step.task === "create") {
       if (step.stepData.length !== 1)

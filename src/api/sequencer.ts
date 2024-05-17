@@ -616,7 +616,7 @@ export class Sequencer {
             undefined
           )
             throw new Error(`origin ${i} not found`);
-        console.log("Sequencer: run: final result", result);
+        //console.log("Sequencer: run: final result", result);
         await JobsTable.updateStatus({
           id: this.id,
           jobId: this.jobId,

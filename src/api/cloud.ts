@@ -43,7 +43,7 @@ export class CloudWorker extends Cloud {
     chain: blockchain;
     webhook?: string;
   }) {
-    console.log("CloudWorker: constructor", params);
+    //console.log("CloudWorker: constructor", params);
     const {
       id,
       jobId,
