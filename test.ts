@@ -2,6 +2,9 @@ import type { Handler, Context, Callback } from "aws-lambda";
 import { listFiles } from "./src/storage/files";
 import fs from "fs/promises";
 import os from "os";
+import { Transactions } from "./src/table/transactions";
+
+const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
 
 export const cloud: Handler = async (
   event: any,
@@ -27,6 +30,16 @@ export const cloud: Handler = async (
     console.log("cacheDir removed");
     await listFiles(cacheDir, false);
     */
+
+    const transactionsTable = new Transactions(TRANSACTIONS_TABLE);
+    let txs = await transactionsTable.scan();
+    let count = 0;
+    while (txs.length > 0 && count < 50) {
+      for (const tx of txs) {
+        await transactionsTable.remove({ txId: tx.txId, repoId: tx.repoId });
+      }
+      txs = await transactionsTable.scan();
+    }
 
     console.timeEnd("test");
     return 200;

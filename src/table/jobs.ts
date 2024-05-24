@@ -6,7 +6,7 @@ import {
   makeString,
   LogStream,
 } from "../cloud";
-import { log } from "console";
+import { connect } from "nats";
 
 export class Jobs extends Table<JobData> {
   public async createJob(params: {
@@ -102,65 +102,77 @@ export class Jobs extends Table<JobData> {
       throw new Error("logStreams is required for started jobs");
 
     const time: number = Date.now();
-    await this.updateData(
-      {
-        id: id,
-        jobId,
-      },
-      status === "finished" && logStreams !== undefined
-        ? {
-            "#S": "jobStatus",
-            "#T": "timeFinished",
-            "#R": "result",
-            "#B": "billedDuration",
-            "#M": "maxAttempts",
-            "#L": "logStreams",
-          }
-        : status === "finished" && logStreams === undefined
-        ? {
-            "#S": "jobStatus",
-            "#T": "timeFinished",
-            "#R": "result",
-            "#B": "billedDuration",
-            "#M": "maxAttempts",
-          }
-        : status === "started"
-        ? { "#S": "jobStatus", "#T": "timeStarted", "#L": "logStreams" }
-        : status === "used"
-        ? { "#S": "jobStatus", "#T": "timeUsed" }
-        : { "#S": "jobStatus", "#T": "timeFailed" },
-      status === "finished" && logStreams !== undefined
-        ? {
-            ":status": status,
-            ":time": time,
-            ":result": result,
-            ":billedDuration": billedDuration,
-            ":maxAttempts": maxAttempts,
-            ":logStreams": logStreams,
-          }
-        : status === "finished" && logStreams === undefined
-        ? {
-            ":status": status,
-            ":time": time,
-            ":result": result,
-            ":billedDuration": billedDuration,
-            ":maxAttempts": maxAttempts,
-          }
-        : status === "started"
-        ? {
-            ":status": status,
-            ":time": time,
-            ":logStreams": logStreams,
-          }
-        : { ":status": status, ":time": time },
-      status === "finished" && logStreams !== undefined
-        ? "set #S = :status, #T = :time, #R = :result, #B = :billedDuration, #M = :maxAttempts, #L = :logStreams"
-        : status === "finished" && logStreams === undefined
-        ? "set #S = :status, #T = :time, #R = :result, #B = :billedDuration, #M = :maxAttempts"
-        : status === "started"
-        ? "set #S = :status, #T = :time, #L = :logStreams"
-        : "set #S = :status, #T = :time"
-    );
+    try {
+      const nc = await connect({
+        servers: "http://cloud.zkcloudworker.com:4222",
+      });
+      const js = nc.jetstream();
+      const kv = await js.views.kv("profiles");
+
+      await this.updateData(
+        {
+          id: id,
+          jobId,
+        },
+        status === "finished" && logStreams !== undefined
+          ? {
+              "#S": "jobStatus",
+              "#T": "timeFinished",
+              "#R": "result",
+              "#B": "billedDuration",
+              "#M": "maxAttempts",
+              "#L": "logStreams",
+            }
+          : status === "finished" && logStreams === undefined
+          ? {
+              "#S": "jobStatus",
+              "#T": "timeFinished",
+              "#R": "result",
+              "#B": "billedDuration",
+              "#M": "maxAttempts",
+            }
+          : status === "started"
+          ? { "#S": "jobStatus", "#T": "timeStarted", "#L": "logStreams" }
+          : status === "used"
+          ? { "#S": "jobStatus", "#T": "timeUsed" }
+          : { "#S": "jobStatus", "#T": "timeFailed" },
+        status === "finished" && logStreams !== undefined
+          ? {
+              ":status": status,
+              ":time": time,
+              ":result": result,
+              ":billedDuration": billedDuration,
+              ":maxAttempts": maxAttempts,
+              ":logStreams": logStreams,
+            }
+          : status === "finished" && logStreams === undefined
+          ? {
+              ":status": status,
+              ":time": time,
+              ":result": result,
+              ":billedDuration": billedDuration,
+              ":maxAttempts": maxAttempts,
+            }
+          : status === "started"
+          ? {
+              ":status": status,
+              ":time": time,
+              ":logStreams": logStreams,
+            }
+          : { ":status": status, ":time": time },
+        status === "finished" && logStreams !== undefined
+          ? "set #S = :status, #T = :time, #R = :result, #B = :billedDuration, #M = :maxAttempts, #L = :logStreams"
+          : status === "finished" && logStreams === undefined
+          ? "set #S = :status, #T = :time, #R = :result, #B = :billedDuration, #M = :maxAttempts"
+          : status === "started"
+          ? "set #S = :status, #T = :time, #L = :logStreams"
+          : "set #S = :status, #T = :time"
+      );
+      await kv.put("zkcloudworker.jobStatus", JSON.stringify(params, null, 2));
+      await nc.drain();
+    } catch (error: any) {
+      console.error("Error: Jobs: updateStatus", error);
+    }
   }
 
   public async queryBilling(id: string): Promise<JobData[]> {

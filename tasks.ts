@@ -52,10 +52,12 @@ export const check: Handler = async () => {
         console.log("item", i, ":", data[i]);
 
         if (data[i].timeCreated + 4 * 60 * 60 * 1000 < time) {
-          console.error("Removing stuck task", data[i]);
+          if (data[i].task !== "txTask")
+            console.error("Removing stuck task", data[i]);
           await table.remove({ id: data[i].id, taskId: data[i].taskId });
         } else if (data[i].attempts > (data[i].maxAttempts ?? 5)) {
-          console.error("Removing task exceeding max attempts", data[i]);
+          if (data[i].task !== "txTask")
+            console.error("Removing task exceeding max attempts", data[i]);
           await table.remove({ id: data[i].id, taskId: data[i].taskId });
         } else {
           await table.increaseAttempts(data[i]);

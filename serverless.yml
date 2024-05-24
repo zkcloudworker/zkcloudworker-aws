@@ -165,17 +165,17 @@ provider:
       Resource: "*"
 
 functions:
-  zkcloudworker:
+  zkcloudworker-devnet:
     handler: zkcloudworker.api
     timeout: 30
     memorySize: 1024
     reservedConcurrency: 20 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
     deadLetter:
       sqs:
-        queueName: zkcloudworker-dl-queue
+        queueName: zkcloudworker-devnet-dl-queue
     events:
       - http:
-          path: zkcloudworker
+          path: devnet
           method: post
           cors: true
     fileSystemConfig:
@@ -187,14 +187,19 @@ functions:
       subnetIds:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
-  worker:
-    handler: zkcloudworker.worker
-    timeout: 900
-    memorySize: 10240
-    reservedConcurrency: 20
+  zkcloudworker-zeko:
+    handler: zkcloudworker.api
+    timeout: 30
+    memorySize: 1024
+    reservedConcurrency: 20 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
     deadLetter:
       sqs:
-        queueName: worker-dl-queue
+        queueName: zkcloudworker-zeko-dl-queue
+    events:
+      - http:
+          path: zeko
+          method: post
+          cors: true
     fileSystemConfig:
       localMountPath: /mnt/efs
       arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
@@ -204,7 +209,40 @@ functions:
       subnetIds:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
-
+  worker-devnet:
+    handler: zkcloudworker.worker
+    timeout: 900
+    memorySize: 10240
+    reservedConcurrency: 20
+    deadLetter:
+      sqs:
+        queueName: worker-devnet-dl-queue
+    fileSystemConfig:
+      localMountPath: /mnt/efs
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
+    vpc:
+      securityGroupIds:
+        - sg-07cdd56c86fb70d88
+      subnetIds:
+        - subnet-0c3cc81920de4c4c3
+        - subnet-08f6fb90590c47699
+  worker-zeko:
+    handler: zkcloudworker.worker
+    timeout: 900
+    memorySize: 10240
+    reservedConcurrency: 20
+    deadLetter:
+      sqs:
+        queueName: worker-zeko-dl-queue
+    fileSystemConfig:
+      localMountPath: /mnt/efs
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
+    vpc:
+      securityGroupIds:
+        - sg-07cdd56c86fb70d88
+      subnetIds:
+        - subnet-0c3cc81920de4c4c3
+        - subnet-08f6fb90590c47699
   test:
     handler: test.cloud
     timeout: 900
@@ -248,14 +286,31 @@ functions:
     deadLetter:
       sqs:
         queueName: sequencer-dl-queue
-  step:
+  step-devnet:
     handler: step.run
     timeout: 300
     memorySize: 10240
     reservedConcurrency: 64
     deadLetter:
       sqs:
-        queueName: step-dl-queue
+        queueName: step-devnet-dl-queue
+    fileSystemConfig:
+      localMountPath: /mnt/efs
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
+    vpc:
+      securityGroupIds:
+        - sg-07cdd56c86fb70d88
+      subnetIds:
+        - subnet-0c3cc81920de4c4c3
+        - subnet-08f6fb90590c47699
+  step-zeko:
+    handler: step.run
+    timeout: 300
+    memorySize: 10240
+    reservedConcurrency: 64
+    deadLetter:
+      sqs:
+        queueName: step-zeko-dl-queue
     fileSystemConfig:
       localMountPath: /mnt/efs
       arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898

@@ -74,6 +74,13 @@ export class Sequencer {
       webhook,
       chain,
     } = params;
+    if (chain !== "zeko" && chain !== "devnet") {
+      console.error(
+        "Error: Sequencer: createJob: chain is not supported",
+        chain
+      );
+      return undefined;
+    }
     if (this.id !== params.id) throw new Error("id mismatch");
     const JobsTable = new Jobs(this.jobsTable);
     const jobId = await JobsTable.createJob({
@@ -191,7 +198,7 @@ export class Sequencer {
       };
       try {
         await StepsTable.create(stepData);
-        await callLambda("step", JSON.stringify({ stepData }));
+        await callLambda("step-" + job.chain, JSON.stringify({ stepData }));
       } catch (error: any) {
         console.error("Error: Sequencer: startJob", error);
         throw new Error("Error: Sequencer: startJob");
@@ -616,7 +623,7 @@ export class Sequencer {
             undefined
           )
             throw new Error(`origin ${i} not found`);
-        console.log("Sequencer: run: final result", result);
+        //console.log("Sequencer: run: final result", result);
         await JobsTable.updateStatus({
           id: this.id,
           jobId: this.jobId,
@@ -843,7 +850,7 @@ export class Sequencer {
             };
             try {
               await StepsTable.create(stepData);
-              await callLambda("step", JSON.stringify({ stepData }));
+              await callLambda("step-" + chain, JSON.stringify({ stepData }));
               console.log(
                 `Sequencer: run: started merging ${
                   stepData.origins?.length
