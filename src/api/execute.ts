@@ -141,11 +141,23 @@ export async function createExecuteJob(params: {
       logStreams: [],
     });
     if (jobId !== undefined) {
-      await callLambda(
-        "worker",
-        JSON.stringify({ command, id, jobId, developer, repo, args })
-      );
-      return { success: true, jobId, error: undefined };
+      if (chain !== "devnet" && chain !== "zeko") {
+        console.error(
+          "error: execute: createJob: chain is not supported",
+          chain
+        );
+        return {
+          success: false,
+          jobId,
+          error: `error: chain ${chain} is not supported`,
+        };
+      } else {
+        await callLambda(
+          "worker-" + chain,
+          JSON.stringify({ command, id, jobId, developer, repo, args })
+        );
+        return { success: true, jobId, error: undefined };
+      }
     } else {
       console.error("error: execute: createJob: jobId is undefined");
       return {

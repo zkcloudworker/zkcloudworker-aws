@@ -44,7 +44,8 @@
     "@aws-sdk/util-dynamodb": "^3.577.0",
     "adm-zip": "^0.5.12",
     "axios": "^1.6.8",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "nats": "^2.26.0"
   },
   "packageManager": "yarn@4.2.2"
 }

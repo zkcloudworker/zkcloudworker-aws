@@ -48,7 +48,7 @@ export async function getWorker(params: {
     developer,
     repo,
   });
-  console.log("getWorker result:", result);
+  //console.log("getWorker result:", result);
   if (result === undefined) {
     console.error(`worker not found: ${developer}/${repo}`);
     return { error: `error: worker not found: ${developer}/${repo}` };

@@ -5874,6 +5874,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"nats@npm:^2.26.0":
+  version: 2.26.0
+  resolution: "nats@npm:2.26.0"
+  dependencies:
+    nkeys.js: "npm:1.1.0"
+  checksum: 10c0/acd333ce22f5cc3c040704404a508493030d85aa731ce7c8058efddadc9cb17b005f35cc98d64950391d2bde87c19395958d2d86df989620bad71f306e30dd87
+  languageName: node
+  linkType: hard
+
 "ncjsm@npm:^4.3.2":
   version: 4.3.2
   resolution: "ncjsm@npm:4.3.2"
@@ -5908,6 +5917,15 @@ __metadata:
   version: 1.0.5
   resolution: "nice-try@npm:1.0.5"
   checksum: 10c0/95568c1b73e1d0d4069a3e3061a2102d854513d37bcfda73300015b7ba4868d3b27c198d1dbbd8ebdef4112fc2ed9e895d4a0f2e1cce0bd334f2a1346dc9205f
+  languageName: node
+  linkType: hard
+
+"nkeys.js@npm:1.1.0":
+  version: 1.1.0
+  resolution: "nkeys.js@npm:1.1.0"
+  dependencies:
+    tweetnacl: "npm:1.0.3"
+  checksum: 10c0/44ff8d61e46d2b345351ed7844d66036a815aeca23927def6ca258e27a18a1678fe5ab161c5cf0b6e3a3993a945d422b71036986d09669b214540c8491478bef
   languageName: node
   linkType: hard
 
@@ -7247,6 +7265,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tweetnacl@npm:1.0.3":
+  version: 1.0.3
+  resolution: "tweetnacl@npm:1.0.3"
+  checksum: 10c0/069d9df51e8ad4a89fbe6f9806c68e06c65be3c7d42f0701cc43dba5f0d6064686b238bbff206c5addef8854e3ce00c643bff59432ea2f2c639feab0ee1a93f9
+  languageName: node
+  linkType: hard
+
 "type-fest@npm:^0.21.3":
   version: 0.21.3
   resolution: "type-fest@npm:0.21.3"
@@ -7740,6 +7765,7 @@ __metadata:
     adm-zip: "npm:^0.5.12"
     axios: "npm:^1.6.8"
     jsonwebtoken: "npm:^9.0.2"
+    nats: "npm:^2.26.0"
     serverless: "npm:^3.38.0"
     serverless-plugin-typescript: "npm:^2.1.5"
     serverless-prune-plugin: "npm:^2.0.2"

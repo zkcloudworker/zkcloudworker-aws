@@ -180,6 +180,13 @@ export class CloudWorker extends Cloud {
         } catch (error) {
           console.error("addTransaction: error", error);
         }
+      } else if (tx.txId === undefined) {
+        txs.push({
+          txId: "invalid",
+          transaction: tx.transaction,
+          timeReceived: tx.timeReceived,
+          status: "invalid",
+        });
       } else {
         try {
           txs.push(tx);

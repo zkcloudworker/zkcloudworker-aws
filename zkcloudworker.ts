@@ -11,7 +11,7 @@ import { LogStream } from "./src/cloud";
 const MAX_JOB_AGE: number = 1000 * 60 * 60; // 60 minutes
 const nameContract = {
   // TODO: remove later
-  contractAddress: "B62qnXXnnwnyUKbEBuQM64LEfNcBRzCkeNSCu3H4mhbe7ittQX2mDNS",
+  contractAddress: "B62qoYeVkaeVimrjBNdBEKpQTDR1gVN2ooaarwXaJmuQ9t8MYu9mDNS",
 };
 
 const ZKCLOUDWORKER_AUTH = process.env.ZKCLOUDWORKER_AUTH!;
