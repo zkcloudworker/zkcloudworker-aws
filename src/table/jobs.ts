@@ -6,7 +6,9 @@ import {
   makeString,
   LogStream,
 } from "../cloud";
-import { connect } from "nats";
+import { stringHash } from "../api/hash";
+import { publishJobStatus } from "../publish/publish";
+import { sleep } from "../cloud";
 
 export class Jobs extends Table<JobData> {
   public async createJob(params: {
@@ -41,7 +43,18 @@ export class Jobs extends Table<JobData> {
     } = params;
     const timeCreated: number = params.timeCreated ?? Date.now();
     const jobId: string =
-      id + "." + timeCreated.toString() + "." + makeString(32);
+      "zkCW" +
+      stringHash(
+        JSON.stringify({
+          id,
+          developer,
+          repo,
+          chain,
+          timeCreated,
+          salt: makeString(32),
+        })
+      );
+    //id + "." + timeCreated.toString() + "." + makeString(32);
     const item: JobData = {
       id,
       jobId,
@@ -64,6 +77,7 @@ export class Jobs extends Table<JobData> {
     };
     try {
       await this.create(item);
+      await publishJobStatus(item);
       return jobId;
     } catch (error: any) {
       console.error("Error: Jobs: createJob", error);
@@ -103,12 +117,6 @@ export class Jobs extends Table<JobData> {
 
     const time: number = Date.now();
     try {
-      const nc = await connect({
-        servers: "http://cloud.zkcloudworker.com:4222",
-      });
-      const js = nc.jetstream();
-      const kv = await js.views.kv("profiles");
-
       await this.updateData(
         {
           id: id,
@@ -168,8 +176,20 @@ export class Jobs extends Table<JobData> {
           ? "set #S = :status, #T = :time, #L = :logStreams"
           : "set #S = :status, #T = :time"
       );
-      await kv.put("zkcloudworker.jobStatus", JSON.stringify(params, null, 2));
-      await nc.drain();
+      await sleep(100);
+      const job = await this.get({
+        id,
+        jobId,
+      });
+      if (job === undefined)
+        throw new Error("Job not found after updateStatus");
+      if (job.jobStatus !== status)
+        console.error(
+          "Error: Jobs: updateStatus: jobStatus mismatch",
+          job.jobStatus,
+          status
+        );
+      await publishJobStatus(job);
     } catch (error: any) {
       console.error("Error: Jobs: updateStatus", error);
     }

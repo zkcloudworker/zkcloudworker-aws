@@ -17,7 +17,7 @@ import { createRecursiveProofJob } from "./recursive";
 import { createExecuteJob } from "./execute";
 import { Sequencer } from "./sequencer";
 import { forceRestartLambda } from "../lambda/lambda";
-import { stringHash } from "../cloud/utils/hash";
+import { stringHash } from "./hash";
 
 export const cacheDir = "/mnt/efs/cache";
 const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
