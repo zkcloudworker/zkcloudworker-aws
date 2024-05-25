@@ -77,7 +77,7 @@ export class Jobs extends Table<JobData> {
     };
     try {
       await this.create(item);
-      await publishJobStatus(item);
+      await publishJobStatus(item, true);
       return jobId;
     } catch (error: any) {
       console.error("Error: Jobs: createJob", error);
