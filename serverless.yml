@@ -31,6 +31,9 @@ provider:
     PINATA_JWT: ${file(./env.json):PINATA_JWT, env:PINATA_JWT}
     COREPACK_HOME: ${file(./env.json):COREPACK_HOME, env:COREPACK_HOME}
     HOME: ${file(./env.json):HOME, env:HOME}
+    ALGOLIA_KEY: ${file(./env.json):ALGOLIA_KEY, env:ALGOLIA_KEY}
+    ALGOLIA_PROJECT: ${file(./env.json):ALGOLIA_PROJECT, env:ALGOLIA_PROJECT}
+
   iamRoleStatements:
     - Effect: "Allow"
       Action:

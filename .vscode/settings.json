@@ -1,11 +1,13 @@
 {
   "cSpell.words": [
+    "algoliasearch",
     "cloudobject",
     "corepack",
     "GASTANKS",
     "jetstream",
     "keyvalues",
     "nameservice",
+    "nats",
     "presigner",
     "unzipper"
   ]
