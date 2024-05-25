@@ -8,4 +8,5 @@ export interface WorkersData {
   timeDeployed: number;
   timeUsed: number;
   countUsed: number;
+  publishJobs?: boolean;
 }
