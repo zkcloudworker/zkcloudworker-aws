@@ -23,12 +23,14 @@ export async function publishJobStatusAlgolia(job: JobData): Promise<void> {
       logStreams: undefined,
       logs: undefined,
     };
+    /*
     console.log(
       "publishJobStatusAlgolia: Algolia write data for job",
       job.jobId,
       "is ",
       data
     );
+    */
     const result = await index.saveObject(data);
     if (result.taskID === undefined) {
       console.error(
