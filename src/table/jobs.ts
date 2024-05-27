@@ -5,10 +5,15 @@ import {
   blockchain,
   makeString,
   LogStream,
+  JobEvent,
 } from "../cloud";
 import { stringHash } from "../api/hash";
 import { publishJobStatus } from "../publish/publish";
 import { sleep } from "../cloud";
+
+const JOB_EVENTS_TABLE = process.env.JOB_EVENTS_TABLE!;
+
+export class JobEvents extends Table<JobEvent> {}
 
 export class Jobs extends Table<JobData> {
   public async createJob(params: {
@@ -20,7 +25,6 @@ export class Jobs extends Table<JobData> {
     userId?: string;
     args?: string;
     metadata?: string;
-    webhook?: string;
     chain: blockchain;
     filename?: string;
     timeCreated?: number;
@@ -38,7 +42,6 @@ export class Jobs extends Table<JobData> {
       args,
       metadata,
       chain,
-      webhook,
       logStreams,
     } = params;
     const timeCreated: number = params.timeCreated ?? Date.now();
@@ -66,18 +69,20 @@ export class Jobs extends Table<JobData> {
       args,
       metadata,
       chain,
-      webhook,
       filename,
       txNumber: params.txNumber,
       timeCreated,
-      timeCreatedString: new Date(timeCreated).toISOString(),
       jobStatus: "created" as JobStatus,
-      maxAttempts: 0,
       logStreams,
     };
     try {
       await this.create(item);
-      await publishJobStatus(item, true);
+      const event = {
+        jobId,
+        eventTime: timeCreated,
+        jobStatus: "created" as JobStatus,
+      };
+      await publishJobStatus({ job: item, event, publishFull: true });
       return jobId;
     } catch (error: any) {
       console.error("Error: Jobs: createJob", error);
@@ -189,7 +194,15 @@ export class Jobs extends Table<JobData> {
           job.jobStatus,
           status
         );
-      await publishJobStatus(job);
+      const jobEvents = new JobEvents(JOB_EVENTS_TABLE);
+      const event: JobEvent = {
+        jobId,
+        eventTime: time,
+        jobStatus: status,
+        result,
+      };
+      await publishJobStatus({ job, event });
+      await jobEvents.create(event);
     } catch (error: any) {
       console.error("Error: Jobs: updateStatus", error);
     }

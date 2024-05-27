@@ -1,11 +1,13 @@
 import { connect } from "nats";
-import { JobData } from "../cloud";
+import { JobData, JobEvent } from "../cloud";
 import config from "../cloud/config";
 
-export async function publishJobStatusNats(
-  job: JobData,
-  publishFull: boolean = false
-): Promise<void> {
+export async function publishJobStatusNats(params: {
+  job: JobData;
+  event: JobEvent;
+  publishFull?: boolean;
+}): Promise<void> {
+  const { job, event, publishFull } = params;
   try {
     const nc = await connect({
       servers: config.ZKCLOUDWORKER_NATS,
@@ -13,7 +15,7 @@ export async function publishJobStatusNats(
     });
     const js = nc.jetstream();
     const kv = await js.views.kv("profiles", { timeout: 2000 });
-    if (publishFull) {
+    if (publishFull === true) {
       const updateFull = await kv.put(
         `zkcloudworker.job.${clean(job.developer)}.${clean(job.repo)}`,
         JSON.stringify(job)
@@ -24,14 +26,10 @@ export async function publishJobStatusNats(
     }
 
     const updateStatus = await kv.put(
-      `zkcloudworker.jobStatus.${job.jobId}`,
-      JSON.stringify({
-        status: job.jobStatus,
-        time: Date.now(),
-        result: job.result,
-      })
+      `zkcloudworker.jobStatus.${event.jobId}`,
+      JSON.stringify(event)
     );
-    console.log(`NATS: Job status updated for ${job.jobId}:`, {
+    console.log(`NATS: Job status updated for ${event.jobId}:`, {
       updateStatus,
     });
 

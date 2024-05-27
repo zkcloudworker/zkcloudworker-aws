@@ -21,6 +21,7 @@ provider:
     TRANSACTIONS_TABLE: ${file(./env.json):TRANSACTIONS_TABLE, env:TRANSACTIONS_TABLE}
     KV_TABLE: ${file(./env.json):KV_TABLE, env:KV_TABLE}
     JOBS_TABLE: ${file(./env.json):JOBS_TABLE, env:JOBS_TABLE}
+    JOB_EVENTS_TABLE: ${file(./env.json):JOB_EVENTS_TABLE, env:JOB_EVENTS_TABLE}
     STEPS_TABLE: ${file(./env.json):STEPS_TABLE, env:STEPS_TABLE}
     PROOFS_TABLE: ${file(./env.json):PROOFS_TABLE, env:PROOFS_TABLE}
     WORKERS_TABLE: ${file(./env.json):WORKERS_TABLE, env:WORKERS_TABLE}
@@ -69,6 +70,16 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOBS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOB_EVENTS_TABLE}"
+
     - Effect: Allow
       Action:
         - dynamodb:Query
@@ -411,6 +422,22 @@ resources:
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.JOBS_TABLE}
+    JobEventsDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: jobId
+            AttributeType: S
+          - AttributeName: eventTime
+            AttributeType: N
+        KeySchema:
+          - AttributeName: jobId
+            KeyType: HASH
+          - AttributeName: eventTime
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.JOB_EVENTS_TABLE}
     StepsDynamoDbTable:
       Type: "AWS::DynamoDB::Table"
       DeletionPolicy: Delete
