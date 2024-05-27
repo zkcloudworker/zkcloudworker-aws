@@ -87,12 +87,9 @@ export async function createExecuteJob(params: {
       args,
       metadata,
       chain,
-      webhook,
       txNumber: transactions.length,
       timeCreated,
-      timeCreatedString: new Date(timeCreated).toISOString(),
       jobStatus: "started" as JobStatus,
-      maxAttempts: 0,
     };
     try {
       const result = await executeSync({
@@ -137,7 +134,6 @@ export async function createExecuteJob(params: {
       txNumber: 1,
       metadata,
       chain,
-      webhook,
       logStreams: [],
     });
     if (jobId !== undefined) {

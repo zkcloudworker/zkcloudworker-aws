@@ -94,7 +94,6 @@ export class Sequencer {
       txNumber,
       metadata,
       userId,
-      webhook,
       chain,
       logStreams: this.logStream ? [this.logStream] : [],
     });

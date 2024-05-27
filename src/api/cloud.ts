@@ -390,7 +390,6 @@ export class JobCloudWorker extends CloudWorker {
       args: job.args,
       metadata: job.metadata,
       chain: job.chain,
-      webhook: job.webhook,
     });
   }
 }
@@ -428,7 +427,6 @@ export class ExecuteCloudWorker extends CloudWorker {
       metadata,
       cache: cacheDir,
       chain: job.chain,
-      webhook: job.webhook,
     });
   }
 }
