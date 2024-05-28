@@ -16,22 +16,18 @@ export async function publishJobStatusNats(params: {
     const js = nc.jetstream();
     const kv = await js.views.kv("profiles", { timeout: 2000 });
     if (publishFull === true) {
-      const updateFull = await kv.put(
+      await kv.put(
         `zkcloudworker.job.${clean(job.developer)}.${clean(job.repo)}`,
         JSON.stringify(job)
       );
-      console.log(`NATS: Job status updated for ${job.jobId}:`, {
-        updateFull,
-      });
+      await kv.put(`zkcloudworker.job`, JSON.stringify(job));
     }
 
-    const updateStatus = await kv.put(
+    await kv.put(
       `zkcloudworker.jobStatus.${event.jobId}`,
       JSON.stringify(event)
     );
-    console.log(`NATS: Job status updated for ${event.jobId}:`, {
-      updateStatus,
-    });
+    await kv.put(`zkcloudworker.jobStatus`, JSON.stringify(event));
 
     await nc.drain();
   } catch (error) {
