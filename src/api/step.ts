@@ -5,6 +5,7 @@ import { StepsData, MAX_STEP_ATTEMPTS } from "../model/stepsData";
 import { zkCloudWorker, Memory } from "../cloud";
 import { cacheDir } from "./cloud";
 import { listFiles } from "../storage/files";
+import { forceRestartLambda } from "../lambda/lambda";
 
 export async function runStep(
   step: StepsData,
@@ -105,6 +106,7 @@ export async function runStep(
       status: "failed",
       billedDuration: step.billedDuration ?? 0,
     });
+    await forceRestartLambda();
     Memory.info(`failed`);
   }
   Memory.info(`finished`);
