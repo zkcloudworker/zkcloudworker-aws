@@ -5,6 +5,7 @@ import { Jobs } from "../table/jobs";
 import { getWorker } from "./worker";
 import { callLambda } from "../lambda/lambda";
 import { S3File } from "../storage/s3";
+import { forceRestartLambda } from "../lambda/lambda";
 
 export async function createExecuteJob(params: {
   command: string;
@@ -259,6 +260,7 @@ export async function execute(params: {
         billedDuration: Date.now() - timeStarted,
       });
       Memory.info(`failed`);
+      await forceRestartLambda();
       console.timeEnd("zkCloudWorker Execute");
       return false;
     }
@@ -271,6 +273,7 @@ export async function execute(params: {
       result: "execute error",
       billedDuration: Date.now() - timeStarted,
     });
+    await forceRestartLambda();
     console.timeEnd("zkCloudWorker Execute");
     return false;
   }
