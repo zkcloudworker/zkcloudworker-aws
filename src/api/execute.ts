@@ -138,7 +138,7 @@ export async function createExecuteJob(params: {
       logStreams: [],
     });
     if (jobId !== undefined) {
-      if (chain !== "devnet" && chain !== "zeko") {
+      if (chain !== "devnet" && chain !== "zeko" && chain !== "mainnet") {
         console.error(
           "error: execute: createJob: chain is not supported",
           chain
