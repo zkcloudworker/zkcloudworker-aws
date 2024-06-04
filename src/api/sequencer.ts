@@ -74,7 +74,7 @@ export class Sequencer {
       webhook,
       chain,
     } = params;
-    if (chain !== "zeko" && chain !== "devnet") {
+    if (chain !== "zeko" && chain !== "devnet" && chain !== "mainnet") {
       console.error(
         "Error: Sequencer: createJob: chain is not supported",
         chain

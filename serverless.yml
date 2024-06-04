@@ -240,6 +240,23 @@ functions:
       subnetIds:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
+  worker-mainnet:
+    handler: zkcloudworker.worker
+    timeout: 900
+    memorySize: 10240
+    reservedConcurrency: 20
+    deadLetter:
+      sqs:
+        queueName: worker-mainnet-dl-queue
+    fileSystemConfig:
+      localMountPath: /mnt/efs
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
+    vpc:
+      securityGroupIds:
+        - sg-07cdd56c86fb70d88
+      subnetIds:
+        - subnet-0c3cc81920de4c4c3
+        - subnet-08f6fb90590c47699
   worker-zeko:
     handler: zkcloudworker.worker
     timeout: 900
