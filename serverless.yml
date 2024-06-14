@@ -28,6 +28,7 @@ provider:
     BUCKET: ${file(./env.json):BUCKET_NAME, env:BUCKET_NAME}
     AWS_KMS_ENCRYPTION_KEY_ID: ${file(./env.json):AWS_KMS_ENCRYPTION_KEY_ID, env:AWS_KMS_ENCRYPTION_KEY_ID}
     JWT_PRIVATEKEY: ${file(./env.json):JWT_PRIVATEKEY, env:JWT_PRIVATEKEY}
+    JWT_ACCESS_KEY: ${file(./env.json):JWT_ACCESS_KEY, env:JWT_ACCESS_KEY}
     ZKCLOUDWORKER_AUTH: ${file(./env.json):ZKCLOUDWORKER_AUTH, env:ZKCLOUDWORKER_AUTH}
     PINATA_JWT: ${file(./env.json):PINATA_JWT, env:PINATA_JWT}
     COREPACK_HOME: ${file(./env.json):COREPACK_HOME, env:COREPACK_HOME}

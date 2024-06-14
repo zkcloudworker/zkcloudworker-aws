@@ -3,13 +3,23 @@ const JWT_PRIVATEKEY = process.env.JWT_PRIVATEKEY!;
 
 export function generateJWT(
   id: string,
-  expires_sec: number = 365 * 24 * 60 * 60, // one year
+  expires_sec: number = 365 * 24 * 60 * 60 // one year
 ) {
+  const regex = /^B62[1-9A-HJ-NP-Za-km-z]{52}$/;
+  if (!regex.test(id)) {
+    console.error("generateJWT - Wrong id", id);
+    return undefined;
+  }
   const options = {
     expiresIn: expires_sec,
   };
   const token = jwt.sign({ id }, JWT_PRIVATEKEY, options);
-  console.log("generateJWT Token", token, "verify", verifyJWT(token), "id", id);
+  const recoveredId = verifyJWT(token);
+  if (recoveredId !== id) {
+    console.error("generateJWT - Wrong id", id, "recoveredId", recoveredId);
+    return undefined;
+  }
+  console.log("generated JWT Token for id", id);
   return token;
 }
 

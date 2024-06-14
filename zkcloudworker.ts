@@ -1,5 +1,5 @@
 import { Handler, Context, Callback } from "aws-lambda";
-import { verifyJWT } from "./src/api/jwt";
+import { verifyJWT, generateJWT } from "./src/api/jwt";
 import { Sequencer } from "./src/api/sequencer";
 import { Jobs } from "./src/table/jobs";
 import { deploy } from "./src/api/deploy";
@@ -48,6 +48,18 @@ const api: Handler = async (
         return;
       }
       switch (command) {
+        case "generateJWT":
+          const jwt = generateJWT(data.id);
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: jwt ?? "error",
+          });
+          return;
+
         case "getBalance":
           callback(null, {
             statusCode: 200,
