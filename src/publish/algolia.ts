@@ -63,3 +63,36 @@ export async function publishJobStatusAlgolia(params: {
     console.error("publishJobStatusAlgolia error:", { error, job });
   }
 }
+
+export async function publishPayment(params: {
+  txHash: string;
+  account: string;
+  amount: number;
+}): Promise<void> {
+  const { txHash } = params;
+  try {
+    const ALGOLIA_PROJECT = process.env.ALGOLIA_PROJECT;
+    const ALGOLIA_KEY = process.env.ALGOLIA_KEY;
+    if (!ALGOLIA_PROJECT || !ALGOLIA_KEY) {
+      throw new Error("ALGOLIA_PROJECT or ALGOLIA_KEY is not set");
+    }
+    const client = algoliasearch(ALGOLIA_PROJECT, ALGOLIA_KEY);
+
+    const jobIndex = client.initIndex("payments");
+    const data = {
+      objectID: txHash,
+      ...params,
+    };
+    let result = await jobIndex.saveObject(data);
+    if (result.taskID === undefined) {
+      console.error(
+        "publishJobStatusAlgolia: Algolia write result for payment",
+        txHash,
+        "is ",
+        result
+      );
+    }
+  } catch (error) {
+    console.error("publishPayment error:", { error, params });
+  }
+}

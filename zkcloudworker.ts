@@ -1,5 +1,5 @@
 import { Handler, Context, Callback } from "aws-lambda";
-import { verifyJWT } from "./src/api/jwt";
+import { verifyJWT, generateJWT } from "./src/api/jwt";
 import { Sequencer } from "./src/api/sequencer";
 import { Jobs } from "./src/table/jobs";
 import { deploy } from "./src/api/deploy";
@@ -8,7 +8,9 @@ import { createRecursiveProofJob } from "./src/api/recursive";
 import { CloudWorker } from "./src/api/cloud";
 import { getPresignedUrl } from "./src/storage/presigned";
 import { LogStream } from "./src/cloud";
+import { createAccount, getBalance } from "./src/table/balance";
 const MAX_JOB_AGE: number = 1000 * 60 * 60; // 60 minutes
+const INITIAL_BALANCE: number = 10; // MINA
 const nameContract = {
   // TODO: remove later
   contractAddress: "B62qoYeVkaeVimrjBNdBEKpQTDR1gVN2ooaarwXaJmuQ9t8MYu9mDNS",
@@ -48,14 +50,32 @@ const api: Handler = async (
         return;
       }
       switch (command) {
-        case "getBalance":
+        case "generateJWT":
+          const jwt = generateJWT(data);
+          if (jwt !== undefined)
+            await createAccount({
+              id: data.id,
+              initialBalance: INITIAL_BALANCE,
+            });
           callback(null, {
             statusCode: 200,
             headers: {
               "Access-Control-Allow-Origin": "*",
               "Access-Control-Allow-Credentials": true,
             },
-            body: JSON.stringify("1", null, 2), // TODO: get actual balance
+            body: jwt ?? "error",
+          });
+          return;
+
+        case "getBalance":
+          const balance = await getBalance(id);
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: balance.toString(),
           });
           return;
 
