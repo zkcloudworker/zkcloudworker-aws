@@ -14,6 +14,7 @@ import { StepsData, StepTask } from "../model/stepsData";
 import { callLambda } from "../lambda/lambda";
 import { S3File } from "../storage/s3";
 import { getLogs } from "./logs";
+import { charge } from "../table/balance";
 
 export class Sequencer {
   jobsTable: string;
@@ -623,15 +624,20 @@ export class Sequencer {
           )
             throw new Error(`origin ${i} not found`);
         //console.log("Sequencer: run: final result", result);
+        const billedDuration =
+          (result.billedDuration ?? 0) +
+          (result.timeFinished ?? 0) -
+          (result.timeStarted ?? 0);
+        await charge({
+          id: this.id,
+          billedDuration,
+        });
         await JobsTable.updateStatus({
           id: this.id,
           jobId: this.jobId,
           status: "finished",
           result: result.result,
-          billedDuration:
-            (result.billedDuration ?? 0) +
-            (result.timeFinished ?? 0) -
-            (result.timeStarted ?? 0),
+          billedDuration,
           maxAttempts: Math.max(result.attempts, result.maxAttempts),
           logStreams: [...(job.logStreams ?? []), ...(result.logStreams ?? [])],
         });

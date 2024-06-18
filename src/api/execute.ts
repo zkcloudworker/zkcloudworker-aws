@@ -6,6 +6,7 @@ import { getWorker } from "./worker";
 import { callLambda } from "../lambda/lambda";
 import { S3File } from "../storage/s3";
 import { forceRestartLambda } from "../lambda/lambda";
+import { charge } from "../table/balance";
 
 export async function createExecuteJob(params: {
   command: string;
@@ -239,13 +240,19 @@ export async function execute(params: {
       transactions,
     });
 
+    const billedDuration = Date.now() - timeStarted;
+    await charge({
+      id,
+      billedDuration,
+    });
+
     if (result !== undefined) {
       await JobsTable.updateStatus({
         id,
         jobId,
         status: "finished",
         result: result,
-        billedDuration: Date.now() - timeStarted,
+        billedDuration,
         maxAttempts: 1,
       });
       console.timeEnd("zkCloudWorker Execute");
@@ -257,7 +264,7 @@ export async function execute(params: {
         status: "failed",
         result: "execute error",
         maxAttempts: 1,
-        billedDuration: Date.now() - timeStarted,
+        billedDuration,
       });
       Memory.info(`failed`);
       await forceRestartLambda();
@@ -266,12 +273,17 @@ export async function execute(params: {
     }
   } catch (error: any) {
     console.error("zkCloudWorker Execute: catch:", error);
+    const billedDuration = Date.now() - timeStarted;
+    await charge({
+      id,
+      billedDuration,
+    });
     await JobsTable.updateStatus({
       id,
       jobId,
       status: "failed",
       result: "execute error",
-      billedDuration: Date.now() - timeStarted,
+      billedDuration,
     });
     await forceRestartLambda();
     console.timeEnd("zkCloudWorker Execute");

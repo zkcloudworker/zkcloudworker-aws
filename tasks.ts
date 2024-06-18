@@ -3,10 +3,12 @@ import { TaskData, makeString } from "./src/cloud";
 import { Tasks } from "./src/table/tasks";
 import { getSystemDataByKey, saveSystemDataByKey } from "./src/table/kv";
 import { createExecuteJob } from "./src/api//execute";
+import { processIncomingPayments } from "./src/mina/payments";
 const TASKS_TABLE = process.env.TASKS_TABLE!;
 
 export const check: Handler = async () => {
   try {
+    await processIncomingPayments();
     const time = Date.now();
     const handlerId = makeString(20);
     const invocation = await getSystemDataByKey("tasks.invocation");

@@ -5,6 +5,7 @@ import fs from "fs/promises";
 import { Jobs } from "../table/jobs";
 import { Workers } from "../table/workers";
 import { Memory, sleep } from "../cloud";
+import { charge } from "../table/balance";
 
 const { BUCKET } = process.env;
 const WORKERS_TABLE = process.env.WORKERS_TABLE!;
@@ -102,12 +103,17 @@ export async function deploy(params: {
       timeUsed: 0,
       countUsed: 0,
     });
+    const billedDuration = Date.now() - timeStarted;
+    await charge({
+      id,
+      billedDuration,
+    });
     await JobsTable.updateStatus({
       id,
       jobId: jobId,
       status: "finished",
       result: "deployed",
-      billedDuration: Date.now() - timeStarted, //TODO: bill for clearing old deployment
+      billedDuration, // TODO: add billed duration for clearing old deployment
       maxAttempts: 1,
     });
 

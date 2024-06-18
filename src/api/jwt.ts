@@ -2,9 +2,18 @@ import jwt from "jsonwebtoken";
 const JWT_PRIVATEKEY = process.env.JWT_PRIVATEKEY!;
 
 export function generateJWT(
-  id: string,
+  data: any,
   expires_sec: number = 365 * 24 * 60 * 60 // one year
 ) {
+  const { id, auth } = data;
+  if (auth !== process.env.JWT_ACCESS_KEY) {
+    console.error("generateJWT - Wrong auth", auth);
+    return undefined;
+  }
+  if (id === undefined || id === "") {
+    console.error("generateJWT - Wrong id", id);
+    return undefined;
+  }
   const regex = /^B62[1-9A-HJ-NP-Za-km-z]{52}$/;
   if (!regex.test(id)) {
     console.error("generateJWT - Wrong id", id);
