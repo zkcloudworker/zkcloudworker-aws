@@ -60,7 +60,12 @@ export async function copyFiles(params: {
         console.log(`downloading ${file}`);
         const s3File = new S3File(bucket, `${developer}/${file}`);
         const data = await s3File.get();
-        await fs.writeFile(`${folder}/${developer}/${file}`, data.Body);
+        if (data?.Body)
+          await fs.writeFile(
+            `${folder}/${developer}/${file}`,
+            data.Body as any
+          );
+        else console.error(`Error reading ${file} from S3`);
         console.log(`downloaded ${file}`);
         if (move === true) {
           console.log(`removing ${file} from cache`);
@@ -90,7 +95,8 @@ export async function moveZip(params: {
     }
     const s3File = new S3File(bucket, key);
     const data = await s3File.get();
-    await fs.writeFile(`${folder}/${file}`, data.Body);
+    if (data?.Body) await fs.writeFile(`${folder}/${file}`, data.Body as any);
+    else console.error(`Error reading ${file} from S3`);
     await s3File.remove();
     //console.log(`moved ${file} to ${folder}`);
   } catch (error) {

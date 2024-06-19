@@ -18,12 +18,14 @@ import { createExecuteJob } from "./execute";
 import { Sequencer } from "./sequencer";
 import { forceRestartLambda } from "../lambda/lambda";
 import { stringHash } from "./hash";
+import { S3File } from "../storage/s3";
 
 export const cacheDir = "/mnt/efs/cache";
 const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
 const TASKS_TABLE = process.env.TASKS_TABLE!;
 const KV_TABLE = process.env.KV_TABLE!;
 const DEPLOYERS_TABLE = process.env.DEPLOYERS_TABLE!;
+const BUCKET = process.env.BUCKET!;
 
 export class CloudWorker extends Cloud {
   webhook?: string; // TODO: add webhook call to Sequencer
@@ -140,11 +142,19 @@ export class CloudWorker extends Cloud {
   }
 
   async saveFile(filename: string, value: Buffer): Promise<void> {
-    throw new Error("Method not implemented.");
+    //throw new Error("Method not implemented.");
+    const key = this.developer + "/" + this.repo + "/" + filename;
+    const file = new S3File(process.env.BUCKET!, key);
+    await file.put(value, undefined);
   }
 
   async loadFile(filename: string): Promise<Buffer | undefined> {
-    throw new Error("Method not implemented.");
+    //throw new Error("Method not implemented.");
+    const key = this.developer + "/" + this.repo + "/" + filename;
+    const file = new S3File(process.env.BUCKET!, key);
+    const data = await file.get();
+    const buffer = await data?.Body?.transformToByteArray();
+    return buffer ? Buffer.from(buffer) : undefined;
   }
 
   async loadEnvironment(password: string): Promise<void> {
