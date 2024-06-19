@@ -223,6 +223,8 @@ export async function execute(params: {
     if (job.filename !== undefined) {
       const file = new S3File(process.env.BUCKET!, job.filename);
       const data = await file.get();
+      if (data?.Body === undefined)
+        throw new Error(`Error reading file ${job.filename} from S3`);
       const streamToString = await data.Body?.transformToString("utf8");
       if (streamToString === undefined) {
         throw new Error("Error: streamToString is undefined");

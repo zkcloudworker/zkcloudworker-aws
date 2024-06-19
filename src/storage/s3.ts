@@ -5,6 +5,7 @@ import {
   HeadObjectCommand,
   DeleteObjectCommand,
   CopyObjectCommand,
+  GetObjectCommandOutput,
 } from "@aws-sdk/client-s3";
 import axios from "axios";
 import { createHash } from "crypto";
@@ -55,7 +56,7 @@ export class S3File {
     }
   }
 
-  public async get(): Promise<any | undefined> {
+  public async get(): Promise<GetObjectCommandOutput | undefined> {
     try {
       const params = {
         Bucket: this.bucket,

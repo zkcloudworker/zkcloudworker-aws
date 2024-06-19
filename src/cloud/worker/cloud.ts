@@ -193,13 +193,6 @@ export abstract class Cloud {
   abstract loadFile(filename: string): Promise<Buffer | undefined>;
 
   /**
-   * Abstract method to load the environment
-   * Used to load the environment from the cloud storage
-   * @param password the password
-   */
-  abstract loadEnvironment(password: string): Promise<void>;
-
-  /**
    * Abstract method to calculate the recursive proof
    * Used to calculate the recursive proof
    * @param data the data

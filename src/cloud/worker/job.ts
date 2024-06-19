@@ -48,7 +48,7 @@ export interface LogStream {
  * @param timeFailed the time the job failed
  * @param timeUsed the time the job result was used
  * @param jobStatus the status of the job
- * @param billedDuration the duration the job was billed for
+ * @param billedDuration the duration the job was billed for in ms
  * @param logStreams the log streams of the job
  * @param logs the logs of the job
  * @param isFullLog whether the logs are full
