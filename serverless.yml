@@ -27,6 +27,7 @@ provider:
     WORKERS_TABLE: ${file(./env.json):WORKERS_TABLE, env:WORKERS_TABLE}
     BALANCE_TABLE: ${file(./env.json):BALANCE_TABLE, env:BALANCE_TABLE}
     BUCKET: ${file(./env.json):BUCKET_NAME, env:BUCKET_NAME}
+    VERIFICATION_BUCKET: ${file(./env.json):VERIFICATION_BUCKET_NAME, env:VERIFICATION_BUCKET_NAME}
     AWS_KMS_ENCRYPTION_KEY_ID: ${file(./env.json):AWS_KMS_ENCRYPTION_KEY_ID, env:AWS_KMS_ENCRYPTION_KEY_ID}
     JWT_PRIVATEKEY: ${file(./env.json):JWT_PRIVATEKEY, env:JWT_PRIVATEKEY}
     JWT_ACCESS_KEY: ${file(./env.json):JWT_ACCESS_KEY, env:JWT_ACCESS_KEY}
@@ -157,6 +158,16 @@ provider:
         - s3:ListBucket
         - s3:DeleteObject
       Resource: "arn:aws:s3:::${self:provider.environment.BUCKET}/*"
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:PutObjectAcl
+        - s3:GetObject
+        - s3:GetObjectAcl
+        - s3:HeadObject
+        - s3:ListBucket
+        - s3:DeleteObject
+      Resource: "arn:aws:s3:::${self:provider.environment.VERIFICATION_BUCKET}/*"
     - Effect: Allow
       Action:
         - ec2:DescribeNetworkInterfaces

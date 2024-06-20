@@ -3,6 +3,7 @@ import { verifyJWT, generateJWT } from "./src/api/jwt";
 import { Sequencer } from "./src/api/sequencer";
 import { Jobs } from "./src/table/jobs";
 import { deploy } from "./src/api/deploy";
+import { verify } from "./src/api/verify";
 import { execute, createExecuteJob } from "./src/api/execute";
 import { createRecursiveProofJob } from "./src/api/recursive";
 import { CloudWorker } from "./src/api/cloud";
@@ -35,7 +36,7 @@ const api: Handler = async (
       body.jwtToken &&
       body.chain
     ) {
-      const { command, data, chain, webhook } = body;
+      const { command, data, chain } = body;
       const id: string | undefined = verifyJWT(body.jwtToken);
       if (id === undefined) {
         console.error("Wrong jwtToken");
@@ -106,7 +107,31 @@ const api: Handler = async (
               args,
               task: "deploy",
               chain,
-              webhook,
+              id,
+              transactions: [],
+            },
+          });
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify(result, null, 2),
+          });
+          return;
+        }
+
+        case "verify": {
+          const { developer, repo, args } = data;
+          const result = await createExecuteJob({
+            command: "verify",
+            data: {
+              developer,
+              repo,
+              args,
+              task: "verify",
+              chain,
               id,
               transactions: [],
             },
@@ -126,7 +151,6 @@ const api: Handler = async (
           const result = await createRecursiveProofJob({
             ...data,
             chain,
-            webhook,
             id,
           });
           callback(null, {
@@ -168,7 +192,7 @@ const api: Handler = async (
           }
           const result = await createExecuteJob({
             command: "execute",
-            data: { ...data, chain, webhook, id },
+            data: { ...data, chain, id },
           });
           callback(null, {
             statusCode: 200,
@@ -311,7 +335,7 @@ const worker: Handler = async (event: any, context: Context) => {
     logStreamName: context.logStreamName,
     awsRequestId: context.awsRequestId,
   };
-  const { command, id, jobId, developer, repo, args } = event;
+  const { command, id, jobId, developer, repo, args, chain } = event;
   try {
     console.log("worker", event);
     if (command && id && jobId && developer && repo) {
@@ -353,6 +377,20 @@ const worker: Handler = async (event: any, context: Context) => {
               id,
               jobId,
               args,
+            });
+            success = true;
+          }
+          break;
+
+        case "verify":
+          {
+            success = await verify({
+              developer,
+              repo,
+              id,
+              jobId,
+              args,
+              chain,
             });
             success = true;
           }

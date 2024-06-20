@@ -316,7 +316,6 @@ export class CloudWorker extends Cloud {
         args: data.args,
         metadata: data.metadata,
         chain: this.chain,
-        webhook: this.webhook,
       },
     });
     if (result.success === false || result.jobId === undefined) {
