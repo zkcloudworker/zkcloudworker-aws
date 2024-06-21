@@ -1,4 +1,5 @@
-import { JobData, JobEvent } from "../cloud";
+import { JobData, JobEvent, TransactionMetadata } from "../cloud";
+import { VerificationAnswer } from "../api/verify";
 import algoliasearch from "algoliasearch";
 
 export async function publishJobStatusAlgolia(params: {
@@ -94,5 +95,74 @@ export async function publishPayment(params: {
     }
   } catch (error) {
     console.error("publishPayment error:", { error, params });
+  }
+}
+
+export async function publishTransactionAlgolia(params: {
+  txId: string;
+  metadata: TransactionMetadata;
+  developer: string;
+  repo: string;
+}): Promise<void> {
+  const { txId, metadata, developer, repo } = params;
+  try {
+    const ALGOLIA_PROJECT = process.env.ALGOLIA_PROJECT;
+    const ALGOLIA_KEY = process.env.ALGOLIA_KEY;
+    if (!ALGOLIA_PROJECT || !ALGOLIA_KEY) {
+      throw new Error("ALGOLIA_PROJECT or ALGOLIA_KEY is not set");
+    }
+    const client = algoliasearch(ALGOLIA_PROJECT, ALGOLIA_KEY);
+
+    const jobIndex = client.initIndex("transactions");
+    const data = {
+      objectID: txId,
+      ...params,
+    };
+    let result = await jobIndex.saveObject(data);
+    if (result.taskID === undefined) {
+      console.error(
+        "publishTransactionAlgolia: Algolia write result for transaction",
+        params,
+        "is ",
+        result
+      );
+    }
+  } catch (error) {
+    console.error("publishTransactionAlgolia error:", { error, params });
+  }
+}
+
+export async function publishVerificationAlgolia(params: {
+  chain: string;
+  account: string;
+  metadata: VerificationAnswer;
+  developer: string;
+  repo: string;
+}): Promise<void> {
+  const { chain, metadata, developer, repo, account } = params;
+  try {
+    const ALGOLIA_PROJECT = process.env.ALGOLIA_PROJECT;
+    const ALGOLIA_KEY = process.env.ALGOLIA_KEY;
+    if (!ALGOLIA_PROJECT || !ALGOLIA_KEY) {
+      throw new Error("ALGOLIA_PROJECT or ALGOLIA_KEY is not set");
+    }
+    const client = algoliasearch(ALGOLIA_PROJECT, ALGOLIA_KEY);
+
+    const jobIndex = client.initIndex("zkapps");
+    const data = {
+      objectID: chain + "." + account,
+      ...params,
+    };
+    let result = await jobIndex.saveObject(data);
+    if (result.taskID === undefined) {
+      console.error(
+        "publishTransactionAlgolia: Algolia write result for zkapp",
+        params,
+        "is ",
+        result
+      );
+    }
+  } catch (error) {
+    console.error("publishTransactionAlgolia error:", { error, params });
   }
 }

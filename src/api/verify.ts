@@ -19,6 +19,7 @@ import {
 } from "../cloud";
 import { charge } from "../table/balance";
 import { S3File } from "../storage/s3";
+import { publishVerification } from "../publish/verify";
 
 const { BUCKET, VERIFICATION_BUCKET } = process.env;
 const WORKERS_TABLE = process.env.WORKERS_TABLE!;
@@ -26,6 +27,7 @@ const WORKERS_TABLE = process.env.WORKERS_TABLE!;
 export interface VerificationAnswer {
   name: string;
   account: string;
+  image?: string;
   verificationKey: { verificationKey: string; hash: string };
   methods: Record<
     string,
@@ -143,23 +145,28 @@ export async function verify(params: {
 
     await copyZip({
       bucket: VERIFICATION_BUCKET,
-      key: chain + "/" + address + ".zip",
+      key: chain + "/zkapp/" + address + ".zip",
       folder: developerDir,
       file: filename,
     });
-    // https://zkcloudworker-verification.s3.eu-west-1.amazonaws.com/devnet/B62qrZso6WMaxZPrkDHW9sa7BTtVKjHon6BJxUbN3q6PwdTNQXWvADD.zip
+    // https://verification.zkcloudworker.com/devnet/zkapp/B62qrZso6WMaxZPrkDHW9sa7BTtVKjHon6BJxUbN3q6PwdTNQXWvADD.zip
 
     const file = new S3File(
       VERIFICATION_BUCKET,
-      chain + "/" + address + ".json"
+      chain + "/zkapp/" + address + ".json"
     );
     await file.put(
       JSON.stringify(verificationResult, null, 2),
       "application/json"
     );
-    // https://zkcloudworker-verification.s3.eu-west-1.amazonaws.com/devnet/B62qrZso6WMaxZPrkDHW9sa7BTtVKjHon6BJxUbN3q6PwdTNQXWvADD.json
-    // https://verification.zkcloudworker.com/devnet/B62qrZso6WMaxZPrkDHW9sa7BTtVKjHon6BJxUbN3q6PwdTNQXWvADD.json
-    // https://d1tpaqd9nef6xp.cloudfront.net/devnet/B62qrZso6WMaxZPrkDHW9sa7BTtVKjHon6BJxUbN3q6PwdTNQXWvADD.json
+    // https://verification.zkcloudworker.com/devnet/zkapp/B62qrZso6WMaxZPrkDHW9sa7BTtVKjHon6BJxUbN3q6PwdTNQXWvADD.json
+    await publishVerification({
+      chain,
+      account: address,
+      metadata: verificationResult,
+      developer,
+      repo,
+    });
     await fs.rm(developerDir + "/" + filename);
     const billedDuration = Date.now() - timeStarted;
     await charge({
@@ -219,6 +226,7 @@ export async function verifyContract(
   const {
     contract,
     address,
+    image,
     chain,
     programDependencies,
     contractDependencies,
@@ -280,6 +288,7 @@ export async function verifyContract(
     return undefined;
   }
   console.log("SmartContract is verified");
+  verificationAnswer.image = image;
   return verificationAnswer;
 }
 

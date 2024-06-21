@@ -1,5 +1,6 @@
 import { connect } from "nats";
-import { JobData, JobEvent } from "../cloud";
+import { JobData, JobEvent, TransactionMetadata } from "../cloud";
+import { VerificationAnswer } from "../api/verify";
 import config from "../cloud/config";
 
 export async function publishJobStatusNats(params: {
@@ -32,6 +33,58 @@ export async function publishJobStatusNats(params: {
     await nc.drain();
   } catch (error) {
     console.error(`NATS: Error publishing job status`, { error, job });
+  }
+}
+
+export async function publishTransactionNats(params: {
+  txId: string;
+  metadata: TransactionMetadata;
+  developer: string;
+  repo: string;
+}): Promise<void> {
+  const { txId, metadata, developer, repo } = params;
+  try {
+    const nc = await connect({
+      servers: config.ZKCLOUDWORKER_NATS,
+      timeout: 3000,
+    });
+    const js = nc.jetstream();
+    const kv = await js.views.kv("profiles", { timeout: 2000 });
+    await kv.put(
+      `zkcloudworker.tx.${clean(developer)}.${clean(repo)}`,
+      JSON.stringify({ txId, metadata })
+    );
+    await kv.put(
+      `zkcloudworker.transaction`,
+      JSON.stringify({ txId, metadata, developer, repo })
+    );
+
+    await nc.drain();
+  } catch (error) {
+    console.error(`NATS: Error publishing job status`, params, error);
+  }
+}
+
+export async function publishVerificationNats(params: {
+  chain: string;
+  account: string;
+  metadata: VerificationAnswer;
+  developer: string;
+  repo: string;
+}): Promise<void> {
+  const { chain, metadata, developer, repo, account } = params;
+  try {
+    const nc = await connect({
+      servers: config.ZKCLOUDWORKER_NATS,
+      timeout: 3000,
+    });
+    const js = nc.jetstream();
+    const kv = await js.views.kv("profiles", { timeout: 2000 });
+    await kv.put(`zkcloudworker.zkapp`, JSON.stringify(params));
+
+    await nc.drain();
+  } catch (error) {
+    console.error(`NATS: Error publishing job status`, params, error);
   }
 }
 

@@ -7,6 +7,7 @@ import {
   CloudTransaction,
   TaskData,
   DeployerKeyPair,
+  TransactionMetadata,
 } from "../cloud";
 import { StepsData } from "../model/stepsData";
 import { Transactions } from "../table/transactions";
@@ -19,6 +20,7 @@ import { Sequencer } from "./sequencer";
 import { forceRestartLambda } from "../lambda/lambda";
 import { stringHash } from "./hash";
 import { S3File } from "../storage/s3";
+import { publishTransactionMetadata } from "../publish/transaction";
 
 export const cacheDir = "/mnt/efs/cache";
 const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
@@ -271,6 +273,20 @@ export class CloudWorker extends Cloud {
         timeReceived: result.timeReceived,
         status: result.status,
       };
+    });
+  }
+
+  public async publishTransactionMetadata(params: {
+    txId: string;
+    metadata: TransactionMetadata;
+  }): Promise<void> {
+    const { txId, metadata } = params;
+    await publishTransactionMetadata({
+      chain: this.chain,
+      txId,
+      metadata,
+      developer: this.developer,
+      repo: this.repo,
     });
   }
 
