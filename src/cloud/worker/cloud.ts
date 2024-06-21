@@ -1,23 +1,6 @@
 import { blockchain } from "../networks";
 import { JobData } from "./job";
-
-/**
- * Interface for the deployed smart contract
- * Used to get verification keys and addresses of the deployed smart contracts
- * to be published in the blockchain explorer
- * @param address: the address of the deployed smart contract
- * @param name: the name of the deployed smart contract
- * @param chain: the blockchain network where the smart contract is deployed
- * @param verificationKey: the verification key of the deployed smart contract
- * @param verificationKey.hash: the hash of the verification key
- * @param verificationKey.data: the data of the verification key
- */
-export interface DeployedSmartContract {
-  address: string;
-  name: string;
-  chain: blockchain;
-  verificationKey: { hash: string; data: string };
-}
+import { TransactionMetadata } from "./transaction";
 
 /**
  * Interface for the deployer key pair
@@ -274,6 +257,17 @@ export abstract class Cloud {
   abstract getTransactions(): Promise<CloudTransaction[]>;
 
   /**
+   * Publish the transaction metadata in human-readable format
+   * @param params
+   * @param params.txId the transaction id
+   * @param params.metadata the metadata
+   */
+  abstract publishTransactionMetadata(params: {
+    txId: string;
+    metadata: TransactionMetadata;
+  }): Promise<void>;
+
+  /**
    * Abstract method to delete the task
    * Used to delete the task
    * @param taskId the task id
@@ -298,73 +292,4 @@ export abstract class Cloud {
    * See https://github.com/o1-labs/o1js/issues/1651
    */
   abstract forceWorkerRestart(): Promise<void>;
-}
-
-/**
- * Abstract class for the zkCloudWorker
- * Used to define the zkCloudWorker methods and properties
- * Should be implemented for by the developer for the zkCloudWorker in the cloud
- * @param cloud: the cloud
- */
-export abstract class zkCloudWorker {
-  readonly cloud: Cloud;
-
-  /**
-   * Constructor for the zkCloudWorker class
-   * @param cloud the cloud instance provided by the zkCloudWorker in the local environment or in the cloud
-   */
-  constructor(cloud: Cloud) {
-    this.cloud = cloud;
-  }
-
-  /**
-   * Returns the deployed smart contracts for verification in the blockchain explorer
-   * @returns the deployed smart contracts
-   */
-  async deployedContracts(): Promise<DeployedSmartContract[]> {
-    return [];
-  }
-
-  // Those methods should be implemented for recursive proofs calculations
-  /**
-   * Creates a new proof from a transaction
-   * @param transaction the transaction
-   * @returns the serialized proof
-   */
-  async create(transaction: string): Promise<string | undefined> {
-    return undefined;
-  }
-
-  /**
-   * Merges two proofs
-   * @param proof1 the first proof
-   * @param proof2 the second proof
-   * @returns the merged proof
-   */
-  async merge(proof1: string, proof2: string): Promise<string | undefined> {
-    return undefined;
-  }
-
-  // Those methods should be implemented for anything except for recursive proofs
-  /**
-   * Executes the transactions
-   * @param transactions the transactions, can be empty list
-   * @returns the result
-   */
-  async execute(transactions: string[]): Promise<string | undefined> {
-    return undefined;
-  }
-
-  /* Process the transactions received by the cloud
-   * @param transactions: the transactions
-   */
-  async processTransactions(transactions: CloudTransaction[]): Promise<void> {}
-
-  /**
-   * process the task defined by the developer
-   * @returns the result
-   */
-  async task(): Promise<string | undefined> {
-    return undefined;
-  }
 }

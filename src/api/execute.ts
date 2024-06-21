@@ -21,7 +21,6 @@ export async function createExecuteJob(params: {
     userId?: string;
     metadata?: string;
     chain: blockchain;
-    webhook?: string;
     mode?: string;
   };
 }): Promise<{
@@ -40,7 +39,6 @@ export async function createExecuteJob(params: {
     metadata,
     userId,
     chain,
-    webhook,
     taskId,
     mode,
   } = data;
@@ -152,7 +150,7 @@ export async function createExecuteJob(params: {
       } else {
         await callLambda(
           "worker-" + chain,
-          JSON.stringify({ command, id, jobId, developer, repo, args })
+          JSON.stringify({ command, id, jobId, developer, repo, args, chain })
         );
         return { success: true, jobId, error: undefined };
       }

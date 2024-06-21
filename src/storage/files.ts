@@ -104,6 +104,23 @@ export async function moveZip(params: {
   }
 }
 
+export async function copyZip(params: {
+  bucket: string;
+  key: string;
+  folder: string;
+  file: string;
+}): Promise<void> {
+  const { bucket, key, folder, file } = params;
+  //console.log(`moveZip`, params);
+  try {
+    const data = await fs.readFile(`${folder}/${file}`);
+    const s3File = new S3File(bucket, key);
+    await s3File.put(data, "application/zip");
+  } catch (error) {
+    console.log(`error copying ${file}`, error);
+  }
+}
+
 export async function isExist(name: string): Promise<boolean> {
   // check if file exists
   try {
