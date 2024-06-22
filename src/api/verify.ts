@@ -127,6 +127,7 @@ export async function verify(params: {
       await charge({
         id,
         billedDuration,
+        jobId,
       });
       await JobsTable.updateStatus({
         id,
@@ -172,6 +173,7 @@ export async function verify(params: {
     await charge({
       id,
       billedDuration,
+      jobId,
     });
     await JobsTable.updateStatus({
       id,

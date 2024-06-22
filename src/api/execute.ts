@@ -244,6 +244,7 @@ export async function execute(params: {
     await charge({
       id,
       billedDuration,
+      jobId,
     });
 
     if (result !== undefined) {
@@ -277,6 +278,7 @@ export async function execute(params: {
     await charge({
       id,
       billedDuration,
+      jobId,
     });
     await JobsTable.updateStatus({
       id,

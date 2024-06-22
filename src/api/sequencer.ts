@@ -633,6 +633,7 @@ export class Sequencer {
         await charge({
           id: this.id,
           billedDuration,
+          jobId: this.jobId,
         });
         await JobsTable.updateStatus({
           id: this.id,

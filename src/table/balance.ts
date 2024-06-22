@@ -1,10 +1,19 @@
 import { Table } from "./table";
 import { BalanceData } from "../model/balanceData";
+import { callLambda } from "../lambda/lambda";
 
 const BALANCE_TABLE = process.env.BALANCE_TABLE;
 const MS_PER_MINA = 1000000;
 
 export async function charge(params: {
+  id: string;
+  billedDuration: number;
+  jobId: string;
+}): Promise<void> {
+  await callLambda("charge", JSON.stringify(params));
+}
+
+export async function chargeInternal(params: {
   id: string;
   billedDuration: number;
 }): Promise<void> {
