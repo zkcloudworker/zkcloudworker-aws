@@ -132,6 +132,40 @@ export async function publishTransactionAlgolia(params: {
   }
 }
 
+export async function publishChargeAlgolia(params: {
+  jobId: string;
+  id: string;
+  billedDuration: number;
+}): Promise<void> {
+  const { jobId } = params;
+  try {
+    const ALGOLIA_PROJECT = process.env.ALGOLIA_PROJECT;
+    const ALGOLIA_KEY = process.env.ALGOLIA_KEY;
+    if (!ALGOLIA_PROJECT || !ALGOLIA_KEY) {
+      throw new Error("ALGOLIA_PROJECT or ALGOLIA_KEY is not set");
+    }
+    const client = algoliasearch(ALGOLIA_PROJECT, ALGOLIA_KEY);
+
+    const jobIndex = client.initIndex("charges");
+    const data = {
+      objectID: jobId,
+      ...params,
+      time: Date.now(),
+    };
+    let result = await jobIndex.saveObject(data);
+    if (result.taskID === undefined) {
+      console.error(
+        "publishChargeAlgolia: Algolia write result for transaction",
+        params,
+        "is ",
+        result
+      );
+    }
+  } catch (error) {
+    console.error("publishChargeAlgolia error:", { error, params });
+  }
+}
+
 export async function publishVerificationAlgolia(params: {
   chain: string;
   account: string;

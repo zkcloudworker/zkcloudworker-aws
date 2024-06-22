@@ -1,8 +1,9 @@
 import type { Handler, Context, Callback } from "aws-lambda";
-import { listFiles } from "./src/storage/files";
+//import { listFiles } from "./src/storage/files";
 import fs from "fs/promises";
 import os from "os";
-import { Transactions } from "./src/table/transactions";
+//import { Transactions } from "./src/table/transactions";
+import { restartNatsServer } from "./src/publish/restart";
 
 const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
 
@@ -23,13 +24,16 @@ export const cloud: Handler = async (
     console.log("CPU cores:", numberOfCPUCores);
     const functionName = process.env.AWS_LAMBDA_FUNCTION_NAME;
     console.log("functionName", functionName);
+    console.log("env", process.env);
+
+    await restartNatsServer();
     /*
     const cacheDir = "/mnt/efs/cache";
     await listFiles(cacheDir, false);
     await fs.rm(cacheDir, { recursive: true, force: true });
     console.log("cacheDir removed");
     await listFiles(cacheDir, false);
-    */
+    
 
     const transactionsTable = new Transactions(TRANSACTIONS_TABLE);
     let txs = await transactionsTable.scan();
@@ -40,6 +44,7 @@ export const cloud: Handler = async (
       }
       txs = await transactionsTable.scan();
     }
+      */
 
     console.timeEnd("test");
     return 200;

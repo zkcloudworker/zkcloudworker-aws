@@ -107,6 +107,7 @@ export async function deploy(params: {
     await charge({
       id,
       billedDuration,
+      jobId,
     });
     await JobsTable.updateStatus({
       id,
