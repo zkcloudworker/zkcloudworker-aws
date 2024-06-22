@@ -24,7 +24,6 @@ export const cloud: Handler = async (
     console.log("CPU cores:", numberOfCPUCores);
     const functionName = process.env.AWS_LAMBDA_FUNCTION_NAME;
     console.log("functionName", functionName);
-    console.log("env", process.env);
 
     await restartNatsServer();
     /*

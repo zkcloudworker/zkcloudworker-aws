@@ -9,8 +9,8 @@ const TASKS_TABLE = process.env.TASKS_TABLE!;
 
 export const check: Handler = async () => {
   try {
-    await processIncomingPayments();
     await restartNatsServer();
+    await processIncomingPayments();
     const time = Date.now();
     const handlerId = makeString(20);
     const invocation = await getSystemDataByKey("tasks.invocation");
