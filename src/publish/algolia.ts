@@ -103,8 +103,10 @@ export async function publishTransactionAlgolia(params: {
   metadata: TransactionMetadata;
   developer: string;
   repo: string;
+  id: string;
+  jobId: string;
 }): Promise<void> {
-  const { txId, metadata, developer, repo } = params;
+  const { txId } = params;
   try {
     const ALGOLIA_PROJECT = process.env.ALGOLIA_PROJECT;
     const ALGOLIA_KEY = process.env.ALGOLIA_KEY;
@@ -136,6 +138,7 @@ export async function publishChargeAlgolia(params: {
   jobId: string;
   id: string;
   billedDuration: number;
+  amount: number;
 }): Promise<void> {
   const { jobId } = params;
   try {

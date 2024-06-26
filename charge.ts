@@ -2,6 +2,8 @@ import type { Handler, Context, Callback } from "aws-lambda";
 import { chargeInternal } from "./src/table/balance";
 import { publishChargeAlgolia } from "./src/publish/algolia";
 
+const MS_PER_MINA = 1000000;
+
 export const run: Handler = async (
   event: any,
   context: Context,
@@ -19,8 +21,9 @@ export const run: Handler = async (
     return 200;
   }
   try {
-    await chargeInternal({ id, billedDuration });
-    await publishChargeAlgolia({ id, billedDuration, jobId });
+    const amount = billedDuration / MS_PER_MINA;
+    await chargeInternal({ id, amount });
+    await publishChargeAlgolia({ id, billedDuration, jobId, amount });
     return 200;
   } catch (error) {
     console.error("catch", (error as any).toString());
