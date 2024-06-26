@@ -287,6 +287,8 @@ export class CloudWorker extends Cloud {
       metadata,
       developer: this.developer,
       repo: this.repo,
+      id: this.id,
+      jobId: this.jobId,
     });
   }
 

@@ -11,6 +11,8 @@ export async function publishTransactionMetadata(params: {
   metadata: TransactionMetadata;
   developer: string;
   repo: string;
+  id: string;
+  jobId: string;
 }): Promise<void> {
   const { txId, metadata, chain } = params;
   await publishTransactionNats(params);

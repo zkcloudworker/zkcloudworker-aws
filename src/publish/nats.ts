@@ -41,6 +41,8 @@ export async function publishTransactionNats(params: {
   metadata: TransactionMetadata;
   developer: string;
   repo: string;
+  id: string;
+  jobId: string;
 }): Promise<void> {
   const { txId, metadata, developer, repo } = params;
   try {
@@ -52,12 +54,9 @@ export async function publishTransactionNats(params: {
     const kv = await js.views.kv("profiles", { timeout: 2000 });
     await kv.put(
       `zkcloudworker.tx.${clean(developer)}.${clean(repo)}`,
-      JSON.stringify({ txId, metadata })
+      JSON.stringify(params)
     );
-    await kv.put(
-      `zkcloudworker.transaction`,
-      JSON.stringify({ txId, metadata, developer, repo })
-    );
+    await kv.put(`zkcloudworker.transaction`, JSON.stringify(params));
 
     await nc.drain();
   } catch (error) {

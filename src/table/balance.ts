@@ -3,7 +3,6 @@ import { BalanceData } from "../model/balanceData";
 import { callLambda } from "../lambda/lambda";
 
 const BALANCE_TABLE = process.env.BALANCE_TABLE;
-const MS_PER_MINA = 1000000;
 
 export async function charge(params: {
   id: string;
@@ -15,12 +14,12 @@ export async function charge(params: {
 
 export async function chargeInternal(params: {
   id: string;
-  billedDuration: number;
+  amount: number;
 }): Promise<void> {
-  const { id, billedDuration } = params;
+  const { id, amount } = params;
   if (!BALANCE_TABLE) throw new Error("BALANCE_TABLE is not defined");
   const balance = new Workers(BALANCE_TABLE);
-  await balance.charge({ id, amount: billedDuration / MS_PER_MINA });
+  await balance.charge({ id, amount });
 }
 
 export async function topup(params: {
