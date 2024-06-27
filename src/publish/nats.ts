@@ -12,9 +12,9 @@ export async function publishJobStatusNats(params: {
   try {
     const nc = await connect({
       servers: config.ZKCLOUDWORKER_NATS,
-      timeout: 3000,
+      timeout: 1000,
     });
-    const js = nc.jetstream();
+    const js = nc.jetstream({ timeout: 1000 });
     const kv = await js.views.kv("profiles", { timeout: 2000 });
     if (publishFull === true) {
       await kv.put(
@@ -48,9 +48,9 @@ export async function publishTransactionNats(params: {
   try {
     const nc = await connect({
       servers: config.ZKCLOUDWORKER_NATS,
-      timeout: 3000,
+      timeout: 1000,
     });
-    const js = nc.jetstream();
+    const js = nc.jetstream({ timeout: 1000 });
     const kv = await js.views.kv("profiles", { timeout: 2000 });
     await kv.put(
       `zkcloudworker.tx.${clean(developer)}.${clean(repo)}`,
@@ -75,9 +75,9 @@ export async function publishVerificationNats(params: {
   try {
     const nc = await connect({
       servers: config.ZKCLOUDWORKER_NATS,
-      timeout: 3000,
+      timeout: 1000,
     });
-    const js = nc.jetstream();
+    const js = nc.jetstream({ timeout: 1000 });
     const kv = await js.views.kv("profiles", { timeout: 2000 });
     await kv.put(`zkcloudworker.zkapp`, JSON.stringify(params));
 
