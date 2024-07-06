@@ -4,9 +4,9 @@ import { Cloud, CloudTransaction } from "./cloud";
  * Abstract class for the zkCloudWorker
  * Used to define the zkCloudWorker methods and properties
  * Should be implemented for by the developer for the zkCloudWorker in the cloud
- * @param cloud: the cloud
  */
 export abstract class zkCloudWorker {
+  /**  cloud: the cloud instance */
   readonly cloud: Cloud;
 
   /**

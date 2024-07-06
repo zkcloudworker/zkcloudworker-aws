@@ -21,6 +21,7 @@ import { forceRestartLambda } from "../lambda/lambda";
 import { stringHash } from "./hash";
 import { S3File } from "../storage/s3";
 import { publishTransactionMetadata } from "../publish/transaction";
+import { encrypt, decrypt } from "../storage/encrypt";
 
 export const cacheDir = "/mnt/efs/cache";
 const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
@@ -157,6 +158,38 @@ export class CloudWorker extends Cloud {
     const data = await file.get();
     const buffer = await data?.Body?.transformToByteArray();
     return buffer ? Buffer.from(buffer) : undefined;
+  }
+
+  async encrypt(params: {
+    data: string;
+    context: string;
+    keyId?: string;
+  }): Promise<string | undefined> {
+    const { data, context, keyId } = params;
+    return await encrypt({
+      data,
+      context,
+      keyId,
+      developer: this.developer,
+      repo: this.repo,
+      id: this.id,
+    });
+  }
+
+  async decrypt(params: {
+    data: string;
+    context: string;
+    keyId?: string;
+  }): Promise<string | undefined> {
+    const { data, context, keyId } = params;
+    return await decrypt({
+      data,
+      context,
+      keyId,
+      developer: this.developer,
+      repo: this.repo,
+      id: this.id,
+    });
   }
 
   async loadEnvironment(password: string): Promise<void> {

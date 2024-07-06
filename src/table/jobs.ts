@@ -76,13 +76,19 @@ export class Jobs extends Table<JobData> {
       logStreams,
     };
     try {
-      await this.create(item);
       const event = {
         jobId,
         eventTime: timeCreated,
         jobStatus: "created" as JobStatus,
       };
-      await publishJobStatus({ job: item, event, publishFull: true });
+      const publishPromise = publishJobStatus({
+        job: item,
+        event,
+        publishFull: true,
+      });
+      await this.create(item);
+      await publishPromise;
+
       return jobId;
     } catch (error: any) {
       console.error("Error: Jobs: createJob", error);

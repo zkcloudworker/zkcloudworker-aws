@@ -1,37 +1,45 @@
 import { blockchain } from "../networks";
 
 /**
- * TaskData is the data structure for a task, keeping track of the task status, result, logs, and metadata
- * @param id the id of the user
- * @param taskId the id of the task
- *
- * @param startTime the time the task was started
- * @param timeCreated the time the task was created
- * @param maxAttempts the maximum number of attempts
- * @param attempts the number of attempts
- *
- * @param developer the developer of the repo executing the task
- * @param repo the repo executing the task
- * @param task the task to execute
- * @param userId the id of the user
- * @param args the arguments for the task
- * @param metadata the metadata for the task
- * @param chain the blockchain to execute the task on
+ * TaskData is the data structure for a task, keeping track of the task status, result, logs, and metadata.
  */
 export interface TaskData {
+  /** The ID of the user */
   id: string;
+
+  /** The ID of the task */
   taskId: string;
 
+  /** The time the task was started (optional) */
   startTime?: number;
+
+  /** The time the task was created */
   timeCreated: number;
-  maxAttempts?: number; // default is 5
+
+  /** The maximum number of attempts (default is 5) (optional) */
+  maxAttempts?: number;
+
+  /** The number of attempts */
   attempts: number;
 
+  /** The developer of the repo executing the task */
   developer: string;
+
+  /** The repo executing the task */
   repo: string;
+
+  /** The task to execute */
   task: string;
+
+  /** The ID of the user (optional) */
   userId?: string;
+
+  /** The arguments for the task (optional) */
   args?: string;
+
+  /** The metadata for the task (optional) */
   metadata?: string;
+
+  /** The blockchain to execute the task on */
   chain: blockchain;
 }

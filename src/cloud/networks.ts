@@ -10,41 +10,36 @@ export {
 };
 
 /**
- * blockchain is the type for the chain id
- * @param local the local chain id
- * @param devnet the devnet chain id
- * @param lightnet the lightnet chain id
- * @param mainnet the mainnet chain id
- * @param zeko the zeko chain id
- * @param mainnet the mainnet chain id
+ * blockchain is the type for the chain ID.
  */
-type blockchain =
-  | "local"
-  | "devnet"
-  | "lightnet"
-  | "mainnet"
-  | "zeko"
-  | "mainnet";
+type blockchain = "local" | "devnet" | "lightnet" | "mainnet" | "zeko";
 
 /**
- * MinaNetwork is the data structure for a Mina network, keeping track of the mina and archive endpoints, chain id, name, account manager, explorer account url, explorer transaction url, and faucet
- * @param mina the mina endpoints
- * @param archive the archive endpoints
- * @param chainId the chain id
- * @param name the name of the network
- * @param accountManager the account manager for Lightnet
- * @param explorerAccountUrl the explorer account url
- * @param explorerTransactionUrl the explorer transaction url
- * @param faucet the faucet url
+ * MinaNetwork is the data structure for a Mina network, keeping track of the Mina and archive endpoints, chain ID, name, account manager, explorer account URL, explorer transaction URL, and faucet.
  */
 interface MinaNetwork {
+  /** The Mina endpoints */
   mina: string[];
+
+  /** The archive endpoints */
   archive: string[];
+
+  /** The chain ID */
   chainId: blockchain;
+
+  /** The name of the network (optional) */
   name?: string;
+
+  /** The account manager for Lightnet (optional) */
   accountManager?: string;
+
+  /** The explorer account URL (optional) */
   explorerAccountUrl?: string;
+
+  /** The explorer transaction URL (optional) */
   explorerTransactionUrl?: string;
+
+  /** The faucet URL (optional) */
   faucet?: string;
 }
 

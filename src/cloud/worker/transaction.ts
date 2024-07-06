@@ -6,7 +6,7 @@
  */
 
 export interface TransactionMetadata {
-  events: object[];
-  actions: object[];
-  custom: object;
+  events?: object[];
+  actions?: object[];
+  custom?: object;
 }

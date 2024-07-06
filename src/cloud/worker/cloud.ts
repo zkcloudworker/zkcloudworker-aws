@@ -4,27 +4,32 @@ import { TransactionMetadata } from "./transaction";
 
 /**
  * Interface for the deployer key pair
- * Used to get the public and private keys of the deployer for test networks only
- * Devnet and Zeko are supported
- * @param publicKey: the public key of the deployer
- * @param privateKey: the private key of the deployer
+ * Used to get the public and private keys of the deployer for test networks only.
+ * Devnet and Zeko are supported.
  */
 export interface DeployerKeyPair {
+  /** The public key of the deployer */
   publicKey: string;
+
+  /** The private key of the deployer */
   privateKey: string;
 }
 
 /**
  * Interface for the cloud transaction
  * Used to get the transaction id, the transaction, and the time received
- * @param txId: the transaction id
- * @param transaction: the transaction
- * @param timeReceived: the time received
  */
 export interface CloudTransaction {
+  /** The transaction id */
   txId: string;
+
+  /** The transaction */
   transaction: string;
+
+  /** The time received */
   timeReceived: number;
+
+  /** The status of the transaction */
   status: string;
 }
 
@@ -174,6 +179,32 @@ export abstract class Cloud {
    * @returns the value of the file
    */
   abstract loadFile(filename: string): Promise<Buffer | undefined>;
+
+  /**
+   * Abstract method to encrypt the data
+   * @param params
+   * @param params.data the data
+   * @param params.context the context
+   * @param params.keyId the key id, optional
+   */
+  abstract encrypt(params: {
+    data: string;
+    context: string;
+    keyId?: string;
+  }): Promise<string | undefined>;
+
+  /**
+   * Abstract method to decrypt the data
+   * @param params
+   * @param params.data the data
+   * @param params.context the context
+   * @param params.keyId the key id, optional
+   */
+  abstract decrypt(params: {
+    data: string;
+    context: string;
+    keyId?: string;
+  }): Promise<string | undefined>;
 
   /**
    * Abstract method to calculate the recursive proof
