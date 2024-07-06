@@ -7,7 +7,7 @@ export async function publishJobStatusNats(params: {
   job: JobData;
   event: JobEvent;
   publishFull?: boolean;
-}): Promise<void> {
+}): Promise<boolean> {
   const { job, event, publishFull } = params;
   try {
     const nc = await connect({
@@ -31,8 +31,10 @@ export async function publishJobStatusNats(params: {
     await kv.put(`zkcloudworker.jobStatus`, JSON.stringify(event));
 
     await nc.drain();
+    return true;
   } catch (error) {
     console.error(`NATS: Error publishing job status`, { error, job });
+    return false;
   }
 }
 
@@ -60,7 +62,7 @@ export async function publishTransactionNats(params: {
 
     await nc.drain();
   } catch (error) {
-    console.error(`NATS: Error publishing job status`, params, error);
+    console.error(`NATS: Error publishing transaction`, params, error);
   }
 }
 
@@ -83,7 +85,7 @@ export async function publishVerificationNats(params: {
 
     await nc.drain();
   } catch (error) {
-    console.error(`NATS: Error publishing job status`, params, error);
+    console.error(`NATS: Error publishing verification`, params, error);
   }
 }
 

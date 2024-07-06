@@ -28,27 +28,28 @@
     "@types/adm-zip": "^0.5.5",
     "@types/aws-lambda": "^8.10.140",
     "@types/jsonwebtoken": "^9.0.6",
-    "@types/node": "^20.14.9",
+    "@types/node": "^20.14.10",
     "@types/serverless": "^3.12.22",
     "serverless": "^3.39.0",
     "serverless-iam-roles-per-function": "^3.2.0",
     "serverless-plugin-typescript": "^2.1.5",
     "serverless-prune-plugin": "^2.0.2",
-    "typescript": "^5.5.2"
+    "typescript": "^5.5.3"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudwatch-logs": "^3.600.0",
-    "@aws-sdk/client-dynamodb": "^3.602.0",
-    "@aws-sdk/client-lambda": "^3.600.0",
-    "@aws-sdk/client-lightsail": "^3.600.0",
-    "@aws-sdk/client-s3": "^3.600.0",
-    "@aws-sdk/s3-request-presigner": "^3.600.0",
-    "@aws-sdk/util-dynamodb": "^3.602.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.609.0",
+    "@aws-sdk/client-dynamodb": "^3.609.0",
+    "@aws-sdk/client-kms": "^3.609.0",
+    "@aws-sdk/client-lambda": "^3.609.0",
+    "@aws-sdk/client-lightsail": "^3.609.0",
+    "@aws-sdk/client-s3": "^3.609.0",
+    "@aws-sdk/s3-request-presigner": "^3.609.0",
+    "@aws-sdk/util-dynamodb": "^3.609.0",
     "adm-zip": "^0.5.14",
     "algoliasearch": "^4.24.0",
     "axios": "^1.7.2",
     "jsonwebtoken": "^9.0.2",
-    "nats": "^2.27.0"
+    "nats": "^2.28.0"
   },
   "packageManager": "yarn@4.2.2"
 }

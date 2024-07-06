@@ -281,7 +281,6 @@ functions:
     memorySize: 10240
     reservedConcurrency: 20
     environment:
-      AWS_KMS_ENCRYPTION_KEY_ID: ""
       JWT_PRIVATEKEY: ""
       JWT_ACCESS_KEY: ""
       ZKCLOUDWORKER_AUTH: ""
@@ -426,7 +425,6 @@ functions:
     memorySize: 10240
     reservedConcurrency: 20
     environment:
-      AWS_KMS_ENCRYPTION_KEY_ID: ""
       JWT_PRIVATEKEY: ""
       JWT_ACCESS_KEY: ""
       ZKCLOUDWORKER_AUTH: ""
@@ -571,7 +569,6 @@ functions:
     memorySize: 10240
     reservedConcurrency: 20
     environment:
-      AWS_KMS_ENCRYPTION_KEY_ID: ""
       JWT_PRIVATEKEY: ""
       JWT_ACCESS_KEY: ""
       ZKCLOUDWORKER_AUTH: ""
@@ -698,6 +695,14 @@ functions:
           - lambda:UpdateFunctionConfiguration
         Resource:
           - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-worker-zeko
+      - Effect: Allow
+        Action:
+          - kms:Encrypt
+          - kms:Decrypt
+          - kms:Encrypt*
+          - kms:Decrypt*
+        Resource: "*"
+
     deadLetter:
       sqs:
         queueName: worker-zeko-dl-queue
@@ -767,7 +772,6 @@ functions:
     memorySize: 10240
     reservedConcurrency: 64
     environment:
-      AWS_KMS_ENCRYPTION_KEY_ID: ""
       JWT_PRIVATEKEY: ""
       JWT_ACCESS_KEY: ""
       ZKCLOUDWORKER_AUTH: ""
@@ -867,7 +871,6 @@ functions:
     memorySize: 10240
     reservedConcurrency: 64
     environment:
-      AWS_KMS_ENCRYPTION_KEY_ID: ""
       JWT_PRIVATEKEY: ""
       JWT_ACCESS_KEY: ""
       ZKCLOUDWORKER_AUTH: ""
@@ -967,7 +970,6 @@ functions:
     memorySize: 10240
     reservedConcurrency: 64
     environment:
-      AWS_KMS_ENCRYPTION_KEY_ID: ""
       JWT_PRIVATEKEY: ""
       JWT_ACCESS_KEY: ""
       ZKCLOUDWORKER_AUTH: ""
