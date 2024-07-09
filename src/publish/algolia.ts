@@ -16,7 +16,7 @@ export async function publishJobStatusAlgolia(params: {
     }
     const client = algoliasearch(ALGOLIA_PROJECT, ALGOLIA_KEY);
 
-    const jobIndex = client.initIndex("jobs");
+    const jobIndex = client.initIndex("zk-jobs");
     const data = {
       objectID: job.jobId,
       ...job,

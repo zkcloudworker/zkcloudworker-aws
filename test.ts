@@ -1,5 +1,5 @@
 import type { Handler, Context, Callback } from "aws-lambda";
-//import { listFiles } from "./src/storage/files";
+import { listFiles } from "./src/storage/files";
 import fs from "fs/promises";
 import os from "os";
 //import { Transactions } from "./src/table/transactions";
@@ -25,7 +25,13 @@ export const cloud: Handler = async (
     const functionName = process.env.AWS_LAMBDA_FUNCTION_NAME;
     console.log("functionName", functionName);
 
-    await restartNatsServer();
+    //await restartNatsServer();
+
+    const dir = "/mnt/efs/worker/DFST/simple-example";
+    await listFiles(dir, true);
+    await fs.rm(dir, { recursive: true, force: true });
+    console.log("dir removed");
+    await listFiles(dir, true);
     /*
     const cacheDir = "/mnt/efs/cache";
     await listFiles(cacheDir, false);
