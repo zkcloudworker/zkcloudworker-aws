@@ -50,8 +50,23 @@ const api: Handler = async (
         });
         return;
       }
+      const balance = await getBalance(id);
+      if (balance <= 0) {
+        console.error("Low balance", { id, balance });
+        callback(null, {
+          statusCode: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": true,
+          },
+          body: "Low balance for this JWT key, please topup",
+        });
+        return;
+      }
+
       switch (command) {
         case "generateJWT":
+          /*
           const jwt = generateJWT(data);
           if (jwt !== undefined)
             await createAccount({
@@ -65,6 +80,15 @@ const api: Handler = async (
               "Access-Control-Allow-Credentials": true,
             },
             body: jwt ?? "error",
+          });
+          */
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: "Please contact support@zkcloudworker.com",
           });
           return;
 

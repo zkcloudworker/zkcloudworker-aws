@@ -13,7 +13,7 @@ provider:
   versionFunctions: false
   runtime: nodejs20.x
   region: eu-west-1
-  logRetentionInDays: 7
+  logRetentionInDays: 30
   #architecture: arm64 #o1js is not compatible yet - https://github.com/o1-labs/o1js/issues/1525
   environment:
     TASKS_TABLE: ${file(./env.json):TASKS_TABLE, env:TASKS_TABLE}
@@ -411,6 +411,10 @@ functions:
           - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-sequencer
       - Effect: "Allow"
         Action:
+          - lambda:InvokeFunction
+        Resource: arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-nats
+      - Effect: "Allow"
+        Action:
           - lambda:UpdateFunctionConfiguration
         Resource:
           - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-worker-devnet
@@ -560,6 +564,10 @@ functions:
           - lambda:InvokeFunction
         Resource:
           - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-sequencer
+      - Effect: "Allow"
+        Action:
+          - lambda:InvokeFunction
+        Resource: arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-nats
       - Effect: "Allow"
         Action:
           - lambda:UpdateFunctionConfiguration
@@ -713,6 +721,10 @@ functions:
           - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-sequencer
       - Effect: "Allow"
         Action:
+          - lambda:InvokeFunction
+        Resource: arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-nats
+      - Effect: "Allow"
+        Action:
           - lambda:UpdateFunctionConfiguration
         Resource:
           - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-worker-zeko
@@ -779,6 +791,10 @@ functions:
     timeout: 30
     memorySize: 384
     reservedConcurrency: 20
+  nats:
+    handler: nats.publish
+    timeout: 60
+    memorySize: 384
   sequencer:
     handler: sequencer.run
     timeout: 900
