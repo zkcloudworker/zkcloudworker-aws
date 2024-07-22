@@ -13,7 +13,7 @@ provider:
   versionFunctions: false
   runtime: nodejs20.x
   region: eu-west-1
-  logRetentionInDays: 7
+  logRetentionInDays: 30
   #architecture: arm64 #o1js is not compatible yet - https://github.com/o1-labs/o1js/issues/1525
   environment:
     TASKS_TABLE: ${file(./env.json):TASKS_TABLE, env:TASKS_TABLE}
@@ -312,6 +312,7 @@ functions:
         Action:
           - dynamodb:GetItem
           - dynamodb:UpdateItem
+          - dynamodb:PutItem
         Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOBS_TABLE}"
       - Effect: Allow
         Action:
@@ -324,6 +325,7 @@ functions:
           - dynamodb:PutItem
           - dynamodb:UpdateItem
           - dynamodb:DeleteItem
+          - dynamodb:Query
         Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TRANSACTIONS_TABLE}"
       - Effect: Allow
         Action:
@@ -402,6 +404,15 @@ functions:
           - lambda:InvokeFunction
         Resource:
           - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-charge
+      - Effect: "Allow"
+        Action:
+          - lambda:InvokeFunction
+        Resource:
+          - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-sequencer
+      - Effect: "Allow"
+        Action:
+          - lambda:InvokeFunction
+        Resource: arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-nats
       - Effect: "Allow"
         Action:
           - lambda:UpdateFunctionConfiguration
@@ -456,6 +467,7 @@ functions:
         Action:
           - dynamodb:GetItem
           - dynamodb:UpdateItem
+          - dynamodb:PutItem
         Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOBS_TABLE}"
       - Effect: Allow
         Action:
@@ -468,6 +480,7 @@ functions:
           - dynamodb:PutItem
           - dynamodb:UpdateItem
           - dynamodb:DeleteItem
+          - dynamodb:Query
         Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TRANSACTIONS_TABLE}"
       - Effect: Allow
         Action:
@@ -546,6 +559,15 @@ functions:
           - lambda:InvokeFunction
         Resource:
           - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-charge
+      - Effect: "Allow"
+        Action:
+          - lambda:InvokeFunction
+        Resource:
+          - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-sequencer
+      - Effect: "Allow"
+        Action:
+          - lambda:InvokeFunction
+        Resource: arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-nats
       - Effect: "Allow"
         Action:
           - lambda:UpdateFunctionConfiguration
@@ -600,6 +622,7 @@ functions:
         Action:
           - dynamodb:GetItem
           - dynamodb:UpdateItem
+          - dynamodb:PutItem
         Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOBS_TABLE}"
       - Effect: Allow
         Action:
@@ -612,6 +635,7 @@ functions:
           - dynamodb:PutItem
           - dynamodb:UpdateItem
           - dynamodb:DeleteItem
+          - dynamodb:Query
         Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TRANSACTIONS_TABLE}"
       - Effect: Allow
         Action:
@@ -690,6 +714,15 @@ functions:
           - lambda:InvokeFunction
         Resource:
           - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-charge
+      - Effect: "Allow"
+        Action:
+          - lambda:InvokeFunction
+        Resource:
+          - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-sequencer
+      - Effect: "Allow"
+        Action:
+          - lambda:InvokeFunction
+        Resource: arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-nats
       - Effect: "Allow"
         Action:
           - lambda:UpdateFunctionConfiguration
@@ -758,6 +791,10 @@ functions:
     timeout: 30
     memorySize: 384
     reservedConcurrency: 20
+  nats:
+    handler: nats.publish
+    timeout: 60
+    memorySize: 384
   sequencer:
     handler: sequencer.run
     timeout: 900

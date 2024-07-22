@@ -22,6 +22,8 @@ import { stringHash } from "./hash";
 import { S3File } from "../storage/s3";
 import { publishTransactionMetadata } from "../publish/transaction";
 import { encrypt, decrypt } from "../storage/encrypt";
+import { CloudTransactionNatsParams } from "../publish/nats";
+import { callLambda } from "../lambda/lambda";
 
 export const cacheDir = "/mnt/efs/cache";
 const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
@@ -247,6 +249,13 @@ export class CloudWorker extends Cloud {
         }
       }
     }
+    const natsParams: CloudTransactionNatsParams = {
+      txs,
+      developer,
+      repo,
+      id,
+    };
+    await callLambda("nats", JSON.stringify(natsParams));
     return txs;
   }
 

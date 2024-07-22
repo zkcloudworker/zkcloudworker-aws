@@ -1,5 +1,10 @@
 import { connect } from "nats";
-import { JobData, JobEvent, TransactionMetadata } from "../cloud";
+import {
+  JobData,
+  JobEvent,
+  TransactionMetadata,
+  CloudTransaction,
+} from "../cloud";
 import { VerificationAnswer } from "../api/verify";
 import config from "../cloud/config";
 
@@ -59,6 +64,43 @@ export async function publishTransactionNats(params: {
       JSON.stringify(params)
     );
     await kv.put(`zkcloudworker.transaction`, JSON.stringify(params));
+
+    await nc.drain();
+  } catch (error) {
+    console.error(`NATS: Error publishing transaction`, params, error);
+  }
+}
+
+export interface CloudTransactionNatsParams {
+  txs: CloudTransaction[];
+  developer: string;
+  repo: string;
+  id: string;
+  jobId?: string;
+}
+
+export async function publishCloudTransactionsNats(
+  params: CloudTransactionNatsParams
+): Promise<void> {
+  const { txs, developer, repo, id, jobId } = params;
+  const statusTime = Date.now();
+  try {
+    const nc = await connect({
+      servers: config.ZKCLOUDWORKER_NATS,
+      timeout: 1000,
+    });
+    const js = nc.jetstream({ timeout: 1000 });
+    const kv = await js.views.kv("profiles", { timeout: 2000 });
+    await kv.put(
+      `zkcloudworker.rolluptxs.${clean(developer)}.${clean(repo)}`,
+      JSON.stringify({ ...params, statusTime })
+    );
+    for (const tx of txs) {
+      await kv.put(
+        `zkcloudworker.rolluptx.${tx.txId}`,
+        JSON.stringify({ ...tx, statusTime })
+      );
+    }
 
     await nc.drain();
   } catch (error) {
