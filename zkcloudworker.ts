@@ -82,6 +82,7 @@ const api: Handler = async (
             body: jwt ?? "error",
           });
           */
+          console.error("generateJWT is disabled", { id, data });
           callback(null, {
             statusCode: 200,
             headers: {
