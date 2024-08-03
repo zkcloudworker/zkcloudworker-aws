@@ -39,7 +39,7 @@ const api: Handler = async (
       const { command, data, chain } = body;
       const id: string | undefined = verifyJWT(body.jwtToken);
       if (id === undefined) {
-        console.error("Wrong jwtToken");
+        console.error("Wrong jwtToken", event);
         callback(null, {
           statusCode: 200,
           headers: {
@@ -52,7 +52,7 @@ const api: Handler = async (
       }
       const balance = await getBalance(id);
       if (balance <= 0) {
-        console.error("Low balance", { id, balance });
+        console.error("Low balance", { id, balance, event });
         callback(null, {
           statusCode: 200,
           headers: {
@@ -134,6 +134,7 @@ const api: Handler = async (
               chain,
               id,
               transactions: [],
+              metadata: "deploy " + developer + "/" + repo,
             },
           });
           callback(null, {
