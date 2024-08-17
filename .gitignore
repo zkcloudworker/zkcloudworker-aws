@@ -11,6 +11,7 @@ deperciated/
 
 env.json
 src/mina/gastanks.ts
+src/api/blocked-ip.ts
 test/
 proof.json
 output.txt

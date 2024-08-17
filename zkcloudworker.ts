@@ -10,12 +10,24 @@ import { CloudWorker } from "./src/api/cloud";
 import { getPresignedUrl } from "./src/storage/presigned";
 import { LogStream } from "./src/cloud";
 import { createAccount, getBalance } from "./src/table/balance";
+import { rateLimit, initializeRateLimiter } from "./src/api/rate-limit";
 const MAX_JOB_AGE: number = 1000 * 60 * 60; // 60 minutes
 const INITIAL_BALANCE: number = 10; // MINA
 const nameContract = {
   // TODO: remove later
   contractAddress: "B62qoYeVkaeVimrjBNdBEKpQTDR1gVN2ooaarwXaJmuQ9t8MYu9mDNS",
 };
+//let lastBlocksInfoRequest = 0;
+initializeRateLimiter({
+  name: "api",
+  points: 120,
+  duration: 60,
+});
+initializeRateLimiter({
+  name: "getBlocksInfo",
+  points: 1,
+  duration: 300,
+});
 
 const ZKCLOUDWORKER_AUTH = process.env.ZKCLOUDWORKER_AUTH!;
 
@@ -24,8 +36,32 @@ const api: Handler = async (
   context: Context,
   callback: Callback
 ) => {
+  const ip = event?.requestContext?.identity?.sourceIp ?? "no-ip";
+  if (
+    await rateLimit({
+      name: "api",
+      key: ip,
+    })
+  ) {
+    console.log("rate limit", ip);
+    callback(null, {
+      statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": true,
+      },
+      body: JSON.stringify(
+        {
+          success: false,
+          error: "error: rate limit exceeded",
+        },
+        null,
+        2
+      ),
+    });
+    return;
+  }
   try {
-    console.log("api", event.body);
     const body = JSON.parse(event.body);
     if (
       body &&
@@ -37,6 +73,60 @@ const api: Handler = async (
       body.chain
     ) {
       const { command, data, chain } = body;
+      if (data?.developer === "@staketab" && data?.task === "getBlocksInfo") {
+        if (
+          await rateLimit({
+            name: "getBlocksInfo",
+            key: ip,
+          })
+        ) {
+          console.log("getBlocksInfo rate limit", ip);
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify(
+              {
+                success: false,
+                error:
+                  "error: getBlocksInfo rate limit exceeded - 1 request per 5 minutes",
+              },
+              null,
+              2
+            ),
+          });
+          return;
+        }
+        console.log("api", ip, event.body);
+        /*
+        const now = Date.now();
+        if (now - lastBlocksInfoRequest < 1000 * 60 * 5) {
+          console.log(
+            "getBlocksInfo rate limit",
+            (now - lastBlocksInfoRequest) / 1000,
+            "seconds"
+          );
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify(
+              {
+                success: false,
+                error: "getBlocksInfo rate limit: 1 request per 5 minutes",
+              },
+              null,
+              2
+            ),
+          });
+          return;
+        } else lastBlocksInfoRequest = now;
+         */
+      }
       const id: string | undefined = verifyJWT(body.jwtToken);
       if (id === undefined) {
         console.error("Wrong jwtToken", event);
@@ -216,6 +306,7 @@ const api: Handler = async (
             });
             return;
           }
+
           const result = await createExecuteJob({
             command: "execute",
             data: { ...data, chain, id },
