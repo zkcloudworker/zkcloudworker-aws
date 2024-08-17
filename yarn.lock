@@ -8084,6 +8084,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"rate-limiter-flexible@npm:^5.0.3":
+  version: 5.0.3
+  resolution: "rate-limiter-flexible@npm:5.0.3"
+  checksum: 10c0/4ae8290cf57cbd9bc8dfd9829ed821ffad2bc6d4699170608b4b85b010059981e591803a4b1974f25755f1cbf25ff8208795cc325d5bed9d2315717865e25697
+  languageName: node
+  linkType: hard
+
 "readable-stream@npm:^2.0.0, readable-stream@npm:^2.0.5, readable-stream@npm:^2.3.0, readable-stream@npm:^2.3.5, readable-stream@npm:~2.3.6":
   version: 2.3.8
   resolution: "readable-stream@npm:2.3.8"
@@ -9467,6 +9474,7 @@ __metadata:
     axios: "npm:^1.7.2"
     jsonwebtoken: "npm:^9.0.2"
     nats: "npm:^2.28.0"
+    rate-limiter-flexible: "npm:^5.0.3"
     serverless: "npm:^3.39.0"
     serverless-iam-roles-per-function: "npm:^3.2.0"
     serverless-plugin-typescript: "npm:^2.1.5"
