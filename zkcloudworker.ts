@@ -50,14 +50,7 @@ const api: Handler = async (
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Credentials": true,
       },
-      body: JSON.stringify(
-        {
-          success: false,
-          error: "error: rate limit exceeded",
-        },
-        null,
-        2
-      ),
+      body: "error: rate limit exceeded",
     });
     return;
   }
@@ -299,6 +292,28 @@ const api: Handler = async (
                   error:
                     "Invalid contract address, should be " +
                     nameContract.contractAddress,
+                },
+                null,
+                2
+              ),
+            });
+            return;
+          }
+
+          if (
+            data.mode === "sync" &&
+            (data.developer !== "@staketab" || data.repo !== "nameservice")
+          ) {
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+              },
+              body: JSON.stringify(
+                {
+                  success: false,
+                  error: "Invalid mode, should be async",
                 },
                 null,
                 2
