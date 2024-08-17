@@ -28,6 +28,11 @@ initializeRateLimiter({
   points: 1,
   duration: 300,
 });
+initializeRateLimiter({
+  name: "execute",
+  points: 50,
+  duration: 60 * 60, // 1 hour
+});
 
 const ZKCLOUDWORKER_AUTH = process.env.ZKCLOUDWORKER_AUTH!;
 
@@ -206,6 +211,23 @@ const api: Handler = async (
           break;
 
         case "deploy": {
+          if (
+            await rateLimit({
+              name: "execute",
+              key: ip,
+            })
+          ) {
+            console.error("deploy rate limit", ip, data.developer, data.repo);
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+              },
+              body: "error: deploy rate limit exceeded",
+            });
+            return;
+          }
           const { developer, repo, args } = data;
           const result = await createExecuteJob({
             command: "deploy",
@@ -257,6 +279,28 @@ const api: Handler = async (
         }
 
         case "recursiveProof": {
+          if (
+            await rateLimit({
+              name: "execute",
+              key: ip,
+            })
+          ) {
+            console.error(
+              "recursiveProof rate limit",
+              ip,
+              data.developer,
+              data.repo
+            );
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+              },
+              body: "error: recursiveProof rate limit exceeded",
+            });
+            return;
+          }
           const result = await createRecursiveProofJob({
             ...data,
             chain,
@@ -274,6 +318,23 @@ const api: Handler = async (
         }
 
         case "execute": {
+          if (
+            await rateLimit({
+              name: "execute",
+              key: ip,
+            })
+          ) {
+            console.error("execute rate limit", ip, data.developer, data.repo);
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+              },
+              body: "error: execute rate limit exceeded",
+            });
+            return;
+          }
           if (
             data.developer === "@staketab" &&
             data.args &&
