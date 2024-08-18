@@ -30,6 +30,11 @@ export async function initializeDynamoRateLimiter(params: {
   duration: number;
 }) {
   const { name, points, duration } = params;
+  const tableName = process.env.RATE_LIMIT_TABLE;
+  if (!tableName) {
+    console.error("RATE_LIMIT_TABLE not set");
+    return;
+  }
   if (limiters[name]) return;
   const dynamoClient = new DynamoDB({});
   const rateLimiter = new RateLimiterDynamo({
@@ -41,7 +46,8 @@ export async function initializeDynamoRateLimiter(params: {
     points,
     duration,
     tableCreated: true,
-    tableName: "rate-limiter-" + name,
+    tableName,
+    keyPrefix: name,
   });
   limiters[name] = rateLimiter;
   console.log(`Dynamo Rate limit initialized for ${name}`);
