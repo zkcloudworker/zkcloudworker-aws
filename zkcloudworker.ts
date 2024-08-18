@@ -97,7 +97,7 @@ const api: Handler = async (
           });
           return;
         }
-        console.log("api", ip, event.body);
+
         /*
         const now = Date.now();
         if (now - lastBlocksInfoRequest < 1000 * 60 * 5) {
@@ -125,6 +125,7 @@ const api: Handler = async (
         } else lastBlocksInfoRequest = now;
          */
       }
+
       const id: string | undefined = verifyJWT(body.jwtToken);
       if (id === undefined) {
         console.error("Wrong jwtToken", event);
@@ -151,6 +152,7 @@ const api: Handler = async (
         });
         return;
       }
+      console.log("api", { ip, id, balance, body });
 
       switch (command) {
         case "generateJWT":

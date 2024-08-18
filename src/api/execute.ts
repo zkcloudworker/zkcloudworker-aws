@@ -7,6 +7,20 @@ import { callLambda } from "../lambda/lambda";
 import { S3File } from "../storage/s3";
 import { forceRestartLambda } from "../lambda/lambda";
 import { charge } from "../table/balance";
+import {
+  rateLimit,
+  initializeRateLimiter,
+  initializeDynamoRateLimiter,
+  penalizeRateLimit,
+} from "./rate-limit";
+
+initializeRateLimiter({
+  name: "repoSync",
+  points: 1000,
+  duration: 60 * 60,
+});
+
+const REPO_POINTS = 500;
 
 export async function createExecuteJob(params: {
   command: string;
@@ -43,125 +57,163 @@ export async function createExecuteJob(params: {
     mode,
   } = data;
   const transactions = data.transactions ?? [];
+  try {
+    if (
+      id === undefined ||
+      typeof id !== "string" ||
+      transactions === undefined ||
+      developer === undefined ||
+      typeof developer !== "string" ||
+      repo === undefined ||
+      typeof repo !== "string" ||
+      chain === undefined ||
+      typeof chain !== "string" ||
+      (taskId === undefined && command === "task") ||
+      (command !== "deploy" &&
+        (await isWorkerExist({
+          developer,
+          repo,
+        })) === false)
+    ) {
+      console.error("Wrong execute command", {
+        command,
+        ...data,
+        transactions: undefined,
+      });
 
-  if (
-    id === undefined ||
-    typeof id !== "string" ||
-    transactions === undefined ||
-    developer === undefined ||
-    typeof developer !== "string" ||
-    repo === undefined ||
-    typeof repo !== "string" ||
-    chain === undefined ||
-    typeof chain !== "string" ||
-    (taskId === undefined && command === "task") ||
-    (command !== "deploy" &&
-      (await isWorkerExist({
+      return {
+        success: false,
+        jobId: undefined,
+        error: "error: wrong execute command",
+      };
+    }
+
+    if (mode === "sync") {
+      if (
+        await rateLimit({
+          name: "repoSync",
+          key: developer + "/" + repo,
+        })
+      ) {
+        console.log("repoSync rate limit", developer + "/" + repo);
+        return {
+          success: false,
+          error: "error: execute sync: repo rate limit",
+        };
+      }
+      const timeCreated = Date.now();
+      const item: JobData = {
+        id,
+        jobId: "sync",
         developer,
         repo,
-      })) === false)
-  ) {
-    console.error("Wrong execute command", {
-      command,
-      ...data,
-      transactions: undefined,
-    });
-
+        taskId,
+        task,
+        userId,
+        args,
+        metadata,
+        chain,
+        txNumber: transactions.length,
+        timeCreated,
+        jobStatus: "started" as JobStatus,
+      };
+      try {
+        const result = await executeSync({
+          command,
+          developer,
+          repo,
+          job: item,
+          transactions,
+        });
+        if (result !== undefined) return { success: true, result };
+        else {
+          console.error("error: execute: executeSync");
+          return {
+            success: false,
+            error: "error: execute: executeSync",
+          };
+        }
+      } catch (error: any) {
+        console.error("error: catch: execute: executeSync", error);
+        return {
+          success: false,
+          jobId: undefined,
+          error: "error: catch: execute: executeSync",
+        };
+      }
+    } else {
+      await initializeDynamoRateLimiter({
+        name: "repo",
+        points: REPO_POINTS,
+        duration: 60 * 60,
+      });
+      if (
+        await rateLimit({
+          name: "repo",
+          key: developer + "/" + repo,
+        })
+      ) {
+        console.log("repo rate limit", developer + "/" + repo);
+        return {
+          success: false,
+          error: "error: execute: repo rate limit",
+        };
+      }
+      let filename: string | undefined = undefined;
+      if (transactions.length > 0) {
+        filename =
+          developer + "/" + "execute." + Date.now().toString() + ".json";
+        const file = new S3File(process.env.BUCKET!, filename);
+        await file.put(JSON.stringify({ transactions }), "application/json");
+      }
+      const JobsTable = new Jobs(process.env.JOBS_TABLE!);
+      const jobId = await JobsTable.createJob({
+        id,
+        developer,
+        repo,
+        filename,
+        task,
+        taskId,
+        args,
+        txNumber: 1,
+        metadata,
+        chain,
+        logStreams: [],
+      });
+      if (jobId !== undefined) {
+        if (chain !== "devnet" && chain !== "zeko" && chain !== "mainnet") {
+          console.error(
+            "error: execute: createJob: chain is not supported",
+            chain
+          );
+          return {
+            success: false,
+            jobId,
+            error: `error: chain ${chain} is not supported`,
+          };
+        } else {
+          await callLambda(
+            "worker-" + chain,
+            JSON.stringify({ command, id, jobId, developer, repo, args, chain })
+          );
+          return { success: true, jobId, error: undefined };
+        }
+      } else {
+        console.error("error: execute: createJob: jobId is undefined");
+        return {
+          success: false,
+          jobId: undefined,
+          error: "error: execute: createJob: jobId is undefined",
+        };
+      }
+    }
+  } catch (error: any) {
+    console.error("error: execute: catch", error);
     return {
       success: false,
       jobId: undefined,
-      error: "error: wrong execute command",
+      error: "error: execute: catch " + error?.message ?? "",
     };
-  }
-
-  if (mode === "sync") {
-    const timeCreated = Date.now();
-    const item: JobData = {
-      id,
-      jobId: "sync",
-      developer,
-      repo,
-      taskId,
-      task,
-      userId,
-      args,
-      metadata,
-      chain,
-      txNumber: transactions.length,
-      timeCreated,
-      jobStatus: "started" as JobStatus,
-    };
-    try {
-      const result = await executeSync({
-        command,
-        developer,
-        repo,
-        job: item,
-        transactions,
-      });
-      if (result !== undefined) return { success: true, result };
-      else {
-        console.error("error: execute: executeSync");
-        return {
-          success: false,
-          error: "error: execute: executeSync",
-        };
-      }
-    } catch (error: any) {
-      console.error("error: catch: execute: executeSync", error);
-      return {
-        success: false,
-        jobId: undefined,
-        error: "error: catch: execute: executeSync",
-      };
-    }
-  } else {
-    let filename: string | undefined = undefined;
-    if (transactions.length > 0) {
-      filename = developer + "/" + "execute." + Date.now().toString() + ".json";
-      const file = new S3File(process.env.BUCKET!, filename);
-      await file.put(JSON.stringify({ transactions }), "application/json");
-    }
-    const JobsTable = new Jobs(process.env.JOBS_TABLE!);
-    const jobId = await JobsTable.createJob({
-      id,
-      developer,
-      repo,
-      filename,
-      task,
-      taskId,
-      args,
-      txNumber: 1,
-      metadata,
-      chain,
-      logStreams: [],
-    });
-    if (jobId !== undefined) {
-      if (chain !== "devnet" && chain !== "zeko" && chain !== "mainnet") {
-        console.error(
-          "error: execute: createJob: chain is not supported",
-          chain
-        );
-        return {
-          success: false,
-          jobId,
-          error: `error: chain ${chain} is not supported`,
-        };
-      } else {
-        await callLambda(
-          "worker-" + chain,
-          JSON.stringify({ command, id, jobId, developer, repo, args, chain })
-        );
-        return { success: true, jobId, error: undefined };
-      }
-    } else {
-      console.error("error: execute: createJob: jobId is undefined");
-      return {
-        success: false,
-        jobId: undefined,
-        error: "error: execute: createJob: jobId is undefined",
-      };
-    }
   }
 }
 
@@ -246,6 +298,18 @@ export async function execute(params: {
       billedDuration,
       jobId,
     });
+    if (billedDuration > 1000 * 150) {
+      await initializeDynamoRateLimiter({
+        name: "repo",
+        points: REPO_POINTS,
+        duration: 60 * 60,
+      });
+      await penalizeRateLimit({
+        name: "repo",
+        key: developer + "/" + repo,
+        points: billedDuration > 1000 * 60 * 5 ? 50 : 10,
+      });
+    }
 
     if (result !== undefined) {
       await JobsTable.updateStatus({
