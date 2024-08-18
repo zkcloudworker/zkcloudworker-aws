@@ -27,6 +27,7 @@ provider:
     PROOFS_TABLE: ${file(./env.json):PROOFS_TABLE, env:PROOFS_TABLE}
     WORKERS_TABLE: ${file(./env.json):WORKERS_TABLE, env:WORKERS_TABLE}
     BALANCE_TABLE: ${file(./env.json):BALANCE_TABLE, env:BALANCE_TABLE}
+    RATE_LIMIT_TABLE: ${file(./env.json):RATE_LIMIT_TABLE, env:RATE_LIMIT_TABLE}
     BUCKET: ${file(./env.json):BUCKET_NAME, env:BUCKET_NAME}
     COREPACK_HOME: ${file(./env.json):COREPACK_HOME, env:COREPACK_HOME}
     HOME: ${file(./env.json):HOME, env:HOME}
@@ -148,6 +149,17 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DEPLOYERS_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:DescribeTimeToLive
+        - dynamodb:UpdateTimeToLive
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.RATE_LIMIT_TABLE}"
     - Effect: Allow
       Action:
         - s3:PutObject
@@ -294,6 +306,17 @@ functions:
           - elasticfilesystem:ClientMount
           - elasticfilesystem:ClientWrite
         Resource: "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:DescribeTimeToLive
+          - dynamodb:UpdateTimeToLive
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.RATE_LIMIT_TABLE}"
       - Effect: Allow
         Action:
           - dynamodb:GetItem
@@ -451,6 +474,17 @@ functions:
         Resource: "*"
       - Effect: Allow
         Action:
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:DescribeTimeToLive
+          - dynamodb:UpdateTimeToLive
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.RATE_LIMIT_TABLE}"
+      - Effect: Allow
+        Action:
           - dynamodb:GetItem
           - dynamodb:PutItem
           - dynamodb:UpdateItem
@@ -604,6 +638,17 @@ functions:
           - elasticfilesystem:ClientMount
           - elasticfilesystem:ClientWrite
         Resource: "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:DescribeTimeToLive
+          - dynamodb:UpdateTimeToLive
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.RATE_LIMIT_TABLE}"
       - Effect: Allow
         Action:
           - dynamodb:GetItem
@@ -1277,6 +1322,18 @@ resources:
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.DEPLOYERS_TABLE}
+    RateLimitDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: key
+            AttributeType: S
+        KeySchema:
+          - AttributeName: key
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.RATE_LIMIT_TABLE}
 
 package:
   excludeDevDependencies: true

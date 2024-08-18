@@ -1,7 +1,8 @@
-import { RateLimiterMemory } from "rate-limiter-flexible";
+import { RateLimiterMemory, RateLimiterDynamo } from "rate-limiter-flexible";
+import { DynamoDB } from "@aws-sdk/client-dynamodb";
 import { BLOCKED_IPS, BLOCKED_DURATION } from "./blocked-ip";
 
-const limiters: { [key: string]: RateLimiterMemory } = {};
+const limiters: { [key: string]: RateLimiterMemory | RateLimiterDynamo } = {};
 
 export function initializeRateLimiter(params: {
   name: string;
@@ -14,12 +15,36 @@ export function initializeRateLimiter(params: {
     points,
     duration,
   });
+
   for (const ip of BLOCKED_IPS) {
     rateLimiter.block(ip, BLOCKED_DURATION);
   }
 
-  console.log(`Rate limit initialized for ${name}`);
   limiters[name] = rateLimiter;
+  console.log(`Rate limit initialized for ${name}`);
+}
+
+export async function initializeDynamoRateLimiter(params: {
+  name: string;
+  points: number;
+  duration: number;
+}) {
+  const { name, points, duration } = params;
+  if (limiters[name]) return;
+  const dynamoClient = new DynamoDB({});
+  const rateLimiter = new RateLimiterDynamo({
+    storeClient: dynamoClient,
+    dynamoTableOpts: {
+      readCapacityUnits: 30, // default is 25
+      writeCapacityUnits: 30, // default is 25
+    },
+    points,
+    duration,
+    tableCreated: true,
+    tableName: "rate-limiter-" + name,
+  });
+  limiters[name] = rateLimiter;
+  console.log(`Dynamo Rate limit initialized for ${name}`);
 }
 
 const limited: { [key: string]: number } = {};
@@ -46,5 +71,27 @@ export async function rateLimit(params: {
       else console.log(`Rate limit exceeded for ${name} : ${key}`);
     }
     return true;
+  }
+}
+
+export async function penalizeRateLimit(params: {
+  name: string;
+  key: string;
+  points: number;
+}): Promise<void> {
+  const { name, key, points } = params;
+  try {
+    const rateLimiter = limiters[name];
+    if (!rateLimiter) {
+      console.error(`Rate limiter ${name} not initialized`);
+      return;
+    }
+    console.error(
+      `Penalizing rate limit for ${name} : ${key} (${points} points)`
+    );
+
+    await rateLimiter.penalty(key, points);
+  } catch (error) {
+    console.error("penalizeRateLimit error", params, error);
   }
 }
