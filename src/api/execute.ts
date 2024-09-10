@@ -212,7 +212,7 @@ export async function createExecuteJob(params: {
     return {
       success: false,
       jobId: undefined,
-      error: "error: execute: catch " + error?.message ?? "",
+      error: "error: execute: catch " + error?.message,
     };
   }
 }

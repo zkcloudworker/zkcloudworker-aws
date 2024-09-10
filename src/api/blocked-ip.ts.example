@@ -1,0 +1,2 @@
+export const BLOCKED_IPS=[];
+export const BLOCKED_DURATION=1;
