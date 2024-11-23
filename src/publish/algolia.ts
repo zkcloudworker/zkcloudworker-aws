@@ -40,11 +40,13 @@ export async function publishJobStatusAlgolia(params: {
     const jobEventIndex = client.initIndex("job_events");
     let resultString = undefined;
     if (event.result !== undefined) {
-      resultString =
-        event.result.substring(0, 100) +
-        (event.result.length > 100
-          ? `...${event.result.length - 100} more characters`
-          : "");
+      if (typeof event.result === "string")
+        resultString =
+          event.result.substring(0, 100) +
+          (event.result.length > 100
+            ? `...${event.result.length - 100} more characters`
+            : "");
+      else resultString = "Error: wrong result format, should be string";
     }
     const dataEvent = {
       objectID: event.jobId + "." + event.eventTime.toString(),

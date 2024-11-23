@@ -4,12 +4,12 @@ import { Tasks } from "./src/table/tasks";
 import { getSystemDataByKey, saveSystemDataByKey } from "./src/table/kv";
 import { createExecuteJob } from "./src/api//execute";
 import { processIncomingPayments } from "./src/mina/payments";
-import { restartNatsServer } from "./src/publish/restart";
+// import { restartNatsServer } from "./src/publish/restart";
 const TASKS_TABLE = process.env.TASKS_TABLE!;
 
 export const check: Handler = async () => {
   try {
-    await restartNatsServer();
+    //await restartNatsServer();
     await processIncomingPayments();
     const time = Date.now();
     const handlerId = makeString(20);

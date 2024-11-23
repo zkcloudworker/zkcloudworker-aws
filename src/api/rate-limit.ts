@@ -48,6 +48,8 @@ export async function initializeDynamoRateLimiter(params: {
     tableCreated: true,
     tableName,
     keyPrefix: name,
+    inMemoryBlockOnConsumed: points + 10,
+    inMemoryBlockDuration: 120,
   });
   limiters[name] = rateLimiter;
   console.log(`Dynamo Rate limit initialized for ${name}`);

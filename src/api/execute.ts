@@ -212,7 +212,7 @@ export async function createExecuteJob(params: {
     return {
       success: false,
       jobId: undefined,
-      error: "error: execute: catch " + error?.message ?? "",
+      error: "error: execute: catch " + (error?.message ?? ""),
     };
   }
 }
@@ -248,6 +248,11 @@ export async function executeSync(params: {
 
     Memory.info(`finished`);
     console.timeEnd("zkCloudWorker Execute Sync");
+    if (result === undefined) return undefined;
+    if (typeof result !== "string") {
+      console.error("executeSync: Result is not a string");
+      return undefined;
+    }
     return result;
   } catch (error: any) {
     console.error("executeSync: catch:", error);

@@ -17,11 +17,12 @@
   "author": "DFST",
   "license": "Apache-2.0",
   "scripts": {
-    "deploy": "serverless deploy --aws-profile zkcloudworker",
+    "deploy": "serverless deploy --aws-profile zkcloudworker --use-local-credentials",
     "prune": "serverless prune --aws-profile zkcloudworker -n 5",
     "compile": "serverless package --aws-profile zkcloudworker",
     "info": "serverless info --aws-profile zkcloudworker",
-    "org": "serverless --org=dfstio --aws-profile zkcloudworker"
+    "org": "serverless --org=dfstio --aws-profile zkcloudworker",
+    "profile": "serverless config credentials --provider aws --key ACCESS_KEY --secret SECRET_KEY --profile zkcloudworker --overwrite "
   },
   "devDependencies": {
     "@digitalmaas/serverless-plugin-lambda-dead-letter": "^1.0.0",
