@@ -15,7 +15,6 @@
     "noUnusedLocals": false,
     "noImplicitReturns": true,
     "preserveConstEnums": true,
-    "suppressImplicitAnyIndexErrors": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,

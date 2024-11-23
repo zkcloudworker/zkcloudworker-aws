@@ -1,11 +1,11 @@
 import type { Handler, Context, Callback } from "aws-lambda";
-import { listFiles } from "./src/storage/files";
-import fs from "fs/promises";
-import os from "os";
+//import { listFiles } from "./src/storage/files";
+//import fs from "fs/promises";
+//import os from "os";
 //import { Transactions } from "./src/table/transactions";
-import { restartNatsServer } from "./src/publish/restart";
+//import { restartNatsServer } from "./src/publish/restart";
 
-const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
+//const TRANSACTIONS_TABLE = process.env.TRANSACTIONS_TABLE!;
 
 export const cloud: Handler = async (
   event: any,
@@ -14,9 +14,12 @@ export const cloud: Handler = async (
 ) => {
   try {
     console.time("test");
+    console.error("test event");
     console.log("event", event);
+    console.log("context", context);
     //console.log("context", context);
     //console.log("env", process.env);
+    /*
     const parallelism = os.availableParallelism();
     console.log("parallelism", parallelism);
     const cpuCores = os.cpus();
@@ -32,7 +35,7 @@ export const cloud: Handler = async (
     await fs.rm(dir, { recursive: true, force: true });
     console.log("dir removed");
     await listFiles(dir, true);
-    /*
+    
     const cacheDir = "/mnt/efs/cache";
     await listFiles(cacheDir, false);
     await fs.rm(cacheDir, { recursive: true, force: true });
