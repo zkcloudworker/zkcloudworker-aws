@@ -1,6 +1,7 @@
 import { zkCloudWorker, Cloud } from "../cloud";
 //import { zkcloudworker as DomainNameServiceWorker } from "../external/DomainNameService/index";
 import { Workers } from "../table/workers";
+import dotenv from "dotenv";
 
 const WORKERS_TABLE = process.env.WORKERS_TABLE!;
 
@@ -89,6 +90,18 @@ export async function getWorker(params: {
     "/" +
     version.replaceAll(".", "_") +
     "/dist/index.js";
+
+  const env =
+    workersDirRoot +
+    "/" +
+    developer +
+    "/" +
+    repo +
+    "/" +
+    version.replaceAll(".", "_") +
+    "/.env";
+
+  dotenv.config({ path: env, debug: true });
 
   console.log("Running worker", { developer, repo, version });
   const zkcloudworker = await import(dist);
