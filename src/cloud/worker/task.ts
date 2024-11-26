@@ -1,4 +1,4 @@
-import { blockchain } from "../networks";
+import { blockchain } from "../networks.js";
 
 /**
  * TaskData is the data structure for a task, keeping track of the task status, result, logs, and metadata.

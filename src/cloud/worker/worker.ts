@@ -1,4 +1,4 @@
-import { Cloud, CloudTransaction } from "./cloud";
+import { Cloud, CloudTransaction } from "./cloud.js";
 
 /**
  * Abstract class for the zkCloudWorker
