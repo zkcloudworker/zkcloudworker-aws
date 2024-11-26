@@ -1,6 +1,6 @@
-import { blockchain } from "../networks";
-import { JobData } from "./job";
-import { TransactionMetadata } from "./transaction";
+import { blockchain } from "../networks.js";
+import { JobData } from "./job.js";
+import { TransactionMetadata } from "./transaction.js";
 
 /**
  * Interface for the deployer key pair

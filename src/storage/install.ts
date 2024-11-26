@@ -30,9 +30,15 @@ export async function install(params: {
 
   console.log("Compiling...");
   console.time("compiled");
-  execSync("corepack " + packageManager + " tsc", {
-    stdio: "inherit",
-  });
+  execSync(
+    "corepack " +
+      packageManager +
+      (packageManager === "npm" ? " run" : "") +
+      " tsc",
+    {
+      stdio: "inherit",
+    }
+  );
   console.timeEnd("compiled");
   await listFiles(folder, true);
 }

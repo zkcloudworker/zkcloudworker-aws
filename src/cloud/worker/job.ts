@@ -1,4 +1,4 @@
-import { blockchain } from "../networks";
+import { blockchain } from "../networks.js";
 export type JobStatus =
   | "created"
   | "started"

@@ -80,7 +80,7 @@ export async function getWorker(params: {
   }
 
   const workersDirRoot = "/mnt/efs/worker";
-  const distDir =
+  const dist =
     workersDirRoot +
     "/" +
     developer +
@@ -88,10 +88,10 @@ export async function getWorker(params: {
     repo +
     "/" +
     version.replaceAll(".", "_") +
-    "/dist";
+    "/dist/index.js";
 
   console.log("Running worker", { developer, repo, version });
-  const zkcloudworker = await import(distDir);
+  const zkcloudworker = await import(dist);
   const functionName = "zkcloudworker";
   const worker = await zkcloudworker[functionName](cloud);
   await workersTable.timeUsed({
