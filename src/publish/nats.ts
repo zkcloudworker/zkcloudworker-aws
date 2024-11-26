@@ -1,4 +1,7 @@
-import { connect } from "nats";
+import { connect } from "@nats-io/transport-node";
+import { jetstream } from "@nats-io/jetstream";
+import { Kvm } from "@nats-io/kv";
+
 import {
   JobData,
   JobEvent,
@@ -19,8 +22,12 @@ export async function publishJobStatusNats(params: {
       servers: config.ZKCLOUDWORKER_NATS,
       timeout: 1000,
     });
-    const js = nc.jetstream({ timeout: 1000 });
-    const kv = await js.views.kv("profiles", { timeout: 2000 });
+
+    const js = jetstream(nc, { timeout: 2_000 });
+    const kvm = new Kvm(js);
+    const kv = await kvm.create("profiles");
+    // const kv = await js.views.kv("profiles");
+
     if (publishFull === true) {
       await kv.put(
         `zkcloudworker.job.${clean(job.developer)}.${clean(job.repo)}`,
@@ -57,8 +64,9 @@ export async function publishTransactionNats(params: {
       servers: config.ZKCLOUDWORKER_NATS,
       timeout: 1000,
     });
-    const js = nc.jetstream({ timeout: 1000 });
-    const kv = await js.views.kv("profiles", { timeout: 2000 });
+    const js = jetstream(nc, { timeout: 2_000 });
+    const kvm = new Kvm(js);
+    const kv = await kvm.create("profiles");
     await kv.put(
       `zkcloudworker.tx.${clean(developer)}.${clean(repo)}`,
       JSON.stringify(params)
@@ -89,8 +97,9 @@ export async function publishCloudTransactionsNats(
       servers: config.ZKCLOUDWORKER_NATS,
       timeout: 1000,
     });
-    const js = nc.jetstream({ timeout: 1000 });
-    const kv = await js.views.kv("profiles", { timeout: 2000 });
+    const js = jetstream(nc, { timeout: 10_000 });
+    const kvm = new Kvm(js);
+    const kv = await kvm.create("profiles");
     await kv.put(
       `zkcloudworker.rolluptxs.${clean(developer)}.${clean(repo)}`,
       JSON.stringify({ ...params, statusTime })
@@ -121,8 +130,9 @@ export async function publishVerificationNats(params: {
       servers: config.ZKCLOUDWORKER_NATS,
       timeout: 1000,
     });
-    const js = nc.jetstream({ timeout: 1000 });
-    const kv = await js.views.kv("profiles", { timeout: 2000 });
+    const js = jetstream(nc, { timeout: 10_000 });
+    const kvm = new Kvm(js);
+    const kv = await kvm.create("profiles");
     await kv.put(`zkcloudworker.zkapp`, JSON.stringify(params));
 
     await nc.drain();

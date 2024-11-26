@@ -1,29 +1,24 @@
 {
   "compilerOptions": {
-    "target": "es2021",
-    "module": "commonjs",
-    "lib": ["es2021", "dom"],
     "outDir": "./dist",
-    "sourceMap": true,
-    "allowJs": true,
-    "removeComments": true,
-    "moduleResolution": "node",
-    "noImplicitAny": true,
-    "noImplicitThis": true,
-    "strictNullChecks": true,
-    "strict": true,
-    "noUnusedLocals": false,
-    "noImplicitReturns": true,
-    "preserveConstEnums": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "ignoreDeprecations": "5.0",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "noFallthroughCasesInSwitch": true,
-    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".", // affects where output files end up
+    "target": "es2021", // goal: ship *the most modern syntax* that is supported by *all* browsers that support our Wasm
+    "module": "nodenext", // allow top-level await
+    "moduleResolution": "nodenext", // comply with node + "type": "module"
+    "esModuleInterop": true, // to silence jest
+
+    "experimentalDecorators": true, // needed for decorators
+    "emitDecoratorMetadata": true, // needed for decorators
+    "useDefineForClassFields": false, // ensure correct behaviour of class fields with decorators
+
+    "strict": true, // for the full TypeScript experience
     "strictPropertyInitialization": false, // to enable generic constructors, e.g. on CircuitValue
+    "importHelpers": true, // reduces size
+    "declaration": true, // declaration files are how library consumers get our types
+    "noEmitOnError": false, // avoid accidentally shipping with type errors
+    "allowJs": true, // to use JSDoc in some places where TS would be too cumbersome
+    "sourceMap": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true
   },
   "include": ["*.ts", "src/**/*.ts"],
