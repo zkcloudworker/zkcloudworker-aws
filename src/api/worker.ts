@@ -4,6 +4,14 @@ import dotenv from "dotenv";
 
 const WORKERS_TABLE = process.env.WORKERS_TABLE!;
 
+declare global {
+  namespace NodeJS {
+    interface Process {
+      noDeprecation: boolean;
+    }
+  }
+}
+
 export async function isWorkerExist(params: {
   developer: string;
   repo: string;
@@ -33,6 +41,7 @@ export async function getWorker(params: {
   cloud: Cloud;
 }): Promise<{ worker?: zkCloudWorker; error?: string }> {
   const { developer, repo, cloud } = params;
+  (process as any).noDeprecation = true;
   /*
   if (developer === "@staketab") {
     switch (repo) {
