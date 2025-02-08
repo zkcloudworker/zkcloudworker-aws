@@ -20,7 +20,7 @@ export async function deploy(params: {
   console.time("deployed");
   //console.log("deploy", params);
   const { developer, repo, id, jobId, args } = params;
-  const { packageManager, version, size, protect } = JSON.parse(args);
+  const { packageManager = "yarn", version, size, protect } = JSON.parse(args);
   const timeStarted = Date.now();
 
   Memory.info("start");

@@ -3,7 +3,6 @@ app: zkcloudworker
 service: zkcloudworker
 
 plugins:
-  - serverless-plugin-typescript
   - serverless-prune-plugin
   - "@digitalmaas/serverless-plugin-lambda-dead-letter"
   - serverless-iam-roles-per-function
@@ -223,7 +222,7 @@ provider:
 functions:
   zkcloudworker-devnet:
     handler: zkcloudworker.api
-    timeout: 30
+    timeout: 29
     memorySize: 1024
     reservedConcurrency: 20 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
     deadLetter:
@@ -245,7 +244,7 @@ functions:
         - subnet-08f6fb90590c47699
   zkcloudworker-mainnet:
     handler: zkcloudworker.api
-    timeout: 30
+    timeout: 29
     memorySize: 1024
     reservedConcurrency: 20 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
     deadLetter:
@@ -267,7 +266,7 @@ functions:
         - subnet-08f6fb90590c47699
   zkcloudworker-zeko:
     handler: zkcloudworker.api
-    timeout: 30
+    timeout: 29
     memorySize: 1024
     reservedConcurrency: 20 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
     deadLetter:
