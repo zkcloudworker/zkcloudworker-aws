@@ -76,6 +76,7 @@ const api: Handler = async (
 
     if (body && body.command) {
       const { command, data } = body;
+      console.log("explorer: command", command, data);
 
       switch (command) {
         case "balance":
