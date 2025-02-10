@@ -39,6 +39,13 @@ export async function getBalance(id: string): Promise<number> {
   return result?.balance ?? 0;
 }
 
+export async function getBalances(): Promise<object> {
+  if (!BALANCE_TABLE) throw new Error("BALANCE_TABLE is not defined");
+  const balance = new Workers(BALANCE_TABLE);
+  const result = await balance.scan();
+  return result;
+}
+
 export async function createAccount(params: {
   id: string;
   initialBalance: number;
