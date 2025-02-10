@@ -40,6 +40,7 @@ provider:
     ALGOLIA_PROJECT: ${file(./env.json):ALGOLIA_PROJECT, env:ALGOLIA_PROJECT}
     BLOCKBERRY_API_KEY: ${file(./env.json):BLOCKBERRY_API_KEY, env:BLOCKBERRY_API_KEY}
     ZKCW_WALLET_ADDRESS: ${file(./env.json):ZKCW_WALLET_ADDRESS, env:ZKCW_WALLET_ADDRESS}
+    EXPLORER_API_KEY: ${file(./env.json):EXPLORER_API_KEY, env:EXPLORER_API_KEY}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -220,6 +221,16 @@ provider:
       Resource: "*"
 
 functions:
+  explorer:
+    handler: explorer.api
+    timeout: 29
+    memorySize: 512
+    reservedConcurrency: 5 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
+    events:
+      - http:
+          path: explorer
+          method: post
+          cors: true
   zkcloudworker-devnet:
     handler: zkcloudworker.api
     timeout: 29
