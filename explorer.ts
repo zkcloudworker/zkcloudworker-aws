@@ -62,7 +62,7 @@ const api: Handler = async (
         key: "explorer",
       })
     ) {
-      console.log("explorer rate limit", ip);
+      console.error("explorer rate limit", ip);
       callback(null, {
         statusCode: 200,
         headers: {

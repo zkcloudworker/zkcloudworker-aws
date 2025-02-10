@@ -224,7 +224,7 @@ functions:
   explorer:
     handler: explorer.api
     timeout: 29
-    memorySize: 512
+    memorySize: 256
     reservedConcurrency: 5 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
     events:
       - http:
