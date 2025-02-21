@@ -85,8 +85,9 @@ export async function moveZip(params: {
   key: string;
   folder: string;
   file: string;
+  remove?: boolean;
 }): Promise<void> {
-  const { bucket, key, folder, file } = params;
+  const { bucket, key, folder, file, remove = false } = params;
   //console.log(`moveZip`, params);
   try {
     if (await isExist(file)) {
@@ -97,7 +98,7 @@ export async function moveZip(params: {
     const data = await s3File.get();
     if (data?.Body) await fs.writeFile(`${folder}/${file}`, data.Body as any);
     else console.error(`Error reading ${file} from S3`);
-    await s3File.remove();
+    if (remove) await s3File.remove();
     //console.log(`moved ${file} to ${folder}`);
   } catch (error) {
     console.log(`error moving ${file}`, error);
