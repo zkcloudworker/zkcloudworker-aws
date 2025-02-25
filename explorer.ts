@@ -1,6 +1,16 @@
 import { Handler, Context, Callback } from "aws-lambda";
 import { Sequencer } from "./src/api/sequencer";
 import { Jobs } from "./src/table/jobs";
+import {
+  JobStatus,
+  JobData,
+  blockchain,
+  makeString,
+  sleep,
+  formatTime,
+  LogStream,
+} from "./src/cloud";
+import { getLogs } from "./src/api/logs";
 import { Workers } from "./src/table/workers";
 import { getBalance, getBalances } from "./src/table/balance";
 import { rateLimit, initializeRateLimiter } from "./src/api/rate-limit";
@@ -62,7 +72,7 @@ const api: Handler = async (
         key: "explorer",
       })
     ) {
-      console.log("explorer rate limit", ip);
+      console.error("explorer rate limit", ip);
       callback(null, {
         statusCode: 200,
         headers: {
@@ -190,6 +200,64 @@ const api: Handler = async (
               "Access-Control-Allow-Credentials": true,
             },
             body: JSON.stringify(jobResult, null, 2) ?? "error",
+          });
+          return;
+        }
+
+        case "job": {
+          if (!data) throw new Error("No data");
+          const { jobId, includeLogs } = data as JobResultRequest;
+          if (jobId === undefined) {
+            console.error("No jobId");
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+              },
+              body: "error: No jobId",
+            });
+            return;
+          }
+          console.log("jobId", jobId);
+          const JobsTable = new Jobs(process.env.JOBS_TABLE!);
+          const jobs: JobData[] = await JobsTable.queryData(
+            "jobId = :id",
+            {
+              ":id": jobId,
+            },
+            "",
+            "JobIdIndex"
+          );
+          console.log("jobs", jobs);
+          if (jobs.length < 1) {
+            console.error("No jobId");
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+              },
+              body: "error: No such job",
+            });
+            return;
+          }
+          const job = jobs[0];
+
+          if (includeLogs) {
+            const { logs, isFullLog } = await getLogs([
+              ...(job.logStreams ?? []),
+            ]);
+            job.logs = logs;
+            job.isFullLog = isFullLog;
+          }
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify(job, null, 2) ?? "error",
           });
           return;
         }
