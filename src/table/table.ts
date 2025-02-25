@@ -135,15 +135,17 @@ export class Table<T> {
   public async queryData(
     keyConditionExpression: string,
     expressionAttributeValues: any,
-    projectionExpression: string = ""
+    projectionExpression: string = "",
+    indexName?: string
   ): Promise<T[]> {
     try {
       const params: QueryCommandInput = {
         TableName: this.tableName,
-        ConsistentRead: true,
+        ConsistentRead: indexName === undefined,
         KeyConditionExpression: keyConditionExpression,
         ExpressionAttributeValues: marshall(expressionAttributeValues),
       };
+      if (indexName !== undefined) params.IndexName = indexName;
       if (projectionExpression !== "")
         params.ProjectionExpression = projectionExpression;
       //console.log("Table: queryData", params);

@@ -79,6 +79,10 @@ provider:
     - Effect: Allow
       Action:
         - dynamodb:Query
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOBS_TABLE}/index/JobIdIndex"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
         - dynamodb:Scan
         - dynamodb:GetItem
         - dynamodb:PutItem
@@ -985,6 +989,7 @@ functions:
         Action:
           - dynamodb:GetItem
           - dynamodb:PutItem
+          - dynamodb:Query
         Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOB_EVENTS_TABLE}"
       - Effect: Allow
         Action:
@@ -1250,6 +1255,13 @@ resources:
             KeyType: HASH
           - AttributeName: jobId
             KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: JobIdIndex
+            KeySchema:
+              - AttributeName: jobId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.JOBS_TABLE}
     JobEventsDynamoDbTable:
