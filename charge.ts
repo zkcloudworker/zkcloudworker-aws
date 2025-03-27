@@ -2,7 +2,7 @@ import type { Handler, Context, Callback } from "aws-lambda";
 import { chargeInternal } from "./src/table/balance";
 import { publishChargeAlgolia } from "./src/publish/algolia";
 
-const MS_PER_MINA = 1000000;
+const MS_PER_MINA = 250_000;
 
 export const run: Handler = async (
   event: any,
