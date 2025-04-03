@@ -14,6 +14,8 @@ import { getLogs } from "./src/api/logs";
 import { Workers } from "./src/table/workers";
 import { getBalance, getBalances } from "./src/table/balance";
 import { rateLimit, initializeRateLimiter } from "./src/api/rate-limit";
+import { Deployments } from "./src/table/deployments";
+const DEPLOYMENTS_TABLE = process.env.DEPLOYMENTS_TABLE!;
 
 initializeRateLimiter({
   name: "explorer",
@@ -130,6 +132,28 @@ const api: Handler = async (
               billingResult === undefined
                 ? "error"
                 : JSON.stringify(billingResult, null, 2) ?? "error",
+          });
+          return;
+        }
+
+        case "deployments": {
+          const deploymentsTable = new Deployments(DEPLOYMENTS_TABLE);
+          if (!data) throw new Error("No data");
+          const { developer, repo } = data as AgentRequest;
+          const deployments = await deploymentsTable.queryDeployments({
+            developer,
+            repo,
+          });
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body:
+              deployments === undefined
+                ? "error"
+                : JSON.stringify(deployments, null, 2) ?? "error",
           });
           return;
         }

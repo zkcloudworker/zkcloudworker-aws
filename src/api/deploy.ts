@@ -4,12 +4,13 @@ import { install } from "../storage/install";
 import fs from "fs/promises";
 import { Jobs } from "../table/jobs";
 import { Workers } from "../table/workers";
+import { Deployments } from "../table/deployments";
 import { Memory, sleep } from "../cloud";
 import { charge } from "../table/balance";
 
 const { BUCKET } = process.env;
 const WORKERS_TABLE = process.env.WORKERS_TABLE!;
-
+const DEPLOYMENTS_TABLE = process.env.DEPLOYMENTS_TABLE!;
 export async function deploy(params: {
   developer: string;
   repo: string;
@@ -20,7 +21,23 @@ export async function deploy(params: {
   console.time("deployed");
   //console.log("deploy", params);
   const { developer, repo, id, jobId, args } = params;
-  const { packageManager = "yarn", version, size, protect } = JSON.parse(args);
+  const {
+    packageManager = "yarn",
+    version,
+    size,
+    protect,
+    build,
+    env,
+  } = JSON.parse(args);
+  console.log("deploy", {
+    developer,
+    repo,
+    packageManager,
+    version,
+    size,
+    protect,
+    build,
+  });
   const timeStarted = Date.now();
 
   Memory.info("start");
@@ -87,6 +104,8 @@ export async function deploy(params: {
     await install({
       folder: versionDir,
       packageManager,
+      buildCommand: build,
+      env,
     });
     console.timeEnd("installed");
 
@@ -102,6 +121,15 @@ export async function deploy(params: {
       timeDeployed: Date.now(),
       timeUsed: 0,
       countUsed: 0,
+    });
+    const deploymentsTable = new Deployments(DEPLOYMENTS_TABLE);
+    await deploymentsTable.add({
+      developer,
+      repo,
+      timestamp: Date.now(),
+      version,
+      size,
+      success: true,
     });
     const billedDuration = Date.now() - timeStarted;
     await charge({
@@ -122,9 +150,13 @@ export async function deploy(params: {
     const folders = await listFiles(repoDir, false);
     console.log("deployed versions:", folders);
     for (const folder of folders) {
-      if (folder !== versionStr) {
-        console.log("deleting old version", folder);
-        await fs.rm(repoDir + "/" + folder, { recursive: true });
+      try {
+        if (folder !== versionStr) {
+          console.log("deleting old version", folder);
+          await fs.rm(repoDir + "/" + folder, { recursive: true });
+        }
+      } catch (err: any) {
+        console.error("error deleting old version", err.message);
       }
     }
     await listFiles(repoDir, true);
@@ -149,6 +181,16 @@ export async function deploy(params: {
             : "exception while installing dependencies and compiling"),
         billedDuration: Date.now() - timeStarted,
       });
+    const deploymentsTable = new Deployments(DEPLOYMENTS_TABLE);
+    await deploymentsTable.add({
+      developer,
+      repo,
+      timestamp: Date.now(),
+      version,
+      size,
+      success: false,
+      error: msg,
+    });
     Memory.info("deploy error");
     console.timeEnd("deployed");
     await sleep(1000);

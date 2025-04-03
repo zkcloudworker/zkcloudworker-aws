@@ -1,15 +1,38 @@
 import { execSync } from "child_process";
 import { listFiles } from "./files";
+import { decryptWithPrivateKey } from "./rsa";
+import * as fs from "fs/promises";
+import * as path from "path";
 
-import zip from "adm-zip";
-import fs from "fs/promises";
+const key = process.env.CLI_KEY;
 
 export async function install(params: {
   folder: string;
   packageManager: string;
+  buildCommand?: string;
+  env: string;
 }) {
-  //console.log("install", params);
   const { folder, packageManager } = params;
+  if (key === undefined) throw Error("CLI_KEY is not set");
+  if (params.env) {
+    try {
+      console.log("Decrypting and installing .env file");
+      const env = decryptWithPrivateKey({
+        encryptedData: params.env,
+        privateKey: key,
+      });
+      if (env === undefined) throw Error("Failed to decrypt env");
+      // Save the decrypted env string to a .env file in the folder
+
+      const envFilePath = path.join(folder, ".env");
+
+      await fs.writeFile(envFilePath, env);
+      console.log(`Successfully created .env file`);
+    } catch (error: any) {
+      console.error(`Error writing .env file: ${error.message}`);
+      throw new Error("Failed to write .env file");
+    }
+  }
   process.chdir(folder);
   //const currentDir = process.cwd();
   //console.log(`Current directory: ${process.cwd()}`);
@@ -30,15 +53,16 @@ export async function install(params: {
 
   console.log("Compiling...");
   console.time("compiled");
-  execSync(
+  const buildCommand =
+    params.buildCommand ??
     "corepack " +
       packageManager +
       (packageManager === "npm" ? " run" : "") +
-      " tsc",
-    {
-      stdio: "inherit",
-    }
-  );
+      " tsc";
+  console.log("Build command:", buildCommand);
+  execSync(buildCommand, {
+    stdio: "inherit",
+  });
   console.timeEnd("compiled");
   await listFiles(folder, true);
 }
