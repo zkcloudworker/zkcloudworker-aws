@@ -30,7 +30,7 @@ initializeRateLimiter({
 });
 initializeRateLimiter({
   name: "execute",
-  points: 50,
+  points: 500,
   duration: 60 * 60, // 1 hour
 });
 
@@ -217,6 +217,7 @@ const api: Handler = async (
             await rateLimit({
               name: "execute",
               key: ip,
+              points: 100,
             })
           ) {
             console.error("deploy rate limit", ip, data.developer, data.repo);
@@ -285,6 +286,7 @@ const api: Handler = async (
             await rateLimit({
               name: "execute",
               key: ip,
+              points: 10,
             })
           ) {
             console.error(
@@ -324,6 +326,10 @@ const api: Handler = async (
             await rateLimit({
               name: "execute",
               key: ip,
+              points:
+                data.repo === "mint-worker" && data.developer === "DFST"
+                  ? 1
+                  : 10,
             })
           ) {
             console.error("execute rate limit", ip, data.developer, data.repo);

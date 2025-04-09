@@ -475,7 +475,7 @@ functions:
     handler: zkcloudworker.worker
     timeout: 900
     memorySize: 10240
-    reservedConcurrency: 20
+    reservedConcurrency: 100
     environment:
       JWT_PRIVATEKEY: ""
       JWT_ACCESS_KEY: ""

@@ -60,8 +60,9 @@ const limited: { [key: string]: number } = {};
 export async function rateLimit(params: {
   name: string;
   key: string;
+  points?: number;
 }): Promise<boolean> {
-  const { name, key } = params;
+  const { name, key, points = 1 } = params;
   try {
     const rateLimiter = limiters[name];
     if (!rateLimiter) {
@@ -69,7 +70,7 @@ export async function rateLimit(params: {
       return false;
     }
 
-    await rateLimiter.consume(key);
+    await rateLimiter.consume(key, points);
     return false;
   } catch (error) {
     if (limited[key] === undefined || limited[key] < Date.now()) {
