@@ -1,4 +1,4 @@
-import { Table } from "./table";
-import { TransactionsData } from "../model/transactionsData";
+import { Table } from "./table.js";
+import { TransactionsData } from "../model/transactionsData.js";
 
 export class Transactions extends Table<TransactionsData> {}

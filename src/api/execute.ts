@@ -1,20 +1,25 @@
-import { Memory, blockchain, JobData, JobStatus } from "../cloud";
-import { ExecuteCloudWorker } from "./cloud";
-import { isWorkerExist } from "./worker";
-import { Jobs } from "../table/jobs";
-import { getWorker } from "./worker";
-import { callLambda } from "../lambda/lambda";
-import { S3File } from "../storage/s3";
-import { forceRestartLambda } from "../lambda/lambda";
-import { charge } from "../table/balance";
-import { makeString } from "../cloud";
+import {
+  Memory,
+  blockchain,
+  JobData,
+  JobStatus,
+  makeString,
+} from "@silvana-one/prover";
+import { ExecuteCloudWorker } from "./cloud.js";
+import { isWorkerExist } from "./worker.js";
+import { Jobs } from "../table/jobs.js";
+import { getWorker } from "./worker.js";
+import { callLambda } from "../lambda/lambda.js";
+import { S3File } from "../storage/s3.js";
+import { forceRestartLambda } from "../lambda/lambda.js";
+import { charge } from "../table/balance.js";
 import {
   rateLimit,
   initializeRateLimiter,
   initializeDynamoRateLimiter,
   penalizeRateLimit,
-} from "./rate-limit";
-import { stringHash } from "./hash";
+} from "./rate-limit.js";
+import { stringHash } from "./hash.js";
 
 initializeRateLimiter({
   name: "repoSync",

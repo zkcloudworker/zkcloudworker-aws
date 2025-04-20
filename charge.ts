@@ -1,6 +1,6 @@
 import type { Handler, Context, Callback } from "aws-lambda";
-import { chargeInternal } from "./src/table/balance";
-import { publishChargeAlgolia } from "./src/publish/algolia";
+import { chargeInternal } from "./src/table/balance.js";
+import { publishChargeAlgolia } from "./src/publish/algolia.js";
 
 const MS_PER_MINA = 200_000;
 

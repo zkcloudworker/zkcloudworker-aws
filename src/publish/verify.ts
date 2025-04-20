@@ -1,6 +1,6 @@
-import { VerificationAnswer } from "../api/verify";
-import { publishVerificationNats } from "./nats";
-import { publishVerificationAlgolia } from "./algolia";
+import { VerificationAnswer } from "../api/verify.js";
+import { publishVerificationNats } from "./nats.js";
+import { publishVerificationAlgolia } from "./algolia.js";
 
 export async function publishVerification(params: {
   chain: string;

@@ -1,16 +1,16 @@
 import { Handler, Context, Callback } from "aws-lambda";
-import { verifyJWT, generateJWT } from "./src/api/jwt";
-import { Sequencer } from "./src/api/sequencer";
-import { Jobs } from "./src/table/jobs";
-import { deploy } from "./src/api/deploy";
-import { verify } from "./src/api/verify";
-import { execute, createExecuteJob } from "./src/api/execute";
-import { createRecursiveProofJob } from "./src/api/recursive";
-import { CloudWorker } from "./src/api/cloud";
-import { getPresignedUrl } from "./src/storage/presigned";
-import { LogStream } from "./src/cloud";
-import { createAccount, getBalance } from "./src/table/balance";
-import { rateLimit, initializeRateLimiter } from "./src/api/rate-limit";
+import { verifyJWT } from "./src/api/jwt.js";
+import { Sequencer } from "./src/api/sequencer.js";
+import { Jobs } from "./src/table/jobs.js";
+import { deploy } from "./src/api/deploy.js";
+import { verify } from "./src/api/verify.js";
+import { execute, createExecuteJob } from "./src/api/execute.js";
+import { createRecursiveProofJob } from "./src/api/recursive.js";
+import { CloudWorker } from "./src/api/cloud.js";
+import { getPresignedUrl } from "./src/storage/presigned.js";
+import { LogStream } from "@silvana-one/prover";
+import { createAccount, getBalance } from "./src/table/balance.js";
+import { rateLimit, initializeRateLimiter } from "./src/api/rate-limit.js";
 const MAX_JOB_AGE: number = 1000 * 60 * 60; // 60 minutes
 const INITIAL_BALANCE: number = 10; // MINA
 const nameContract = {
@@ -126,7 +126,7 @@ const api: Handler = async (
          */
       }
 
-      const id: string | undefined = verifyJWT(body.jwtToken);
+      const id: string | undefined = await verifyJWT(body.jwtToken);
       if (id === undefined) {
         console.error("Wrong jwtToken", event);
         callback(null, {

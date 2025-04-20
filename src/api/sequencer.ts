@@ -1,6 +1,6 @@
-import { Jobs } from "../table/jobs";
-import { Steps } from "../table/steps";
-import { Proofs } from "../table/proofs";
+import { Jobs } from "../table/jobs.js";
+import { Steps } from "../table/steps.js";
+import { Proofs } from "../table/proofs.js";
 import {
   JobStatus,
   JobData,
@@ -9,12 +9,12 @@ import {
   sleep,
   formatTime,
   LogStream,
-} from "../cloud";
-import { StepsData, StepTask } from "../model/stepsData";
-import { callLambda } from "../lambda/lambda";
-import { S3File } from "../storage/s3";
-import { getLogs } from "./logs";
-import { charge } from "../table/balance";
+} from "@silvana-one/prover";
+import { StepsData, StepTask } from "../model/stepsData.js";
+import { callLambda } from "../lambda/lambda.js";
+import { S3File } from "../storage/s3.js";
+import { getLogs } from "./logs.js";
+import { charge } from "../table/balance.js";
 
 export class Sequencer {
   jobsTable: string;

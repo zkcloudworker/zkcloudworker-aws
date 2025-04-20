@@ -1,5 +1,5 @@
-import { zkCloudWorker, Cloud, blockchain } from "../cloud";
-import { Workers } from "../table/workers";
+import { zkCloudWorker, Cloud, blockchain } from "@silvana-one/prover";
+import { Workers } from "../table/workers.js";
 import dotenv from "dotenv";
 
 const WORKERS_TABLE = process.env.WORKERS_TABLE!;

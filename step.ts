@@ -1,11 +1,11 @@
 import { Handler, Context } from "aws-lambda";
-import { StepsData } from "./src/model/stepsData";
-import { Jobs } from "./src/table/jobs";
-import { Steps } from "./src/table/steps";
-import { runStep } from "./src/api/step";
-import { zkCloudWorker, LogStream } from "./src/cloud";
-import { getWorker } from "./src/api/worker";
-import { StepCloudWorker } from "./src/api/cloud";
+import { StepsData } from "./src/model/stepsData.js";
+import { Jobs } from "./src/table/jobs.js";
+import { Steps } from "./src/table/steps.js";
+import { runStep } from "./src/api/step.js";
+import { LogStream } from "@silvana-one/prover";
+import { getWorker } from "./src/api/worker.js";
+import { StepCloudWorker } from "./src/api/cloud.js";
 
 const run: Handler = async (event: any, context: Context) => {
   if (event.stepData === undefined) {

@@ -1,6 +1,6 @@
 import { Handler, Context } from "aws-lambda";
-import { Sequencer } from "./src/api/sequencer";
-import { LogStream } from "./src/cloud";
+import { Sequencer } from "./src/api/sequencer.js";
+import { LogStream } from "@silvana-one/prover";
 
 const run: Handler = async (event: any, context: Context) => {
   try {

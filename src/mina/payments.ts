@@ -1,6 +1,6 @@
-import { getSystemDataByKey, saveSystemDataByKey } from "../table/kv";
-import { topup } from "../table/balance";
-import { publishPayment } from "../publish/algolia";
+import { getSystemDataByKey, saveSystemDataByKey } from "../table/kv.js";
+import { topup } from "../table/balance.js";
+import { publishPayment } from "../publish/algolia.js";
 
 const BLOCKBERRY_API_KEY = process.env.BLOCKBERRY_API_KEY;
 const zkcwWalletAddress = process.env.ZKCW_WALLET_ADDRESS;

@@ -1,4 +1,4 @@
-import { Table } from "./table";
+import { Table } from "./table.js";
 import {
   JobData,
   JobStatus,
@@ -6,10 +6,10 @@ import {
   makeString,
   LogStream,
   JobEvent,
-} from "../cloud";
-import { stringHash } from "../api/hash";
-import { publishJobStatus } from "../publish/publish";
-import { sleep } from "../cloud";
+  sleep,
+} from "@silvana-one/prover";
+import { stringHash } from "../api/hash.js";
+import { publishJobStatus } from "../publish/publish.js";
 
 const JOB_EVENTS_TABLE = process.env.JOB_EVENTS_TABLE!;
 

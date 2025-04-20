@@ -7,6 +7,7 @@ plugins:
   - "@digitalmaas/serverless-plugin-lambda-dead-letter"
   - serverless-iam-roles-per-function
 
+
 provider:
   name: aws
   versionFunctions: false
@@ -227,7 +228,7 @@ provider:
 
 functions:
   explorer:
-    handler: explorer.api
+    handler: ./explorer.api
     timeout: 29
     memorySize: 256
     reservedConcurrency: 5 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
@@ -237,7 +238,7 @@ functions:
           method: post
           cors: true
   zkcloudworker-devnet:
-    handler: zkcloudworker.api
+    handler: ./zkcloudworker.api
     timeout: 29
     memorySize: 1024
     reservedConcurrency: 20 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
@@ -259,7 +260,7 @@ functions:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
   zkcloudworker-mainnet:
-    handler: zkcloudworker.api
+    handler: ./zkcloudworker.api
     timeout: 29
     memorySize: 1024
     reservedConcurrency: 20 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
@@ -281,7 +282,7 @@ functions:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
   zkcloudworker-zeko:
-    handler: zkcloudworker.api
+    handler: ./zkcloudworker.api
     timeout: 29
     memorySize: 1024
     reservedConcurrency: 20 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
@@ -303,7 +304,7 @@ functions:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
   worker-devnet:
-    handler: zkcloudworker.worker
+    handler: ./zkcloudworker.worker
     timeout: 900
     memorySize: 10240
     reservedConcurrency: 20
@@ -472,7 +473,7 @@ functions:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
   worker-mainnet:
-    handler: zkcloudworker.worker
+    handler: ./zkcloudworker.worker
     timeout: 900
     memorySize: 10240
     reservedConcurrency: 20
@@ -637,7 +638,7 @@ functions:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
   worker-zeko:
-    handler: zkcloudworker.worker
+    handler: ./zkcloudworker.worker
     timeout: 900
     memorySize: 10240
     reservedConcurrency: 20
@@ -818,7 +819,7 @@ functions:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
   test:
-    handler: test.cloud
+    handler: ./test.cloud
     timeout: 900
     memorySize: 10240
     reservedConcurrency: 2
@@ -832,7 +833,7 @@ functions:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
   mocked-sequencer:
-    handler: mocked.sequencer
+    handler: ./mocked.sequencer
     timeout: 30
     memorySize: 192
     reservedConcurrency: 30
@@ -840,7 +841,7 @@ functions:
       sqs:
         queueName: mocked-sequencer-dl-queue
   tasks:
-    handler: tasks.check
+    handler: ./tasks.check
     timeout: 300
     memorySize: 256
     reservedConcurrency: 20
@@ -856,16 +857,16 @@ functions:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
   charge:
-    handler: charge.run
+    handler: ./charge.run
     timeout: 30
     memorySize: 384
     reservedConcurrency: 20
   nats:
-    handler: nats.publish
+    handler: ./nats.publish
     timeout: 60
     memorySize: 384
   sequencer:
-    handler: sequencer.run
+    handler: ./sequencer.run
     timeout: 900
     memorySize: 384
     reservedConcurrency: 20
@@ -873,7 +874,7 @@ functions:
       sqs:
         queueName: sequencer-dl-queue
   step-devnet:
-    handler: step.run
+    handler: ./step.run
     timeout: 300
     memorySize: 10240
     reservedConcurrency: 64
@@ -971,7 +972,7 @@ functions:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
   step-mainnet:
-    handler: step.run
+    handler: ./step.run
     timeout: 300
     memorySize: 10240
     reservedConcurrency: 64
@@ -1070,7 +1071,7 @@ functions:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
   step-zeko:
-    handler: step.run
+    handler: ./step.run
     timeout: 300
     memorySize: 10240
     reservedConcurrency: 64
@@ -1381,6 +1382,7 @@ resources:
         TableName: ${self:provider.environment.RATE_LIMIT_TABLE}
 
 package:
+  individually: true
   excludeDevDependencies: true
   exclude:
     - test/**
@@ -1394,3 +1396,15 @@ package:
 
 custom:
   s3Bucket: formbucket-${self:provider.environment.BUCKET}
+
+build:
+  esbuild:
+    bundle: true
+    packages: external
+    exclude:
+      # Exclude all aws-sdk packages. This is done for you by default.
+      - '@aws-sdk/*'
+    minify: false
+    sourcemap: 
+      type: linked
+

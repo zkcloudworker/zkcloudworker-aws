@@ -5,9 +5,9 @@ import {
   getBalanceFromGraphQL,
   DeployerKeyPair,
   networks,
-} from "../cloud";
-import { GASTANKS } from "./gastanks";
-import { Deployers } from "../table/deployers";
+} from "@silvana-one/prover";
+import { GASTANKS } from "./gastanks.js";
+import { Deployers } from "../table/deployers.js";
 
 const GAS_TANK_MIN_LIMIT = 5 * 10 ** 9;
 const DELAY = 60 * 60 * 1000; // 1 hour

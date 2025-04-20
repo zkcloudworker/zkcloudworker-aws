@@ -1,7 +1,7 @@
-import { S3File } from "../storage/s3";
-import { TransactionMetadata } from "../cloud";
-import { publishTransactionNats } from "./nats";
-import { publishTransactionAlgolia } from "./algolia";
+import { S3File } from "../storage/s3.js";
+import { TransactionMetadata } from "@silvana-one/prover";
+import { publishTransactionNats } from "./nats.js";
+import { publishTransactionAlgolia } from "./algolia.js";
 
 const { VERIFICATION_BUCKET } = process.env;
 

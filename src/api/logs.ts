@@ -2,7 +2,7 @@ import {
   CloudWatchLogsClient,
   GetLogEventsCommand,
 } from "@aws-sdk/client-cloudwatch-logs";
-import { LogStream } from "../cloud";
+import { LogStream } from "@silvana-one/prover";
 
 export async function getLogs(
   logStreams: LogStream[] | undefined

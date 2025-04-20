@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
-import { listFiles } from "./files";
-import { decryptWithPrivateKey } from "./rsa";
+import { listFiles } from "./files.js";
+import { decryptWithPrivateKey } from "./rsa.js";
 import * as fs from "fs/promises";
 import * as path from "path";
 

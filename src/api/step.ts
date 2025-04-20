@@ -1,11 +1,11 @@
-import { Steps } from "../table/steps";
-import { Proofs } from "../table/proofs";
-import { Jobs } from "../table/jobs";
-import { StepsData, MAX_STEP_ATTEMPTS } from "../model/stepsData";
-import { zkCloudWorker, Memory } from "../cloud";
-import { cacheDir } from "./cloud";
-import { listFiles } from "../storage/files";
-import { forceRestartLambda } from "../lambda/lambda";
+import { Steps } from "../table/steps.js";
+import { Proofs } from "../table/proofs.js";
+import { Jobs } from "../table/jobs.js";
+import { StepsData, MAX_STEP_ATTEMPTS } from "../model/stepsData.js";
+import { zkCloudWorker, Memory } from "@silvana-one/prover";
+import { cacheDir } from "./cloud.js";
+import { listFiles } from "../storage/files.js";
+import { forceRestartLambda } from "../lambda/lambda.js";
 
 export async function runStep(
   step: StepsData,

@@ -1,5 +1,5 @@
 import { Handler } from "aws-lambda";
-import { publishCloudTransactionsNats } from "./src/publish/nats";
+import { publishCloudTransactionsNats } from "./src/publish/nats.js";
 
 export const publish: Handler = async (event: any) => {
   try {

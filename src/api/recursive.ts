@@ -1,7 +1,7 @@
-import { Sequencer } from "./sequencer";
-import { isWorkerExist } from "./worker";
-import { S3File } from "../storage/s3";
-import { blockchain } from "../cloud";
+import { Sequencer } from "./sequencer.js";
+import { isWorkerExist } from "./worker.js";
+import { S3File } from "../storage/s3.js";
+import { blockchain } from "@silvana-one/prover";
 
 export async function createRecursiveProofJob(params: {
   id: string;

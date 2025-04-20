@@ -1,4 +1,4 @@
-import { blockchain, LogStream, JobStatus } from "../cloud";
+import { blockchain, LogStream, JobStatus } from "@silvana-one/prover";
 
 export type StepTask = "create" | "merge";
 export const MAX_STEP_ATTEMPTS = 5;

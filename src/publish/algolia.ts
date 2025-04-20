@@ -1,6 +1,6 @@
-import { JobData, JobEvent, TransactionMetadata } from "../cloud";
-import { VerificationAnswer } from "../api/verify";
-import algoliasearch from "algoliasearch";
+import { JobData, JobEvent, TransactionMetadata } from "@silvana-one/prover";
+import { VerificationAnswer } from "../api/verify.js";
+import { algoliasearch } from "algoliasearch";
 
 export async function publishJobStatusAlgolia(params: {
   job: JobData;
@@ -16,7 +16,7 @@ export async function publishJobStatusAlgolia(params: {
     }
     const client = algoliasearch(ALGOLIA_PROJECT, ALGOLIA_KEY);
 
-    const jobIndex = client.initIndex("zk-jobs");
+    const jobIndex = "zk-jobs";
     const data = {
       objectID: job.jobId,
       ...job,
@@ -27,7 +27,7 @@ export async function publishJobStatusAlgolia(params: {
       logStreams: undefined,
       logs: undefined,
     };
-    let result = await jobIndex.saveObject(data);
+    let result = await client.saveObject({ indexName: jobIndex, body: data });
     if (result.taskID === undefined) {
       console.error(
         "publishJobStatusAlgolia: Algolia write result for job",
@@ -37,7 +37,7 @@ export async function publishJobStatusAlgolia(params: {
       );
     }
 
-    const jobEventIndex = client.initIndex("job_events");
+    const jobEventIndex = "job_events";
     let resultString = undefined;
     if (event.result !== undefined) {
       if (typeof event.result === "string")
@@ -53,7 +53,10 @@ export async function publishJobStatusAlgolia(params: {
       ...event,
       result: resultString,
     };
-    result = await jobEventIndex.saveObject(dataEvent);
+    result = await client.saveObject({
+      indexName: jobEventIndex,
+      body: dataEvent,
+    });
     if (result.taskID === undefined) {
       console.error(
         "publishJobStatusAlgolia: Algolia write result for jobEvent",
@@ -81,12 +84,12 @@ export async function publishPayment(params: {
     }
     const client = algoliasearch(ALGOLIA_PROJECT, ALGOLIA_KEY);
 
-    const jobIndex = client.initIndex("payments");
+    const jobIndex = "payments";
     const data = {
       objectID: txHash,
       ...params,
     };
-    let result = await jobIndex.saveObject(data);
+    let result = await client.saveObject({ indexName: jobIndex, body: data });
     if (result.taskID === undefined) {
       console.error(
         "publishJobStatusAlgolia: Algolia write result for payment",
@@ -117,12 +120,12 @@ export async function publishTransactionAlgolia(params: {
     }
     const client = algoliasearch(ALGOLIA_PROJECT, ALGOLIA_KEY);
 
-    const jobIndex = client.initIndex("transactions");
+    const jobIndex = "transactions";
     const data = {
       objectID: txId,
       ...params,
     };
-    let result = await jobIndex.saveObject(data);
+    let result = await client.saveObject({ indexName: jobIndex, body: data });
     if (result.taskID === undefined) {
       console.error(
         "publishTransactionAlgolia: Algolia write result for transaction",
@@ -151,13 +154,13 @@ export async function publishChargeAlgolia(params: {
     }
     const client = algoliasearch(ALGOLIA_PROJECT, ALGOLIA_KEY);
 
-    const jobIndex = client.initIndex("charges");
+    const jobIndex = "charges";
     const data = {
       objectID: jobId,
       ...params,
       time: Date.now(),
     };
-    let result = await jobIndex.saveObject(data);
+    let result = await client.saveObject({ indexName: jobIndex, body: data });
     if (result.taskID === undefined) {
       console.error(
         "publishChargeAlgolia: Algolia write result for transaction",
@@ -187,12 +190,12 @@ export async function publishVerificationAlgolia(params: {
     }
     const client = algoliasearch(ALGOLIA_PROJECT, ALGOLIA_KEY);
 
-    const jobIndex = client.initIndex("zkapps");
+    const jobIndex = "zkapps";
     const data = {
       objectID: chain + "." + account,
       ...params,
     };
-    let result = await jobIndex.saveObject(data);
+    let result = await client.saveObject({ indexName: jobIndex, body: data });
     if (result.taskID === undefined) {
       console.error(
         "publishTransactionAlgolia: Algolia write result for zkapp",
