@@ -7,12 +7,14 @@ import { callLambda } from "../lambda/lambda";
 import { S3File } from "../storage/s3";
 import { forceRestartLambda } from "../lambda/lambda";
 import { charge } from "../table/balance";
+import { makeString } from "../cloud";
 import {
   rateLimit,
   initializeRateLimiter,
   initializeDynamoRateLimiter,
   penalizeRateLimit,
 } from "./rate-limit";
+import { stringHash } from "./hash";
 
 initializeRateLimiter({
   name: "repoSync",
@@ -102,9 +104,21 @@ export async function createExecuteJob(params: {
         };
       }
       const timeCreated = Date.now();
+      const jobId: string =
+        "zkCWsync" +
+        stringHash(
+          JSON.stringify({
+            id,
+            developer,
+            repo,
+            chain,
+            timeCreated,
+            salt: makeString(32),
+          })
+        );
       const item: JobData = {
         id,
-        jobId: "sync",
+        jobId,
         developer,
         repo,
         taskId,
@@ -117,6 +131,7 @@ export async function createExecuteJob(params: {
         timeCreated,
         jobStatus: "started" as JobStatus,
       };
+      const JobsTable = new Jobs(process.env.JOBS_TABLE!);
       try {
         const result = await executeSync({
           command,
@@ -124,6 +139,26 @@ export async function createExecuteJob(params: {
           repo,
           job: item,
           transactions,
+        });
+        const timeFinished = Date.now();
+        await JobsTable.createJob({
+          id,
+          developer,
+          repo,
+          task,
+          taskId,
+          userId,
+          args,
+          txNumber: transactions.length,
+          timeCreated,
+          timeFinished,
+          metadata,
+          chain,
+          logStreams: [],
+          jobId,
+          result: typeof result === "string" ? result : undefined,
+          billedDuration: timeFinished - timeCreated,
+          status: "used" as JobStatus,
         });
         if (result !== undefined) return { success: true, result };
         else {
@@ -134,11 +169,34 @@ export async function createExecuteJob(params: {
           };
         }
       } catch (error: any) {
-        console.error("error: catch: execute: executeSync", error);
+        console.error(
+          "error: catch: execute: executeSync",
+          error?.message ?? ""
+        );
+        const timeFinished = Date.now();
+        await JobsTable.createJob({
+          id,
+          developer,
+          repo,
+          task,
+          taskId,
+          userId,
+          args,
+          txNumber: transactions.length,
+          timeCreated,
+          timeFinished,
+          metadata,
+          chain,
+          logStreams: [],
+          jobId,
+          result: error?.message ?? undefined,
+          billedDuration: timeFinished - timeCreated,
+          status: "failed" as JobStatus,
+        });
         return {
           success: false,
           jobId: undefined,
-          error: "error: catch: execute: executeSync",
+          error: "error: catch: execute: executeSync " + (error?.message ?? ""),
         };
       }
     } else {

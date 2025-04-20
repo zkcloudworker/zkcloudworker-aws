@@ -72,31 +72,31 @@ const api: Handler = async (
     ) {
       const { command, data, chain } = body;
       if (data?.developer === "@staketab" && data?.task === "getBlocksInfo") {
-        if (
-          await rateLimit({
-            name: "getBlocksInfo",
-            key: ip,
-          })
-        ) {
-          console.log("getBlocksInfo rate limit", ip);
-          callback(null, {
-            statusCode: 200,
-            headers: {
-              "Access-Control-Allow-Origin": "*",
-              "Access-Control-Allow-Credentials": true,
+        // if (
+        //   await rateLimit({
+        //     name: "getBlocksInfo",
+        //     key: ip,
+        //   })
+        // ) {
+        console.log("getBlocksInfo rate limit", ip);
+        callback(null, {
+          statusCode: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": true,
+          },
+          body: JSON.stringify(
+            {
+              success: false,
+              error:
+                "error: getBlocksInfo rate limit exceeded - 1 request per 5 minutes",
             },
-            body: JSON.stringify(
-              {
-                success: false,
-                error:
-                  "error: getBlocksInfo rate limit exceeded - 1 request per 5 minutes",
-              },
-              null,
-              2
-            ),
-          });
-          return;
-        }
+            null,
+            2
+          ),
+        });
+        return;
+        //}
 
         /*
         const now = Date.now();
@@ -152,7 +152,16 @@ const api: Handler = async (
         });
         return;
       }
-      console.log("api", { ip, id, balance, body });
+      console.log("api", {
+        ip,
+        id,
+        balance,
+        command: body?.command,
+        developer: body?.data?.developer,
+        repo: body?.data?.repo,
+        mode: body?.data?.mode,
+        chain: body?.chain,
+      });
 
       switch (command) {
         case "generateJWT":
@@ -328,7 +337,7 @@ const api: Handler = async (
               key: ip,
               points:
                 data.repo === "mint-worker" && data.developer === "DFST"
-                  ? 1
+                  ? 5
                   : 10,
             })
           ) {
@@ -371,7 +380,10 @@ const api: Handler = async (
 
           if (
             data.mode === "sync" &&
-            (data.developer !== "@staketab" || data.repo !== "nameservice")
+            data.developer !== "@staketab" &&
+            data.repo !== "nameservice" &&
+            data.developer !== "DFST" &&
+            data.repo !== "dex-agent"
           ) {
             callback(null, {
               statusCode: 200,

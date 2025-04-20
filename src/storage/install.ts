@@ -10,7 +10,7 @@ export async function install(params: {
   folder: string;
   packageManager: string;
   buildCommand?: string;
-  env: string;
+  env?: string;
 }) {
   const { folder, packageManager } = params;
   if (key === undefined) throw Error("CLI_KEY is not set");

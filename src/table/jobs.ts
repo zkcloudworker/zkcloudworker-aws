@@ -30,6 +30,11 @@ export class Jobs extends Table<JobData> {
     timeCreated?: number;
     txNumber: number;
     logStreams: LogStream[];
+    status?: JobStatus;
+    result?: string;
+    billedDuration?: number;
+    jobId?: string;
+    timeFinished?: number;
   }): Promise<string | undefined> {
     const {
       id,
@@ -43,20 +48,25 @@ export class Jobs extends Table<JobData> {
       metadata,
       chain,
       logStreams,
+      status,
+      result,
+      billedDuration,
+      timeFinished,
     } = params;
     const timeCreated: number = params.timeCreated ?? Date.now();
     const jobId: string =
+      params.jobId ??
       "zkCW" +
-      stringHash(
-        JSON.stringify({
-          id,
-          developer,
-          repo,
-          chain,
-          timeCreated,
-          salt: makeString(32),
-        })
-      );
+        stringHash(
+          JSON.stringify({
+            id,
+            developer,
+            repo,
+            chain,
+            timeCreated,
+            salt: makeString(32),
+          })
+        );
     //id + "." + timeCreated.toString() + "." + makeString(32);
     const item: JobData = {
       id,
@@ -72,14 +82,17 @@ export class Jobs extends Table<JobData> {
       filename,
       txNumber: params.txNumber,
       timeCreated,
-      jobStatus: "created" as JobStatus,
+      jobStatus: status ?? ("created" as JobStatus),
       logStreams,
+      result,
+      billedDuration,
+      timeFinished,
     };
     try {
       const event = {
         jobId,
         eventTime: timeCreated,
-        jobStatus: "created" as JobStatus,
+        jobStatus: status ?? ("created" as JobStatus),
       };
       const publishPromise = publishJobStatus({
         job: item,
