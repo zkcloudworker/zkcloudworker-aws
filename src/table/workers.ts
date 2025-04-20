@@ -1,5 +1,5 @@
-import { Table } from "./table";
-import { WorkersData } from "../model/workersData";
+import { Table } from "./table.js";
+import { WorkersData } from "../model/workersData.js";
 
 export class Workers extends Table<WorkersData> {
   async timeUsed(params: {

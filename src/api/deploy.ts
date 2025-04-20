@@ -1,12 +1,17 @@
-import { listFiles, moveZip, createFolders, isExist } from "../storage/files";
-import { unzip } from "../storage/zip";
-import { install } from "../storage/install";
+import {
+  listFiles,
+  moveZip,
+  createFolders,
+  isExist,
+} from "../storage/files.js";
+import { unzip } from "../storage/zip.js";
+import { install } from "../storage/install.js";
 import fs from "fs/promises";
-import { Jobs } from "../table/jobs";
-import { Workers } from "../table/workers";
-import { Deployments } from "../table/deployments";
-import { Memory, sleep } from "../cloud";
-import { charge } from "../table/balance";
+import { Jobs } from "../table/jobs.js";
+import { Workers } from "../table/workers.js";
+import { Deployments } from "../table/deployments.js";
+import { Memory, sleep } from "@silvana-one/prover";
+import { charge } from "../table/balance.js";
 
 const { BUCKET } = process.env;
 const WORKERS_TABLE = process.env.WORKERS_TABLE!;

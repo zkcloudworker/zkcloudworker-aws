@@ -1,6 +1,6 @@
 import { RateLimiterMemory, RateLimiterDynamo } from "rate-limiter-flexible";
 import { DynamoDB } from "@aws-sdk/client-dynamodb";
-import { BLOCKED_IPS, BLOCKED_DURATION } from "./blocked-ip";
+import { BLOCKED_IPS, BLOCKED_DURATION } from "./blocked-ip.js";
 
 const limiters: { [key: string]: RateLimiterMemory | RateLimiterDynamo } = {};
 

@@ -1,5 +1,5 @@
 import fs from "fs/promises";
-import { S3File } from "./s3";
+import { S3File } from "./s3.js";
 
 export async function listFiles(
   folder: string,

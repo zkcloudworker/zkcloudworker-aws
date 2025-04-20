@@ -1,6 +1,6 @@
-import { Table } from "./table";
-import { BalanceData } from "../model/balanceData";
-import { callLambda } from "../lambda/lambda";
+import { Table } from "./table.js";
+import { BalanceData } from "../model/balanceData.js";
+import { callLambda } from "../lambda/lambda.js";
 
 const BALANCE_TABLE = process.env.BALANCE_TABLE;
 

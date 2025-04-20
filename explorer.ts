@@ -1,6 +1,6 @@
 import { Handler, Context, Callback } from "aws-lambda";
-import { Sequencer } from "./src/api/sequencer";
-import { Jobs } from "./src/table/jobs";
+import { Sequencer } from "./src/api/sequencer.js";
+import { Jobs } from "./src/table/jobs.js";
 import {
   JobStatus,
   JobData,
@@ -9,12 +9,12 @@ import {
   sleep,
   formatTime,
   LogStream,
-} from "./src/cloud";
-import { getLogs } from "./src/api/logs";
-import { Workers } from "./src/table/workers";
-import { getBalance, getBalances } from "./src/table/balance";
-import { rateLimit, initializeRateLimiter } from "./src/api/rate-limit";
-import { Deployments } from "./src/table/deployments";
+} from "@silvana-one/prover";
+import { getLogs } from "./src/api/logs.js";
+import { Workers } from "./src/table/workers.js";
+import { getBalance, getBalances } from "./src/table/balance.js";
+import { rateLimit, initializeRateLimiter } from "./src/api/rate-limit.js";
+import { Deployments } from "./src/table/deployments.js";
 const DEPLOYMENTS_TABLE = process.env.DEPLOYMENTS_TABLE!;
 
 initializeRateLimiter({

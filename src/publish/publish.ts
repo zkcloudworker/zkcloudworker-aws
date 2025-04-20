@@ -1,6 +1,6 @@
-import { JobData, JobEvent, sleep } from "../cloud";
-import { publishJobStatusNats } from "./nats";
-import { publishJobStatusAlgolia } from "./algolia";
+import { JobData, JobEvent, sleep } from "@silvana-one/prover";
+import { publishJobStatusNats } from "./nats.js";
+import { publishJobStatusAlgolia } from "./algolia.js";
 
 export async function publishJobStatus(params: {
   job: JobData;

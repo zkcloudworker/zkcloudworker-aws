@@ -1,9 +1,9 @@
 import { Handler } from "aws-lambda";
-import { TaskData, makeString } from "./src/cloud";
-import { Tasks } from "./src/table/tasks";
-import { getSystemDataByKey, saveSystemDataByKey } from "./src/table/kv";
-import { createExecuteJob } from "./src/api//execute";
-import { processIncomingPayments } from "./src/mina/payments";
+import { TaskData, makeString } from "@silvana-one/prover";
+import { Tasks } from "./src/table/tasks.js";
+import { getSystemDataByKey, saveSystemDataByKey } from "./src/table/kv.js";
+import { createExecuteJob } from "./src/api/execute.js";
+import { processIncomingPayments } from "./src/mina/payments.js";
 // import { restartNatsServer } from "./src/publish/restart";
 const TASKS_TABLE = process.env.TASKS_TABLE!;
 

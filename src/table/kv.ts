@@ -1,5 +1,5 @@
-import { Table } from "./table";
-import { KeyValueData } from "../model/kvData";
+import { Table } from "./table.js";
+import { KeyValueData } from "../model/kvData.js";
 const KV_TABLE = process.env.KV_TABLE!;
 
 export class KeyValue extends Table<KeyValueData> {}

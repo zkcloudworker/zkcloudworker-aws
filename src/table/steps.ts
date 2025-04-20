@@ -1,6 +1,6 @@
-import { Table } from "./table";
-import { StepsData } from "../model/stepsData";
-import { JobStatus, LogStream } from "../cloud";
+import { Table } from "./table.js";
+import { StepsData } from "../model/stepsData.js";
+import { JobStatus, LogStream } from "@silvana-one/prover";
 
 export class Steps extends Table<StepsData> {
   public async updateStatus(params: {

@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { bigintToBase56 } from "../cloud";
+import { bigintToBase56 } from "@silvana-one/prover";
 
 export function stringHash(jsonString: string): string {
   if (typeof jsonString !== "string")

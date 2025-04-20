@@ -1,5 +1,5 @@
-import { Table } from "./table";
-import { TaskData } from "../cloud";
+import { Table } from "./table.js";
+import { TaskData } from "@silvana-one/prover";
 
 export class Tasks extends Table<TaskData> {
   async increaseAttempts(task: TaskData): Promise<void> {

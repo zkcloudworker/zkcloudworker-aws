@@ -1,5 +1,5 @@
-import { Table } from "./table";
-import { FileData } from "../model/fileData";
+import { Table } from "./table.js";
+import { FileData } from "../model/fileData.js";
 
 export class FilesTable extends Table<FileData> {
   public async listFiles(id: string): Promise<FileData[]> {

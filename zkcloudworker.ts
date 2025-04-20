@@ -1,16 +1,16 @@
 import { Handler, Context, Callback } from "aws-lambda";
-import { verifyJWT, generateJWT } from "./src/api/jwt";
-import { Sequencer } from "./src/api/sequencer";
-import { Jobs } from "./src/table/jobs";
-import { deploy } from "./src/api/deploy";
-import { verify } from "./src/api/verify";
-import { execute, createExecuteJob } from "./src/api/execute";
-import { createRecursiveProofJob } from "./src/api/recursive";
-import { CloudWorker } from "./src/api/cloud";
-import { getPresignedUrl } from "./src/storage/presigned";
-import { LogStream } from "./src/cloud";
-import { createAccount, getBalance } from "./src/table/balance";
-import { rateLimit, initializeRateLimiter } from "./src/api/rate-limit";
+import { verifyJWT } from "./src/api/jwt.js";
+import { Sequencer } from "./src/api/sequencer.js";
+import { Jobs } from "./src/table/jobs.js";
+import { deploy } from "./src/api/deploy.js";
+import { verify } from "./src/api/verify.js";
+import { execute, createExecuteJob } from "./src/api/execute.js";
+import { createRecursiveProofJob } from "./src/api/recursive.js";
+import { CloudWorker } from "./src/api/cloud.js";
+import { getPresignedUrl } from "./src/storage/presigned.js";
+import { LogStream } from "@silvana-one/prover";
+import { createAccount, getBalance } from "./src/table/balance.js";
+import { rateLimit, initializeRateLimiter } from "./src/api/rate-limit.js";
 const MAX_JOB_AGE: number = 1000 * 60 * 60; // 60 minutes
 const INITIAL_BALANCE: number = 10; // MINA
 const nameContract = {
@@ -72,31 +72,31 @@ const api: Handler = async (
     ) {
       const { command, data, chain } = body;
       if (data?.developer === "@staketab" && data?.task === "getBlocksInfo") {
-        if (
-          await rateLimit({
-            name: "getBlocksInfo",
-            key: ip,
-          })
-        ) {
-          console.log("getBlocksInfo rate limit", ip);
-          callback(null, {
-            statusCode: 200,
-            headers: {
-              "Access-Control-Allow-Origin": "*",
-              "Access-Control-Allow-Credentials": true,
+        // if (
+        //   await rateLimit({
+        //     name: "getBlocksInfo",
+        //     key: ip,
+        //   })
+        // ) {
+        console.log("getBlocksInfo rate limit", ip);
+        callback(null, {
+          statusCode: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": true,
+          },
+          body: JSON.stringify(
+            {
+              success: false,
+              error:
+                "error: getBlocksInfo rate limit exceeded - 1 request per 5 minutes",
             },
-            body: JSON.stringify(
-              {
-                success: false,
-                error:
-                  "error: getBlocksInfo rate limit exceeded - 1 request per 5 minutes",
-              },
-              null,
-              2
-            ),
-          });
-          return;
-        }
+            null,
+            2
+          ),
+        });
+        return;
+        //}
 
         /*
         const now = Date.now();
@@ -126,7 +126,7 @@ const api: Handler = async (
          */
       }
 
-      const id: string | undefined = verifyJWT(body.jwtToken);
+      const id: string | undefined = await verifyJWT(body.jwtToken);
       if (id === undefined) {
         console.error("Wrong jwtToken", event);
         callback(null, {
@@ -152,7 +152,16 @@ const api: Handler = async (
         });
         return;
       }
-      console.log("api", { ip, id, balance, body });
+      console.log("api", {
+        ip,
+        id,
+        balance,
+        command: body?.command,
+        developer: body?.data?.developer,
+        repo: body?.data?.repo,
+        mode: body?.data?.mode,
+        chain: body?.chain,
+      });
 
       switch (command) {
         case "generateJWT":
@@ -328,7 +337,7 @@ const api: Handler = async (
               key: ip,
               points:
                 data.repo === "mint-worker" && data.developer === "DFST"
-                  ? 1
+                  ? 5
                   : 10,
             })
           ) {
@@ -371,7 +380,10 @@ const api: Handler = async (
 
           if (
             data.mode === "sync" &&
-            (data.developer !== "@staketab" || data.repo !== "nameservice")
+            data.developer !== "@staketab" &&
+            data.repo !== "nameservice" &&
+            data.developer !== "DFST" &&
+            data.repo !== "dex-agent"
           ) {
             callback(null, {
               statusCode: 200,

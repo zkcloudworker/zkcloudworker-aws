@@ -2,27 +2,24 @@ import {
   listFiles,
   moveZip,
   createFolders,
-  isExist,
   copyZip,
-} from "../storage/files";
-import { unzip } from "../storage/zip";
-import { install } from "../storage/install";
+} from "../storage/files.js";
+import { unzip } from "../storage/zip.js";
+import { install } from "../storage/install.js";
 import fs from "fs/promises";
-import { Jobs } from "../table/jobs";
-import { Workers } from "../table/workers";
+import { Jobs } from "../table/jobs.js";
 import {
   Memory,
   blockchain,
   sleep,
   getAccountFromGraphQL,
   networks,
-} from "../cloud";
-import { charge } from "../table/balance";
-import { S3File } from "../storage/s3";
-import { publishVerification } from "../publish/verify";
+} from "@silvana-one/prover";
+import { charge } from "../table/balance.js";
+import { S3File } from "../storage/s3.js";
+import { publishVerification } from "../publish/verify.js";
 
 const { BUCKET, VERIFICATION_BUCKET } = process.env;
-const WORKERS_TABLE = process.env.WORKERS_TABLE!;
 
 export interface VerificationAnswer {
   name: string;
@@ -58,7 +55,6 @@ export async function verify(params: {
 
   Memory.info("start");
   const JobsTable = new Jobs(process.env.JOBS_TABLE!);
-  const workersTable = new Workers(WORKERS_TABLE);
   try {
     if (BUCKET === undefined) throw new Error("BUCKET is undefined");
 

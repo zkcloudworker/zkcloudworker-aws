@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
-import { listFiles } from "./files";
-import { decryptWithPrivateKey } from "./rsa";
+import { listFiles } from "./files.js";
+import { decryptWithPrivateKey } from "./rsa.js";
 import * as fs from "fs/promises";
 import * as path from "path";
 
@@ -10,7 +10,7 @@ export async function install(params: {
   folder: string;
   packageManager: string;
   buildCommand?: string;
-  env: string;
+  env?: string;
 }) {
   const { folder, packageManager } = params;
   if (key === undefined) throw Error("CLI_KEY is not set");

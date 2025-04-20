@@ -1,5 +1,5 @@
-import { Table } from "./table";
-import { DeploymentsData } from "../model/deploymentsData";
+import { Table } from "./table.js";
+import { DeploymentsData } from "../model/deploymentsData.js";
 
 export class Deployments extends Table<DeploymentsData> {
   async add(params: {

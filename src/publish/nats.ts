@@ -7,9 +7,9 @@ import {
   JobEvent,
   TransactionMetadata,
   CloudTransaction,
-} from "../cloud";
-import { VerificationAnswer } from "../api/verify";
-import config from "../cloud/config";
+  config,
+} from "@silvana-one/prover";
+import { VerificationAnswer } from "../api/verify.js";
 
 export async function publishJobStatusNats(params: {
   job: JobData;
