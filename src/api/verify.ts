@@ -8,13 +8,8 @@ import { unzip } from "../storage/zip.js";
 import { install } from "../storage/install.js";
 import fs from "fs/promises";
 import { Jobs } from "../table/jobs.js";
-import {
-  Memory,
-  blockchain,
-  sleep,
-  getAccountFromGraphQL,
-  networks,
-} from "@silvana-one/prover";
+import { Memory, sleep, getAccountFromGraphQL } from "@silvana-one/prover";
+import { CanonicalBlockchain, networks } from "@silvana-one/api";
 import { charge } from "../table/balance.js";
 import { S3File } from "../storage/s3.js";
 import { publishVerification } from "../publish/verify.js";
@@ -43,7 +38,7 @@ export async function verify(params: {
   id: string;
   jobId: string;
   args: string;
-  chain: blockchain;
+  chain: CanonicalBlockchain;
 }): Promise<boolean> {
   console.time("deployed");
   //console.log("deploy", params);

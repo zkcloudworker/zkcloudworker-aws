@@ -2,13 +2,13 @@ import { getDeployer } from "../mina/deployers.js";
 import {
   Cloud,
   JobData,
-  blockchain,
   makeString,
   CloudTransaction,
   TaskData,
   DeployerKeyPair,
   TransactionMetadata,
 } from "@silvana-one/prover";
+import { CanonicalBlockchain } from "@silvana-one/api";
 import { StepsData } from "../model/stepsData.js";
 import { Transactions } from "../table/transactions.js";
 import { KeyValue } from "../table/kv.js";
@@ -47,7 +47,7 @@ export class CloudWorker extends Cloud {
     userId?: string;
     args?: string;
     metadata?: string;
-    chain: blockchain;
+    chain: CanonicalBlockchain;
     webhook?: string;
   }) {
     //console.log("CloudWorker: constructor", params);
@@ -319,13 +319,13 @@ export class CloudWorker extends Cloud {
   }
 
   public async publishTransactionMetadata(params: {
-    txId: string;
+    txId?: string;
     metadata: TransactionMetadata;
   }): Promise<void> {
     const { txId, metadata } = params;
     await publishTransactionMetadata({
       chain: this.chain,
-      txId,
+      txId: txId ?? this.jobId,
       metadata,
       developer: this.developer,
       repo: this.repo,

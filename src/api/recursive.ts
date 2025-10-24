@@ -1,7 +1,7 @@
 import { Sequencer } from "./sequencer.js";
 import { isWorkerExist } from "./worker.js";
 import { S3File } from "../storage/s3.js";
-import { blockchain } from "@silvana-one/prover";
+import { CanonicalBlockchain } from "@silvana-one/api";
 
 export async function createRecursiveProofJob(params: {
   id: string;
@@ -12,7 +12,7 @@ export async function createRecursiveProofJob(params: {
   args?: string;
   metadata?: string;
   userId?: string;
-  chain: blockchain;
+  chain: CanonicalBlockchain;
   webhook?: string;
 }): Promise<{
   success: boolean;

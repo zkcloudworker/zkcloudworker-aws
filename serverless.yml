@@ -5,7 +5,7 @@ service: zkcloudworker
 plugins:
   - serverless-prune-plugin
   - "@digitalmaas/serverless-plugin-lambda-dead-letter"
-  - serverless-iam-roles-per-function
+
 
 
 provider:

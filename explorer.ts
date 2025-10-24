@@ -1,15 +1,7 @@
 import { Handler, Context, Callback } from "aws-lambda";
 import { Sequencer } from "./src/api/sequencer.js";
 import { Jobs } from "./src/table/jobs.js";
-import {
-  JobStatus,
-  JobData,
-  blockchain,
-  makeString,
-  sleep,
-  formatTime,
-  LogStream,
-} from "@silvana-one/prover";
+import { JobData } from "@silvana-one/prover";
 import { getLogs } from "./src/api/logs.js";
 import { Workers } from "./src/table/workers.js";
 import { getBalance, getBalances } from "./src/table/balance.js";
