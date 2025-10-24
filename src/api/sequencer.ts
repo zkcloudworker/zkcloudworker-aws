@@ -4,12 +4,12 @@ import { Proofs } from "../table/proofs.js";
 import {
   JobStatus,
   JobData,
-  blockchain,
   makeString,
   sleep,
   formatTime,
   LogStream,
 } from "@silvana-one/prover";
+import { CanonicalBlockchain } from "@silvana-one/api";
 import { StepsData, StepTask } from "../model/stepsData.js";
 import { callLambda } from "../lambda/lambda.js";
 import { S3File } from "../storage/s3.js";
@@ -59,7 +59,7 @@ export class Sequencer {
     metadata?: string;
     userId?: string;
     webhook?: string;
-    chain: blockchain;
+    chain: CanonicalBlockchain;
   }): Promise<string | undefined> {
     const {
       id,
@@ -75,7 +75,11 @@ export class Sequencer {
       webhook,
       chain,
     } = params;
-    if (chain !== "zeko" && chain !== "devnet" && chain !== "mainnet") {
+    if (
+      chain !== "mina:devnet" &&
+      chain !== "zeko:testnet" &&
+      chain !== "mina:mainnet"
+    ) {
       console.error(
         "Error: Sequencer: createJob: chain is not supported",
         chain

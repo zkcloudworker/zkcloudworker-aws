@@ -1,4 +1,4 @@
-import { zkCloudWorker, Cloud, blockchain } from "@silvana-one/prover";
+import { zkCloudWorker, Cloud } from "@silvana-one/prover";
 import { Workers } from "../table/workers.js";
 import dotenv from "dotenv";
 
@@ -118,6 +118,16 @@ export async function getWorker(params: {
   );
   const zkcloudworker = await import(dist);
   const functionName = "zkcloudworker";
+  // Backward compatibility for DFST/mint-worker
+  if (developer === "DFST" && repo === "mint-worker") {
+    if (cloud.chain === "mina:devnet") {
+      (cloud as any).chain = "devnet";
+    } else if (cloud.chain === "mina:mainnet") {
+      (cloud as any).chain = "mainnet";
+    } else {
+      throw new Error(`Unsupported chain: ${cloud.chain}`);
+    }
+  }
   const worker = await zkcloudworker[functionName](cloud);
   await workersTable.timeUsed({
     developer,

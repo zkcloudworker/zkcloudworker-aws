@@ -77,7 +77,63 @@ const api: Handler = async (
       body.jwtToken &&
       body.chain
     ) {
-      const { command, data, chain } = body;
+      const { command, data } = body;
+      if (
+        body.chain === undefined ||
+        body.chain === null ||
+        body.chain === ""
+      ) {
+        console.error("chain is required", body);
+        callback(null, {
+          statusCode: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": true,
+          },
+          body: "error: chain is required",
+        });
+        return;
+      }
+      if (typeof body.chain !== "string") {
+        console.error("chain must be a string");
+        callback(null, {
+          statusCode: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": true,
+          },
+          body: "error: chain must be a string",
+        });
+        return;
+      }
+      if (
+        body.chain != "mina:devnet" &&
+        body.chain != "mina:mainnet" &&
+        body.chain != "zeko:testnet" &&
+        body.chain != "devnet" &&
+        body.chain != "mainnet" &&
+        body.chain != "zeko"
+      ) {
+        console.error("chain must be a valid chain");
+        callback(null, {
+          statusCode: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": true,
+          },
+          body: "error: chain must be a valid chain",
+        });
+        return;
+      }
+      const chain =
+        body.chain === "devnet"
+          ? "mina:devnet"
+          : body.chain === "mainnet"
+          ? "mina:mainnet"
+          : body.chain === "zeko"
+          ? "zeko:testnet"
+          : body.chain;
+
       if (data?.developer === "@staketab" && data?.task === "getBlocksInfo") {
         // if (
         //   await rateLimit({

@@ -241,7 +241,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-cloudwatch-logs@npm:^3.787.0":
+"@aws-sdk/client-cloudwatch-logs@npm:^3.916.0":
   version: 3.916.0
   resolution: "@aws-sdk/client-cloudwatch-logs@npm:3.916.0"
   dependencies:
@@ -292,7 +292,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-dynamodb@npm:^3.788.0":
+"@aws-sdk/client-dynamodb@npm:^3.916.0":
   version: 3.916.0
   resolution: "@aws-sdk/client-dynamodb@npm:3.916.0"
   dependencies:
@@ -342,7 +342,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-kms@npm:^3.787.0":
+"@aws-sdk/client-kms@npm:^3.916.0":
   version: 3.916.0
   resolution: "@aws-sdk/client-kms@npm:3.916.0"
   dependencies:
@@ -389,7 +389,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-lambda@npm:^3.787.0":
+"@aws-sdk/client-lambda@npm:^3.916.0":
   version: 3.916.0
   resolution: "@aws-sdk/client-lambda@npm:3.916.0"
   dependencies:
@@ -441,7 +441,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-lightsail@npm:^3.787.0":
+"@aws-sdk/client-lightsail@npm:^3.916.0":
   version: 3.916.0
   resolution: "@aws-sdk/client-lightsail@npm:3.916.0"
   dependencies:
@@ -488,7 +488,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-s3@npm:^3.787.0":
+"@aws-sdk/client-s3@npm:^3.916.0":
   version: 3.916.0
   resolution: "@aws-sdk/client-s3@npm:3.916.0"
   dependencies:
@@ -962,7 +962,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/s3-request-presigner@npm:^3.787.0":
+"@aws-sdk/s3-request-presigner@npm:^3.916.0":
   version: 3.916.0
   resolution: "@aws-sdk/s3-request-presigner@npm:3.916.0"
   dependencies:
@@ -1026,7 +1026,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/util-dynamodb@npm:^3.788.0":
+"@aws-sdk/util-dynamodb@npm:^3.916.0":
   version: 3.916.0
   resolution: "@aws-sdk/util-dynamodb@npm:3.916.0"
   dependencies:
@@ -1325,7 +1325,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nats-io/jetstream@npm:3.2.0, @nats-io/jetstream@npm:^3.0.2":
+"@nats-io/jetstream@npm:3.2.0, @nats-io/jetstream@npm:^3.2.0":
   version: 3.2.0
   resolution: "@nats-io/jetstream@npm:3.2.0"
   dependencies:
@@ -1334,7 +1334,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nats-io/kv@npm:^3.0.2":
+"@nats-io/kv@npm:^3.2.0":
   version: 3.2.0
   resolution: "@nats-io/kv@npm:3.2.0"
   dependencies:
@@ -1370,7 +1370,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nats-io/transport-node@npm:^3.0.2":
+"@nats-io/transport-node@npm:^3.2.0":
   version: 3.2.0
   resolution: "@nats-io/transport-node@npm:3.2.0"
   dependencies:
@@ -1395,13 +1395,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@silvana-one/prover@npm:^1.0.6":
-  version: 1.1.1
-  resolution: "@silvana-one/prover@npm:1.1.1"
+"@silvana-one/api@npm:^1.1.4":
+  version: 1.1.4
+  resolution: "@silvana-one/api@npm:1.1.4"
+  checksum: 10c0/4f5af1e94c412fb9cdff1e045ff8295622bcccda5a395060741e0c16f6eda02f46fa88ad444d35f837101b45e8202ce5d04b674c222f6a6b6a8d887387bc0a1a
+  languageName: node
+  linkType: hard
+
+"@silvana-one/prover@npm:^1.1.4":
+  version: 1.1.4
+  resolution: "@silvana-one/prover@npm:1.1.4"
   dependencies:
     "@silvana-one/api": "npm:1.1.1"
     chalk: "npm:^4.1.2"
-  checksum: 10c0/773cd432e8dc8ffaf440f8f5d5dd895faf5177ab36f19612d167ffb02a1e6e158b4b7df435a9726b7e4da4cf10ccf0e2f63daa3c3f50255ef093d8698a1adac2
+  checksum: 10c0/be0c5fc09e9b432990f8e92e2481228772c04d1cb2d90038f0fc583995aeb9268ed390ad022179365d188c029128a9d3b6756c1562201e2f5dfd5457a463f255
   languageName: node
   linkType: hard
 
@@ -2022,28 +2029,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/aws-lambda@npm:^8.10.149":
+"@types/aws-lambda@npm:^8.10.156":
   version: 8.10.156
   resolution: "@types/aws-lambda@npm:8.10.156"
   checksum: 10c0/7de38e4241c4b4ffd740622850508aff77ed3258ff2278cc96f86d18f8045d2c0fd944c74c0fbcc32334179a7022a85ce69b5cc807e9a473243cd7d1cb90959b
   languageName: node
   linkType: hard
 
-"@types/node@npm:*":
+"@types/node@npm:*, @types/node@npm:^24.9.1":
   version: 24.9.1
   resolution: "@types/node@npm:24.9.1"
   dependencies:
     undici-types: "npm:~7.16.0"
   checksum: 10c0/c52f8168080ef9a7c3dc23d8ac6061fab5371aad89231a0f6f4c075869bc3de7e89b075b1f3e3171d9e5143d0dda1807c3dab8e32eac6d68f02e7480e7e78576
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:^22.14.1":
-  version: 22.18.12
-  resolution: "@types/node@npm:22.18.12"
-  dependencies:
-    undici-types: "npm:~6.21.0"
-  checksum: 10c0/13a4638f2baba3efba2b8bc369dd6f950dccbfca78f318f9c9f2c7adc11fce14fc119723c38567dada2d57a873c092b7356c024924d5974a08f3c1f93dc706c6
   languageName: node
   linkType: hard
 
@@ -2054,7 +2052,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"algoliasearch@npm:^5.23.4":
+"algoliasearch@npm:^5.41.0":
   version: 5.41.0
   resolution: "algoliasearch@npm:5.41.0"
   dependencies:
@@ -2136,7 +2134,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.12.1, axios@npm:^1.8.4":
+"axios@npm:^1.12.1, axios@npm:^1.12.2":
   version: 1.12.2
   resolution: "axios@npm:1.12.2"
   dependencies:
@@ -2240,10 +2238,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv@npm:^16.5.0":
-  version: 16.6.1
-  resolution: "dotenv@npm:16.6.1"
-  checksum: 10c0/15ce56608326ea0d1d9414a5c8ee6dcf0fffc79d2c16422b4ac2268e7e2d76ff5a572d37ffe747c377de12005f14b3cc22361e79fc7f1061cce81f77d2c973dc
+"dotenv@npm:^17.2.3":
+  version: 17.2.3
+  resolution: "dotenv@npm:17.2.3"
+  checksum: 10c0/c884403209f713214a1b64d4d1defa4934c2aa5b0002f5a670ae298a51e3c3ad3ba79dfee2f8df49f01ae74290fcd9acdb1ab1d09c7bfb42b539036108bb2ba0
   languageName: node
   linkType: hard
 
@@ -2314,7 +2312,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:^0.25.2":
+"esbuild@npm:^0.25.11":
   version: 0.25.11
   resolution: "esbuild@npm:0.25.11"
   dependencies:
@@ -2574,7 +2572,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jose@npm:^6.0.10":
+"jose@npm:^6.1.0":
   version: 6.1.0
   resolution: "jose@npm:6.1.0"
   checksum: 10c0/f4518579e907317e144facd15c7627acd06097bbea17735097437217498aa419564c039dd4020f6af5f2d024a7cee6b7be4648ccbbdc238aedb80a47c061217d
@@ -2681,7 +2679,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rate-limiter-flexible@npm:^7.0.0":
+"rate-limiter-flexible@npm:^7.4.0":
   version: 7.4.0
   resolution: "rate-limiter-flexible@npm:7.4.0"
   checksum: 10c0/abda366a8449384911241d4abd404ba341115cec003c64fc96ea3210080fb473f34a4d8ae955e979e1f485d8d6a0126243f8b00f362aa74e7bb781783881ba58
@@ -2735,7 +2733,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"serverless@npm:^4.14.1":
+"serverless@npm:^4.22.0":
   version: 4.22.0
   resolution: "serverless@npm:4.22.0"
   dependencies:
@@ -2850,7 +2848,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.8.3":
+"typescript@npm:^5.9.3":
   version: 5.9.3
   resolution: "typescript@npm:5.9.3"
   bin:
@@ -2860,20 +2858,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.8.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.9.3#optional!builtin<compat/typescript>":
   version: 5.9.3
   resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/ad09fdf7a756814dce65bc60c1657b40d44451346858eea230e10f2e95a289d9183b6e32e5c11e95acc0ccc214b4f36289dcad4bf1886b0adb84d711d336a430
-  languageName: node
-  linkType: hard
-
-"undici-types@npm:~6.21.0":
-  version: 6.21.0
-  resolution: "undici-types@npm:6.21.0"
-  checksum: 10c0/c01ed51829b10aa72fc3ce64b747f8e74ae9b60eafa19a7b46ef624403508a54c526ffab06a14a26b3120d055e1104d7abe7c9017e83ced038ea5cf52f8d5e04
   languageName: node
   linkType: hard
 
@@ -2938,32 +2929,33 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "zkcloudworker-aws@workspace:."
   dependencies:
-    "@aws-sdk/client-cloudwatch-logs": "npm:^3.787.0"
-    "@aws-sdk/client-dynamodb": "npm:^3.788.0"
-    "@aws-sdk/client-kms": "npm:^3.787.0"
-    "@aws-sdk/client-lambda": "npm:^3.787.0"
-    "@aws-sdk/client-lightsail": "npm:^3.787.0"
-    "@aws-sdk/client-s3": "npm:^3.787.0"
-    "@aws-sdk/s3-request-presigner": "npm:^3.787.0"
-    "@aws-sdk/util-dynamodb": "npm:^3.788.0"
+    "@aws-sdk/client-cloudwatch-logs": "npm:^3.916.0"
+    "@aws-sdk/client-dynamodb": "npm:^3.916.0"
+    "@aws-sdk/client-kms": "npm:^3.916.0"
+    "@aws-sdk/client-lambda": "npm:^3.916.0"
+    "@aws-sdk/client-lightsail": "npm:^3.916.0"
+    "@aws-sdk/client-s3": "npm:^3.916.0"
+    "@aws-sdk/s3-request-presigner": "npm:^3.916.0"
+    "@aws-sdk/util-dynamodb": "npm:^3.916.0"
     "@digitalmaas/serverless-plugin-lambda-dead-letter": "npm:^1.0.0"
-    "@nats-io/jetstream": "npm:^3.0.2"
-    "@nats-io/kv": "npm:^3.0.2"
-    "@nats-io/transport-node": "npm:^3.0.2"
-    "@silvana-one/prover": "npm:^1.0.6"
+    "@nats-io/jetstream": "npm:^3.2.0"
+    "@nats-io/kv": "npm:^3.2.0"
+    "@nats-io/transport-node": "npm:^3.2.0"
+    "@silvana-one/api": "npm:^1.1.4"
+    "@silvana-one/prover": "npm:^1.1.4"
     "@types/adm-zip": "npm:^0.5.7"
-    "@types/aws-lambda": "npm:^8.10.149"
-    "@types/node": "npm:^22.14.1"
+    "@types/aws-lambda": "npm:^8.10.156"
+    "@types/node": "npm:^24.9.1"
     adm-zip: "npm:^0.5.16"
-    algoliasearch: "npm:^5.23.4"
-    axios: "npm:^1.8.4"
-    dotenv: "npm:^16.5.0"
-    esbuild: "npm:^0.25.2"
-    jose: "npm:^6.0.10"
-    rate-limiter-flexible: "npm:^7.0.0"
-    serverless: "npm:^4.14.1"
+    algoliasearch: "npm:^5.41.0"
+    axios: "npm:^1.12.2"
+    dotenv: "npm:^17.2.3"
+    esbuild: "npm:^0.25.11"
+    jose: "npm:^6.1.0"
+    rate-limiter-flexible: "npm:^7.4.0"
+    serverless: "npm:^4.22.0"
     serverless-iam-roles-per-function: "npm:^3.2.0"
     serverless-prune-plugin: "npm:^2.1.0"
-    typescript: "npm:^5.8.3"
+    typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft

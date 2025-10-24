@@ -1,13 +1,13 @@
 import {
   makeString,
   sleep,
-  blockchain,
   getBalanceFromGraphQL,
   DeployerKeyPair,
-  networks,
 } from "@silvana-one/prover";
+import { CanonicalBlockchain, networks } from "@silvana-one/api";
 import { GASTANKS } from "./gastanks.js";
 import { Deployers } from "../table/deployers.js";
+import { chainName } from "../api/chain.js";
 
 const GAS_TANK_MIN_LIMIT = 5 * 10 ** 9;
 const DELAY = 60 * 60 * 1000; // 1 hour
@@ -18,10 +18,12 @@ var deployer3: number | undefined;
 
 export async function getDeployer(
   minimumBalance: number = GAS_TANK_MIN_LIMIT,
-  chain: blockchain
+  chain: CanonicalBlockchain
 ): Promise<DeployerKeyPair | undefined> {
-  if (chain !== "devnet" && chain !== "zeko") {
-    console.error("Only devnet and zeko are supported for now in getDeployer");
+  if (chain !== "mina:devnet" && chain !== "zeko:testnet") {
+    console.error(
+      "Only mina:devnet and zeko:testnet are supported for now in getDeployer"
+    );
     return undefined;
   }
   const mina = networks.find((n) => n.chainId === chain)?.mina;
@@ -83,10 +85,14 @@ async function checkGasTank(params: {
   gasTank: DeployerKeyPair;
   minimumBalance: number;
   mina: string[];
-  chain: blockchain;
+  chain: CanonicalBlockchain;
 }): Promise<{ canUse: boolean; balance: bigint }> {
   const { gasTank, minimumBalance, mina, chain } = params;
-
+  const cloudChain = chainName(chain);
+  if (chainName === undefined) {
+    console.error("Unsupported chain", chain);
+    return { canUse: false, balance: 0n };
+  }
   let balanceGasTank = 0n;
   try {
     balanceGasTank = await getBalanceFromGraphQL({
@@ -109,16 +115,20 @@ async function checkGasTank(params: {
   const deployersTable = new Deployers(process.env.DEPLOYERS_TABLE!);
   const deployer = await deployersTable.get({
     publicKey: gasTank.publicKey,
-    chain,
+    chain: chainName(chain),
   });
   const code = makeString(20);
   if (
     deployer === undefined ||
     (deployer.timeUsed !== undefined && deployer.timeUsed + DELAY < Date.now())
   ) {
+    if (cloudChain === undefined) {
+      console.error("checkGasTank: Unsupported chain", chain);
+      return { canUse: false, balance: 0n };
+    }
     await deployersTable.create({
       publicKey: gasTank.publicKey,
-      chain,
+      chain: cloudChain,
       timeUsed: Date.now(),
       code,
     });

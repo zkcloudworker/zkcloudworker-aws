@@ -2,12 +2,12 @@ import { Table } from "./table.js";
 import {
   JobData,
   JobStatus,
-  blockchain,
   makeString,
   LogStream,
   JobEvent,
   sleep,
 } from "@silvana-one/prover";
+import { CanonicalBlockchain } from "@silvana-one/api";
 import { stringHash } from "../api/hash.js";
 import { publishJobStatus } from "../publish/publish.js";
 
@@ -25,7 +25,7 @@ export class Jobs extends Table<JobData> {
     userId?: string;
     args?: string;
     metadata?: string;
-    chain: blockchain;
+    chain: CanonicalBlockchain;
     filename?: string;
     timeCreated?: number;
     txNumber: number;

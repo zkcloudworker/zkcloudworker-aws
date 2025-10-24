@@ -1,10 +1,5 @@
-import {
-  Memory,
-  blockchain,
-  JobData,
-  JobStatus,
-  makeString,
-} from "@silvana-one/prover";
+import { Memory, JobData, JobStatus, makeString } from "@silvana-one/prover";
+import { CanonicalBlockchain } from "@silvana-one/api";
 import { ExecuteCloudWorker } from "./cloud.js";
 import { isWorkerExist } from "./worker.js";
 import { Jobs } from "../table/jobs.js";
@@ -13,6 +8,7 @@ import { callLambda } from "../lambda/lambda.js";
 import { S3File } from "../storage/s3.js";
 import { forceRestartLambda } from "../lambda/lambda.js";
 import { charge } from "../table/balance.js";
+import { chainName } from "./chain.js";
 import {
   rateLimit,
   initializeRateLimiter,
@@ -41,7 +37,7 @@ export async function createExecuteJob(params: {
     args?: string;
     userId?: string;
     metadata?: string;
-    chain: blockchain;
+    chain: CanonicalBlockchain;
     mode?: string;
   };
 }): Promise<{
@@ -244,7 +240,11 @@ export async function createExecuteJob(params: {
         logStreams: [],
       });
       if (jobId !== undefined) {
-        if (chain !== "devnet" && chain !== "zeko" && chain !== "mainnet") {
+        if (
+          chain !== "mina:devnet" &&
+          chain !== "zeko:testnet" &&
+          chain !== "mina:mainnet"
+        ) {
           console.error(
             "error: execute: createJob: chain is not supported",
             chain
@@ -255,8 +255,20 @@ export async function createExecuteJob(params: {
             error: `error: chain ${chain} is not supported`,
           };
         } else {
+          const cloudChain = chainName(chain);
+          if (chainName === undefined) {
+            console.error(
+              "error: execute: createJob: chain is not supported",
+              chain
+            );
+            return {
+              success: false,
+              jobId,
+              error: `error: chain ${chain} is not supported`,
+            };
+          }
           await callLambda(
-            "worker-" + chain,
+            "worker-" + cloudChain,
             JSON.stringify({ command, id, jobId, developer, repo, args, chain })
           );
           return { success: true, jobId, error: undefined };

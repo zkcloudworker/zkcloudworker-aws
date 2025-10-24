@@ -1,4 +1,5 @@
-import { blockchain, LogStream, JobStatus } from "@silvana-one/prover";
+import { LogStream, JobStatus } from "@silvana-one/prover";
+import { CanonicalBlockchain } from "@silvana-one/api";
 
 export type StepTask = "create" | "merge";
 export const MAX_STEP_ATTEMPTS = 5;
@@ -15,7 +16,7 @@ export interface StepsData {
   task: StepTask;
   userId?: string;
   metadata?: string;
-  chain: blockchain;
+  chain: CanonicalBlockchain;
   origins: string[];
   stepData: string[];
   timeCreated: number;
