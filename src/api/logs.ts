@@ -25,14 +25,14 @@ export async function getLogs(
       });
 
       const data = await client.send(command);
-      /*
+
       console.log(
         "getLogs",
         data.$metadata,
         data.nextBackwardToken,
         data.nextForwardToken
       );
-      */
+
       //console.log("getLogs events", data.events);
       if (data.events !== undefined && log.awsRequestId !== undefined) {
         const searchString = log.awsRequestId + "\t";

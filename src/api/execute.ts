@@ -110,7 +110,7 @@ export async function createExecuteJob(params: {
       }
       const timeCreated = Date.now();
       const jobId: string =
-        "zkCWsync" +
+        "sksync" +
         stringHash(
           JSON.stringify({
             id,

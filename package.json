@@ -48,7 +48,7 @@
     "@nats-io/jetstream": "^3.0.2",
     "@nats-io/kv": "^3.0.2",
     "@nats-io/transport-node": "^3.0.2",
-    "@silvana-one/prover": "^1.0.2",
+    "@silvana-one/prover": "^1.0.6",
     "adm-zip": "^0.5.16",
     "algoliasearch": "^5.23.4",
     "axios": "^1.8.4",
@@ -56,5 +56,5 @@
     "jose": "^6.0.10",
     "rate-limiter-flexible": "^7.0.0"
   },
-  "packageManager": "yarn@4.9.1"
+  "packageManager": "yarn@4.10.3"
 }

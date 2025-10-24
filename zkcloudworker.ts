@@ -8,9 +8,16 @@ import { execute, createExecuteJob } from "./src/api/execute.js";
 import { createRecursiveProofJob } from "./src/api/recursive.js";
 import { CloudWorker } from "./src/api/cloud.js";
 import { getPresignedUrl } from "./src/storage/presigned.js";
-import { LogStream } from "@silvana-one/prover";
+import {
+  LogStream,
+  JobData,
+  JobEvent,
+  TransactionMetadata,
+} from "@silvana-one/prover";
 import { createAccount, getBalance } from "./src/table/balance.js";
 import { rateLimit, initializeRateLimiter } from "./src/api/rate-limit.js";
+import { publishTransactionMetadata } from "src/publish/transaction.js";
+import { publishJobStatusAlgolia } from "src/publish/algolia.js";
 const MAX_JOB_AGE: number = 1000 * 60 * 60; // 60 minutes
 const INITIAL_BALANCE: number = 10; // MINA
 const nameContract = {
@@ -220,6 +227,86 @@ const api: Handler = async (
           });
           return;
           break;
+
+        case "metadata":
+          const {
+            txId,
+            metadata,
+            jobId,
+            developer,
+            repo,
+            result,
+            timeFinished,
+            timeCreated,
+            description,
+          } = data;
+          if (
+            metadata === undefined ||
+            metadata === null ||
+            metadata === "" ||
+            jobId === undefined ||
+            developer === undefined ||
+            repo === undefined ||
+            timeFinished === undefined ||
+            timeCreated === undefined
+          ) {
+            console.error("metadata - wrong params", {
+              txId,
+              jobId,
+              developer,
+              repo,
+              metadata,
+            });
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": true,
+              },
+              body: "error: metadata - wrong or missing params",
+            });
+            return;
+          }
+          await publishJobStatusAlgolia({
+            job: {
+              jobId,
+              developer,
+              repo,
+              id,
+              chain,
+              txNumber: 0,
+              timeCreated,
+              timeStarted: timeCreated,
+              timeFinished,
+              jobStatus: "finished",
+              result,
+              metadata: description,
+            },
+            event: {
+              jobId,
+              eventTime: timeFinished,
+              jobStatus: "finished",
+              result,
+            },
+          });
+          await publishTransactionMetadata({
+            chain,
+            txId: txId ?? jobId,
+            metadata,
+            developer,
+            repo,
+            id,
+            jobId,
+          });
+          callback(null, {
+            statusCode: 200,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Credentials": true,
+            },
+            body: JSON.stringify({ success: true }, null, 2),
+          });
+          return;
 
         case "deploy": {
           if (
@@ -518,6 +605,8 @@ const api: Handler = async (
 
       // await sleep(1000);
     }
+
+    console.log("api: ok", body);
 
     callback(null, {
       statusCode: 200,

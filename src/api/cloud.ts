@@ -319,13 +319,13 @@ export class CloudWorker extends Cloud {
   }
 
   public async publishTransactionMetadata(params: {
-    txId: string;
+    txId?: string;
     metadata: TransactionMetadata;
   }): Promise<void> {
     const { txId, metadata } = params;
     await publishTransactionMetadata({
       chain: this.chain,
-      txId,
+      txId: txId ?? this.jobId,
       metadata,
       developer: this.developer,
       repo: this.repo,

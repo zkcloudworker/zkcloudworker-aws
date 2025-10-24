@@ -56,7 +56,7 @@ export class Jobs extends Table<JobData> {
     const timeCreated: number = params.timeCreated ?? Date.now();
     const jobId: string =
       params.jobId ??
-      "zkCW" +
+      "sk" +
         stringHash(
           JSON.stringify({
             id,
