@@ -242,6 +242,7 @@ export async function createExecuteJob(params: {
       if (jobId !== undefined) {
         if (
           chain !== "mina:devnet" &&
+          chain !== "mina:testnet" &&
           chain !== "zeko:testnet" &&
           chain !== "mina:mainnet"
         ) {

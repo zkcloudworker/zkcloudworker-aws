@@ -20,9 +20,13 @@ export async function getDeployer(
   minimumBalance: number = GAS_TANK_MIN_LIMIT,
   chain: CanonicalBlockchain
 ): Promise<DeployerKeyPair | undefined> {
-  if (chain !== "mina:devnet" && chain !== "zeko:testnet") {
+  if (
+    chain !== "mina:devnet" &&
+    chain !== "mina:testnet" &&
+    chain !== "zeko:testnet"
+  ) {
     console.error(
-      "Only mina:devnet and zeko:testnet are supported for now in getDeployer"
+      "Only mina:devnet, mina:testnet and zeko:testnet are supported for now in getDeployer"
     );
     return undefined;
   }

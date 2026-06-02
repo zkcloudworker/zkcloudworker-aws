@@ -12,6 +12,7 @@ import {
 import { CanonicalBlockchain } from "@silvana-one/api";
 import { StepsData, StepTask } from "../model/stepsData.js";
 import { callLambda } from "../lambda/lambda.js";
+import { chainName } from "./chain.js";
 import { S3File } from "../storage/s3.js";
 import { getLogs } from "./logs.js";
 import { charge } from "../table/balance.js";
@@ -77,6 +78,7 @@ export class Sequencer {
     } = params;
     if (
       chain !== "mina:devnet" &&
+      chain !== "mina:testnet" &&
       chain !== "zeko:testnet" &&
       chain !== "mina:mainnet"
     ) {
@@ -204,7 +206,10 @@ export class Sequencer {
       };
       try {
         await StepsTable.create(stepData);
-        await callLambda("step-" + job.chain, JSON.stringify({ stepData }));
+        await callLambda(
+          "step-" + chainName(job.chain),
+          JSON.stringify({ stepData })
+        );
       } catch (error: any) {
         console.error("Error: Sequencer: startJob", error);
         throw new Error("Error: Sequencer: startJob");
@@ -523,7 +528,7 @@ export class Sequencer {
             try {
               
               await callLambda(
-                "step",
+                "step-" + chainName(stepData.chain),
                 JSON.stringify({ stepData }),
                 stepData3.attempts + 1
               );
@@ -862,7 +867,10 @@ export class Sequencer {
             };
             try {
               await StepsTable.create(stepData);
-              await callLambda("step-" + chain, JSON.stringify({ stepData }));
+              await callLambda(
+                "step-" + chainName(chain),
+                JSON.stringify({ stepData })
+              );
               console.log(
                 `Sequencer: run: started merging ${
                   stepData.origins?.length

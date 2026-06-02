@@ -303,6 +303,28 @@ functions:
       subnetIds:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
+  zkcloudworker-testnet:
+    handler: ./zkcloudworker.api
+    timeout: 29
+    memorySize: 1024
+    reservedConcurrency: 20 # optional, reserved concurrency limit for this function. By default, AWS uses account concurrency limit
+    deadLetter:
+      sqs:
+        queueName: zkcloudworker-testnet-dl-queue
+    events:
+      - http:
+          path: testnet
+          method: post
+          cors: true
+    fileSystemConfig:
+      localMountPath: /mnt/efs
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
+    vpc:
+      securityGroupIds:
+        - sg-07cdd56c86fb70d88
+      subnetIds:
+        - subnet-0c3cc81920de4c4c3
+        - subnet-08f6fb90590c47699
   worker-devnet:
     handler: ./zkcloudworker.worker
     timeout: 900
@@ -818,6 +840,175 @@ functions:
       subnetIds:
         - subnet-0c3cc81920de4c4c3
         - subnet-08f6fb90590c47699
+  worker-testnet:
+    handler: ./zkcloudworker.worker
+    timeout: 900
+    memorySize: 10240
+    reservedConcurrency: 20
+    environment:
+      JWT_PRIVATEKEY: ""
+      JWT_ACCESS_KEY: ""
+      ZKCLOUDWORKER_AUTH: ""
+      BLOCKBERRY_API_KEY: ""
+      ZKCW_WALLET_ADDRESS: ""
+    iamRoleStatementsName: worker-testnet-role
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - elasticfilesystem:ClientMount
+          - elasticfilesystem:ClientWrite
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:DescribeTimeToLive
+          - dynamodb:UpdateTimeToLive
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.RATE_LIMIT_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TASKS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.FILES_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOBS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOB_EVENTS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TRANSACTIONS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.KV_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.STEPS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.PROOFS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.WORKERS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DEPLOYMENTS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.BALANCE_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DEPLOYERS_TABLE}"
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+          - s3:HeadObject
+          - s3:DeleteObject
+          - s3:PutObjectAcl
+        Resource: "arn:aws:s3:::${self:provider.environment.BUCKET}/*"
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: "arn:aws:s3:::${self:provider.environment.VERIFICATION_BUCKET}/*"
+      - Effect: Allow
+        Action:
+          - elasticfilesystem:ClientMount
+          - elasticfilesystem:ClientWrite
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - kms:Encrypt
+          - kms:Decrypt
+          - kms:Encrypt*
+          - kms:Decrypt*
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - sqs:SendMessage
+          - sqs:ReceiveMessage
+          - sqs:DeleteMessage
+          - sqs:GetQueueAttributes
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - logs:GetLogEvents
+        Resource: "*"
+      - Effect: "Allow"
+        Action:
+          - "ses:*"
+          - lambda:InvokeFunction
+        Resource:
+          - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-charge
+      - Effect: "Allow"
+        Action:
+          - lambda:InvokeFunction
+        Resource:
+          - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-sequencer
+      - Effect: "Allow"
+        Action:
+          - lambda:InvokeFunction
+        Resource: arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-nats
+      - Effect: "Allow"
+        Action:
+          - lambda:UpdateFunctionConfiguration
+        Resource:
+          - arn:aws:lambda:eu-west-1:058264205854:function:zkcloudworker-dev-worker-testnet
+    deadLetter:
+      sqs:
+        queueName: worker-testnet-dl-queue
+    fileSystemConfig:
+      localMountPath: /mnt/efs
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
+    vpc:
+      securityGroupIds:
+        - sg-07cdd56c86fb70d88
+      subnetIds:
+        - subnet-0c3cc81920de4c4c3
+        - subnet-08f6fb90590c47699
   test:
     handler: ./test.cloud
     timeout: 900
@@ -1156,6 +1347,104 @@ functions:
         Action:
           - logs:GetLogEvents
         Resource: "*"
+    fileSystemConfig:
+      localMountPath: /mnt/efs
+      arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
+    vpc:
+      securityGroupIds:
+        - sg-07cdd56c86fb70d88
+      subnetIds:
+        - subnet-0c3cc81920de4c4c3
+        - subnet-08f6fb90590c47699
+  step-testnet:
+    handler: ./step.run
+    timeout: 300
+    memorySize: 10240
+    reservedConcurrency: 64
+    environment:
+      JWT_PRIVATEKEY: ""
+      JWT_ACCESS_KEY: ""
+      ZKCLOUDWORKER_AUTH: ""
+      BLOCKBERRY_API_KEY: ""
+      ZKCW_WALLET_ADDRESS: ""
+    iamRoleStatementsName: step-testnet-role
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - elasticfilesystem:ClientMount
+          - elasticfilesystem:ClientWrite
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOBS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.JOB_EVENTS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.KV_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.STEPS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.PROOFS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.WORKERS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.BALANCE_TABLE}"
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+          - s3:HeadObject
+          - s3:DeleteObject
+        Resource: "arn:aws:s3:::${self:provider.environment.BUCKET}/*"
+      - Effect: Allow
+        Action:
+          - elasticfilesystem:ClientMount
+          - elasticfilesystem:ClientWrite
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - kms:Encrypt
+          - kms:Decrypt
+          - kms:Encrypt*
+          - kms:Decrypt*
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - sqs:SendMessage
+          - sqs:ReceiveMessage
+          - sqs:DeleteMessage
+          - sqs:GetQueueAttributes
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - logs:GetLogEvents
+        Resource: "*"
+    deadLetter:
+      sqs:
+        queueName: step-testnet-dl-queue
     fileSystemConfig:
       localMountPath: /mnt/efs
       arn: arn:aws:elasticfilesystem:eu-west-1:058264205854:access-point/fsap-04fa7f21664729898
