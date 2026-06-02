@@ -57,7 +57,7 @@ export async function install(params: {
     params.buildCommand ??
     "corepack " +
       packageManager +
-      (packageManager === "npm" ? " run" : "") +
+      (packageManager === "npm" ? " exec" : "") +
       " tsc";
   console.log("Build command:", buildCommand);
   execSync(buildCommand, {

@@ -124,6 +124,8 @@ export async function getWorker(params: {
       (cloud as any).chain = "devnet";
     } else if (cloud.chain === "mina:mainnet") {
       (cloud as any).chain = "mainnet";
+    } else if (cloud.chain === "mina:testnet") {
+      (cloud as any).chain = "testnet";
     } else {
       throw new Error(`Unsupported chain: ${cloud.chain}`);
     }

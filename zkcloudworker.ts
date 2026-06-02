@@ -109,9 +109,11 @@ const api: Handler = async (
       if (
         body.chain != "mina:devnet" &&
         body.chain != "mina:mainnet" &&
+        body.chain != "mina:testnet" &&
         body.chain != "zeko:testnet" &&
         body.chain != "devnet" &&
         body.chain != "mainnet" &&
+        body.chain != "testnet" &&
         body.chain != "zeko"
       ) {
         console.error("chain must be a valid chain");
@@ -130,6 +132,8 @@ const api: Handler = async (
           ? "mina:devnet"
           : body.chain === "mainnet"
           ? "mina:mainnet"
+          : body.chain === "testnet"
+          ? "mina:testnet"
           : body.chain === "zeko"
           ? "zeko:testnet"
           : body.chain;
